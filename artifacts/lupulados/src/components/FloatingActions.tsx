@@ -36,7 +36,7 @@ export function FloatingActions() {
       </AnimatePresence>
 
       <a
-        href="https://wa.me/5491112345678?text=Hola!%20Quiero%20consultar%20por%20alquiler%20de%20barriles"
+        href="https://wa.me/5491133971210?text=Hola!%20Quiero%20hacer%20una%20consulta%20🍺"
         target="_blank"
         rel="noopener noreferrer"
         className="w-14 h-14 bg-green-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] hover:scale-110 transition-all"

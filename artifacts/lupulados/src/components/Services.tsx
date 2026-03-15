@@ -1,26 +1,31 @@
 import { motion } from "framer-motion";
 import { Truck, Users, Beer, GlassWater } from "lucide-react";
+import { scrollToSection } from "@/lib/utils";
 
 const SERVICES = [
   {
     icon: <Beer className="w-8 h-8 text-primary" />,
     title: "Alquiler de Barriles",
     description: "Barriles de 20L, 30L y 50L. Incluye chopera con hielo o eléctrica, tubo de CO2 y todo listo para tirar.",
+    action: () => scrollToSection("arma-tu-pedido"),
   },
   {
     icon: <GlassWater className="w-8 h-8 text-primary" />,
     title: "Venta Directa",
     description: "Latas, porrones, growlers y packs surtidos para que disfrutes en casa la mejor birra.",
+    action: () => scrollToSection("arma-tu-pedido"),
   },
   {
     icon: <Truck className="w-8 h-8 text-primary" />,
     title: "Entrega y Retiro",
     description: "Llevamos todo a domicilio, lo dejamos instalado funcionando y lo retiramos al día siguiente.",
+    href: "https://wa.me/5491133971210?text=Hola!%20Quiero%20consultar%20por%20envíos",
   },
   {
     icon: <Users className="w-8 h-8 text-primary" />,
     title: "Asesoramiento",
     description: "Te ayudamos a calcular cantidades y elegir los mejores estilos de cerveza para tu evento.",
+    action: () => scrollToSection("calculadora"),
   }
 ];
 
@@ -63,14 +68,24 @@ export function Services() {
               </div>
               <h4 className="text-xl font-bold text-white mb-3">{service.title}</h4>
               <p className="text-muted-foreground flex-1 mb-8">{service.description}</p>
-              <a 
-                href="https://wa.me/5491112345678"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary font-semibold text-sm inline-flex items-center uppercase tracking-wide group-hover:text-amber-400 transition-colors mt-auto"
-              >
-                Consultar <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
-              </a>
+              
+              {service.action ? (
+                <button 
+                  onClick={service.action}
+                  className="text-primary font-semibold text-sm inline-flex items-center uppercase tracking-wide group-hover:text-amber-400 transition-colors mt-auto text-left"
+                >
+                  Consultar <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              ) : (
+                <a 
+                  href={service.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-semibold text-sm inline-flex items-center uppercase tracking-wide group-hover:text-amber-400 transition-colors mt-auto"
+                >
+                  Consultar <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
+                </a>
+              )}
             </motion.div>
           ))}
         </div>

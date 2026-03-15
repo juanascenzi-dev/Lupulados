@@ -39,7 +39,7 @@ export function FAQ() {
           <p className="text-muted-foreground">Todo lo que necesitás saber antes de pedir tu barril.</p>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 mb-12">
           {FAQS.map((faq, i) => (
             <div 
               key={i} 
@@ -77,6 +77,18 @@ export function FAQ() {
               </AnimatePresence>
             </div>
           ))}
+        </div>
+
+        <div className="text-center">
+          <p className="text-muted-foreground mb-4">¿Tenés otra duda?</p>
+          <a
+            href="https://wa.me/5491133971210?text=Hola!%20Quiero%20hacer%20una%20consulta"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-bold bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all"
+          >
+            Consultanos por WhatsApp
+          </a>
         </div>
       </div>
     </section>

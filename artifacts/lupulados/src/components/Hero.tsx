@@ -87,14 +87,12 @@ export function Hero() {
           transition={{ duration: 0.7, delay: 0.6, ease: "easeOut" }}
           className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
         >
-          <a
-            href="https://wa.me/5491112345678?text=Hola!%20Quiero%20consultar%20por%20alquiler%20de%20barriles"
-            target="_blank"
-            rel="noopener noreferrer"
+          <button
+            onClick={() => scrollToSection('arma-tu-pedido')}
             className="inline-flex items-center justify-center px-8 py-4 rounded-full text-lg font-bold bg-primary text-primary-foreground hover:bg-amber-400 transition-all shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_40px_rgba(217,119,6,0.5)] hover:-translate-y-1"
           >
             Pedí tu barril
-          </a>
+          </button>
           <button
             onClick={() => scrollToSection('eventos')}
             className="inline-flex items-center justify-center px-8 py-4 rounded-full text-lg font-bold bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all hover:-translate-y-1 group"

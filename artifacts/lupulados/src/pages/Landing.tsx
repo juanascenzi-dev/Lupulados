@@ -11,6 +11,8 @@ import { FAQ } from "@/components/FAQ";
 import { Ubicacion } from "@/components/Ubicacion";
 import { Footer } from "@/components/Footer";
 import { FloatingActions } from "@/components/FloatingActions";
+import { ArmaTuPedido } from "@/components/ArmaTuPedido";
+import { CartFloating } from "@/components/CartFloating";
 
 export default function Landing() {
   return (
@@ -22,9 +24,10 @@ export default function Landing() {
         <Hero />
         <Services />
         <Cervezas />
-        <Eventos />
-        <ComoFunciona />
         <Calculadora />
+        <ArmaTuPedido />
+        <ComoFunciona />
+        <Eventos />
         <Testimonios />
         <FAQ />
         <Ubicacion />
@@ -32,6 +35,7 @@ export default function Landing() {
 
       <Footer />
       <FloatingActions />
+      <CartFloating />
     </div>
   );
 }

@@ -1,0 +1,358 @@
+# Prompt de Refinamiento #2 — Sistema de Pedidos y Mejoras
+
+---
+
+## PROMPT PARA COPIAR Y PEGAR EN REPLIT (después del primer prompt):
+
+---
+
+Necesito hacer mejoras importantes al sitio de la cervecería. Hay que reorganizar secciones, agregar un **sistema de armado de pedido paso a paso con carrito**, corregir los botones que mandan todo a WhatsApp (muchos deberían llevar a otras secciones del sitio), y poner **precios en pesos argentinos**. Vamos punto por punto:
+
+---
+
+## 1. REORGANIZAR EL ORDEN DE LAS SECCIONES
+
+El nuevo orden del sitio debe ser:
+
+1. **Hero / Inicio**
+2. **Servicios**
+3. **Nuestras Cervezas** (catálogo con precios)
+4. **Calculadora de Cerveza** ← SUBIÓ, ahora va después de Cervezas
+5. **Armá tu Pedido** ← NUEVA SECCIÓN (carrito paso a paso)
+6. **¿Cómo funciona?** (proceso de alquiler)
+7. **Eventos Anteriores** (galería) ← BAJÓ
+8. **FAQ**
+9. **Ubicación**
+10. **Contacto / Footer**
+
+---
+
+## 2. CORREGIR LOS BOTONES — NO TODO VA A WHATSAPP
+
+Actualmente muchos botones redirigen a WhatsApp cuando deberían llevar al usuario a otra sección del sitio. Corregir así:
+
+| Botón | ¿A dónde debe ir? |
+|---|---|
+| "Pedí tu barril" (Hero) | → Scroll a sección "Armá tu Pedido" |
+| "Ver nuestros eventos" (Hero) | → Scroll a sección "Eventos Anteriores" |
+| "Ver cervezas" o "Conocé nuestras cervezas" | → Scroll a sección "Nuestras Cervezas" |
+| "Armá tu pedido" (en cards de servicio) | → Scroll a sección "Armá tu Pedido" |
+| "Calculá cuánto necesitás" | → Scroll a sección "Calculadora" |
+| CTA final de la calculadora | → Scroll a sección "Armá tu Pedido" |
+| Botón del carrito (enviar pedido final) | → **WhatsApp** con mensaje pre-armado |
+| "¿Querés que estemos en tu evento?" | → **WhatsApp** con mensaje genérico |
+| Botón flotante de WhatsApp | → **WhatsApp** siempre |
+| FAQ: "Consultanos" | → **WhatsApp** |
+
+**Regla general**: Solo el paso final del pedido, el botón flotante y consultas puntuales van a WhatsApp. El resto debe navegar dentro del sitio para que el usuario explore antes de contactar.
+
+---
+
+## 3. CATÁLOGO DE CERVEZAS CON PRECIOS
+
+Actualizar la sección "Nuestras Cervezas" para que muestre **precios en pesos argentinos** y las presentaciones disponibles de cada cerveza. Usar estos datos:
+
+### Estilos de cerveza:
+
+**🍺 Blonde Ale** — Suave, refrescante, ideal para los que arrancan en la artesanal.
+- ABV: 4.8% | IBU: 15
+- Porrón 500ml: $1.800
+- Growler 1L: $3.200
+- Growler 2L: $5.800
+- Barril 20L: $38.000
+- Barril 30L: $54.000
+- Barril 50L: $85.000
+
+**🍺 American Pale Ale (APA)** — Cítrica y lupulada, nuestro caballito de batalla.
+- ABV: 5.2% | IBU: 35
+- Porrón 500ml: $2.000
+- Growler 1L: $3.600
+- Growler 2L: $6.500
+- Barril 20L: $42.000
+- Barril 30L: $60.000
+- Barril 50L: $95.000
+
+**🍺 IPA (India Pale Ale)** — Intensa, aromática, para los que les gusta el lúpulo.
+- ABV: 6.5% | IBU: 55
+- Porrón 500ml: $2.200
+- Growler 1L: $4.000
+- Growler 2L: $7.200
+- Barril 20L: $46.000
+- Barril 30L: $66.000
+- Barril 50L: $105.000
+
+**🍺 Red Ale / Amber** — Maltosa, caramelo, equilibrada.
+- ABV: 5.0% | IBU: 25
+- Porrón 500ml: $1.900
+- Growler 1L: $3.400
+- Growler 2L: $6.200
+- Barril 20L: $40.000
+- Barril 30L: $57.000
+- Barril 50L: $90.000
+
+**🍺 Stout** — Oscura, con notas de café y chocolate.
+- ABV: 5.8% | IBU: 30
+- Porrón 500ml: $2.100
+- Growler 1L: $3.800
+- Growler 2L: $6.800
+- Barril 20L: $44.000
+- Barril 30L: $63.000
+- Barril 50L: $100.000
+
+**🍺 Honey / Wheat** — Dulce, con miel patagónica, suavecita.
+- ABV: 4.5% | IBU: 12
+- Porrón 500ml: $1.900
+- Growler 1L: $3.400
+- Growler 2L: $6.200
+- Barril 20L: $40.000
+- Barril 30L: $57.000
+- Barril 50L: $90.000
+
+**🍺 Session IPA** — Lupulada pero liviana, para tomar toda la noche.
+- ABV: 4.2% | IBU: 40
+- Porrón 500ml: $2.000
+- Growler 1L: $3.600
+- Growler 2L: $6.500
+- Barril 20L: $42.000
+- Barril 30L: $60.000
+- Barril 50L: $95.000
+
+**🍺 Scotch Ale** — Fuerte, maltosa, para el invierno.
+- ABV: 7.5% | IBU: 20
+- Porrón 500ml: $2.400
+- Growler 1L: $4.400
+- Growler 2L: $7.800
+- Barril 20L: $48.000
+- Barril 30L: $69.000
+- Barril 50L: $110.000
+
+### Diseño del catálogo:
+- Cada cerveza en una **card** con imagen placeholder, nombre, descripción, ABV/IBU.
+- Al hacer click o tocar una card se abre un **modal o desplegable** que muestra todas las presentaciones con precios.
+- Cada presentación tiene un botón **"Agregar al pedido"** que suma al carrito.
+- Mostrar un **badge/tag** en cada cerveza: "Disponible en barril", "Popular", "Novedad", etc.
+- Filtros opcionales: "Todas", "Livianas", "Lupuladas", "Oscuras".
+
+### Costos adicionales (mostrar aparte, en un banner o nota):
+- **Alquiler de chopera**: $15.000 por evento (incluida gratis con barriles de 50L).
+- **Delivery y retiro de barriles**: $8.000 (zona norte GBA) / $12.000 (CABA y zona sur) / Gratis retiro en fábrica.
+- **Pack degustación (6 porrones surtidos)**: $10.500 (mostrar como promo).
+- **Vaso chopero de regalo**: con pedidos superiores a $80.000.
+
+---
+
+## 4. CALCULADORA MEJORADA (debajo de Cervezas, arriba de Armá tu Pedido)
+
+La calculadora debe ser más completa. Campos:
+
+- **¿Cuántos invitados?** → Slider de 10 a 500 (o input numérico).
+- **¿Cuántas horas dura el evento?** → Selector: 2hs / 3hs / 4hs / 5hs / 6hs / +6hs.
+- **¿Qué tipo de evento es?** → Selector: "Tranqui/almuerzo" / "Fiesta normal" / "Fiesta intensa" / "Festival".
+- **¿Es verano o invierno?** → Toggle (en verano se toma más).
+
+### Lógica de cálculo:
+- Base: 1 litro por persona para evento normal de 4hs.
+- Multiplicadores:
+  - Tranqui/almuerzo: x0.6
+  - Fiesta normal: x1.0
+  - Fiesta intensa: x1.4
+  - Festival: x1.8
+  - Verano: +20%
+  - Cada hora extra sobre 4hs: +15%
+
+### Resultado:
+Mostrar:
+- "Vas a necesitar aproximadamente **XX litros**"
+- Sugerencia: "Te recomendamos **X barriles de 30L** o **X barriles de 50L**"
+- Precio estimado desde: "$XX.000"
+- Botón grande: **"Armá tu pedido con esta cantidad →"** que haga scroll a la sección de armado de pedido y precargue la cantidad sugerida.
+
+---
+
+## 5. NUEVA SECCIÓN: "ARMÁ TU PEDIDO" (Sistema paso a paso con carrito)
+
+Esta es la sección más importante. Tiene que ser un **flujo paso a paso tipo wizard/stepper** donde el usuario arma su pedido completo y al final se genera un mensaje de WhatsApp con todo el detalle.
+
+### PASO 1: ¿Qué estás buscando?
+Elegir uno o más:
+- [ ] Barriles para un evento
+- [ ] Growlers
+- [ ] Porrones / Botellas
+- [ ] Pack degustación
+
+Botón: "Siguiente →"
+
+### PASO 2: Elegí tus cervezas y cantidades
+Según lo que eligió en el paso 1, mostrar las opciones:
+
+**Si eligió Barriles:**
+- Mostrar cada estilo de cerveza con selectores de cantidad para cada tamaño:
+  - Blonde Ale → Barril 20L [0] [+][-] | Barril 30L [0] [+][-] | Barril 50L [0] [+][-]
+  - APA → Barril 20L [0] [+][-] | Barril 30L [0] [+][-] | Barril 50L [0] [+][-]
+  - (igual para cada estilo)
+
+**Si eligió Growlers:**
+- Mostrar cada estilo con selectores:
+  - Blonde Ale → Growler 1L [0] [+][-] | Growler 2L [0] [+][-]
+  - APA → Growler 1L [0] [+][-] | Growler 2L [0] [+][-]
+  - (etc.)
+
+**Si eligió Porrones:**
+- Mostrar cada estilo:
+  - Blonde Ale → Porrón 500ml [0] [+][-]
+  - APA → Porrón 500ml [0] [+][-]
+  - (etc.)
+
+**Si eligió Pack degustación:**
+- Pack degustación x6 porrones surtidos [0] [+][-] — $10.500 c/u
+
+Mostrar el **subtotal parcial actualizado en tiempo real** abajo.
+
+Botón: "← Anterior" | "Siguiente →"
+
+### PASO 3: Extras y servicios
+- [ ] Alquiler de chopera ($15.000) — mostrar solo si eligió barriles. Nota: "Gratis con barriles de 50L".
+- [ ] Vasos choperos personalizados — $800 c/u → selector cantidad.
+- [ ] Delivery (seleccionar zona):
+  - ( ) Zona Norte GBA — $8.000
+  - ( ) CABA / Zona Sur — $12.000
+  - ( ) Retiro en fábrica — Gratis
+- [ ] Hielo (bolsa x5kg) — $3.000 c/u → selector cantidad.
+
+Subtotal actualizado.
+
+Botón: "← Anterior" | "Siguiente →"
+
+### PASO 4: Datos del evento / entrega
+- Nombre completo (input texto)
+- Fecha del evento o entrega (date picker)
+- Horario preferido de entrega (selector: mañana 9-12 / tarde 12-16 / tarde-noche 16-20)
+- Dirección de entrega (input texto, solo si eligió delivery)
+- Comentarios adicionales (textarea opcional)
+
+Botón: "← Anterior" | "Ver resumen →"
+
+### PASO 5: Resumen del pedido
+Mostrar un resumen completo estilo "ticket" o "factura" con:
+
+```
+📋 RESUMEN DE TU PEDIDO
+━━━━━━━━━━━━━━━━━━━━━━
+
+🍺 CERVEZAS:
+• 2x Barril 30L — IPA .................. $132.000
+• 1x Barril 50L — Blonde Ale ........... $85.000
+• 6x Porrón 500ml — APA ................ $12.000
+• 1x Pack Degustación ................... $10.500
+
+🔧 EXTRAS:
+• Chopera (gratis con barril 50L) ....... $0
+• Delivery Zona Norte ................... $8.000
+• 2x Bolsa de hielo ..................... $6.000
+
+━━━━━━━━━━━━━━━━━━━━━━
+💰 TOTAL ESTIMADO: $253.500
+
+📅 Fecha: 15/04/2026
+⏰ Entrega: Tarde (12 a 16hs)
+📍 Dirección: Av. Libertador 1234, San Isidro
+👤 Nombre: Juan Pérez
+📝 Notas: Poner todo en la cochera
+```
+
+Botón principal: **"📲 Enviar pedido por WhatsApp"**
+Botón secundario: "← Modificar pedido"
+
+---
+
+### PASO 6: Envío a WhatsApp
+
+Al tocar "Enviar pedido por WhatsApp", generar un link de WhatsApp al número **+54 9 11 3397-1210** con un mensaje pre-armado que contenga TODA la información del pedido.
+
+El link debe ser:
+```
+https://wa.me/5491133971210?text=[MENSAJE_CODIFICADO]
+```
+
+El mensaje debe tener este formato (URL-encoded):
+
+```
+🍺 *NUEVO PEDIDO — LUPULADOS* 🍺
+━━━━━━━━━━━━━━━━━━━━━
+
+*Cervezas:*
+• 2x Barril 30L — IPA — $132.000
+• 1x Barril 50L — Blonde Ale — $85.000
+• 6x Porrón 500ml — APA — $12.000
+• 1x Pack Degustación — $10.500
+
+*Extras:*
+• Chopera (bonificada)
+• Delivery Zona Norte — $8.000
+• 2x Bolsa de hielo — $6.000
+
+💰 *TOTAL ESTIMADO: $253.500*
+
+📅 Fecha: 15/04/2026
+⏰ Entrega: Tarde (12 a 16hs)
+📍 Dirección: Av. Libertador 1234, San Isidro
+👤 Nombre: Juan Pérez
+📝 Notas: Poner todo en la cochera
+
+---
+Pedido generado desde la web 🌐
+```
+
+**Importante**: El mensaje debe usar `encodeURIComponent()` para que los emojis, asteriscos y saltos de línea funcionen bien en WhatsApp.
+
+---
+
+## 6. CARRITO FLOTANTE / MINI-RESUMEN
+
+Agregar un **indicador de carrito flotante** (además del botón de WhatsApp):
+- Aparece solo cuando el usuario tiene al menos 1 item en el pedido.
+- Mostrar ícono de carrito + cantidad de items + total parcial.
+- Al hacer click lleva a la sección "Armá tu Pedido" o abre un drawer lateral con el resumen.
+- Posición: esquina inferior izquierda (el WhatsApp queda en la derecha).
+- Animación sutil cuando se agrega un item (bounce o shake).
+
+---
+
+## 7. MEJORAS DE UX/UI GENERALES
+
+- **Breadcrumb o stepper visual** en el armado de pedido (Paso 1 de 5, Paso 2 de 5, etc.) con barra de progreso.
+- **Los precios deben usar formato argentino**: punto como separador de miles (ej: $132.000), sin centavos.
+- **Botones "Agregar al pedido"** en la sección de catálogo de cervezas que sumen directo al carrito y muestren una notificación toast tipo "✅ IPA Barril 30L agregado al pedido".
+- **Transiciones suaves** entre pasos del wizard (slide o fade).
+- **Persistir el carrito en localStorage** para que si el usuario recarga la página no pierda el pedido.
+- **Responsive**: en mobile el wizard debe ser vertical y ocupar todo el ancho. En desktop puede ser más ancho con el resumen al costado.
+- **Validaciones**: no dejar avanzar si no seleccionó nada en paso 2, mostrar error amigable.
+
+---
+
+## 8. NÚMERO DE WHATSAPP DEFINITIVO
+
+Cambiar TODOS los links de WhatsApp del sitio al número:
+**+54 9 11 3397-1210**
+
+Link base: `https://wa.me/5491133971210`
+
+Mensajes pre-armados según contexto:
+- Botón flotante: `?text=Hola!%20Quiero%20hacer%20una%20consulta%20🍺`
+- Consulta por evento: `?text=Hola!%20Quiero%20consultar%20por%20alquiler%20de%20barriles%20para%20un%20evento%20🎉`
+- Desde la galería de eventos: `?text=Hola!%20Vi%20los%20eventos%20en%20la%20web%20y%20quiero%20que%20estén%20en%20mi%20próximo%20evento!%20🍻`
+- Pedido del carrito: [se genera dinámicamente con todo el detalle]
+
+---
+
+## RESUMEN DE CAMBIOS CLAVE:
+1. ✅ Reorganizar orden de secciones (calculadora sube, eventos baja)
+2. ✅ Corregir botones: la mayoría navega dentro del sitio, solo el pedido final va a WhatsApp
+3. ✅ Agregar precios argentinos a todas las cervezas y presentaciones
+4. ✅ Nueva sección "Armá tu Pedido" con wizard paso a paso
+5. ✅ Carrito con items, cantidades, subtotales en tiempo real
+6. ✅ Mensaje de WhatsApp generado automáticamente con el pedido completo
+7. ✅ Carrito flotante con contador de items
+8. ✅ Número de WhatsApp: +54 9 11 3397-1210
+9. ✅ Calculadora mejorada con más variables y link al armador de pedido
+10. ✅ UX mejorada con toasts, validaciones, persistencia en localStorage
