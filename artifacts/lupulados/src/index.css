@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: 'DM Sans', sans-serif;
+  --font-display: 'Playfair Display', serif;
+
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  /* Dark elegant premium theme with warm amber/gold accents */
+  --background: 24 10% 6%;
+  --foreground: 45 20% 90%;
+  
+  --card: 24 10% 9%;
+  --card-foreground: 45 20% 90%;
+  
+  --primary: 40 90% 50%; /* Golden Amber */
+  --primary-foreground: 24 10% 6%;
+  
+  --secondary: 24 10% 15%;
+  --secondary-foreground: 45 20% 90%;
+  
+  --muted: 24 10% 15%;
+  --muted-foreground: 45 10% 60%;
+  
+  --accent: 25 80% 45%;
+  --accent-foreground: 45 20% 90%;
+  
+  --border: 40 30% 15%;
+  --input: 40 30% 15%;
+  --ring: 40 90% 50%;
+  
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased font-sans selection:bg-primary/30 selection:text-primary-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply font-semibold tracking-tight;
+  }
+  
+  /* Custom scrollbar for webkit */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-background;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-secondary rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-border;
+  }
+}
+
+@keyframes float-up {
+  0% { 
+    transform: translateY(100vh) scale(0) rotate(0deg); 
+    opacity: 0; 
+  }
+  20% {
+    opacity: 0.6;
+  }
+  80% {
+    opacity: 0.4;
+  }
+  100% { 
+    transform: translateY(-20vh) scale(1.5) rotate(360deg); 
+    opacity: 0; 
+  }
+}
+
+.beer-bubble {
+  position: absolute;
+  background: radial-gradient(circle at 30% 30%, rgba(255, 200, 0, 0.4) 0%, rgba(255, 150, 0, 0.1) 60%, transparent 80%);
+  border: 1px solid rgba(255, 180, 0, 0.1);
+  border-radius: 50%;
+  animation: float-up infinite ease-in;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-panel {
+  @apply bg-card/80 backdrop-blur-md border border-white/5 shadow-xl;
+}

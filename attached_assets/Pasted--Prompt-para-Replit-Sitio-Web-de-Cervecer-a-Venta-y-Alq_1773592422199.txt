@@ -1,0 +1,132 @@
+# Prompt para Replit — Sitio Web de Cervecería (Venta y Alquiler de Barriles)
+
+---
+
+## PROMPT PARA COPIAR Y PEGAR EN REPLIT:
+
+---
+
+Creame una página web moderna, responsive y mobile-first para una cervecería artesanal ubicada en Argentina que se dedica a la **venta de cerveza artesanal** y al **alquiler de barriles para eventos**. El sitio debe estar hecho con **React + Tailwind CSS** (o Next.js si es posible). Tiene que tener un diseño profesional, oscuro/elegante con acentos dorados o ámbar que remitan a la cerveza, y que funcione perfecto en celular.
+
+---
+
+### ESTRUCTURA DEL SITIO (Secciones obligatorias):
+
+**1. HERO / INICIO**
+- Imagen o video de fondo de alta calidad (cerveza, barril, evento).
+- Título principal tipo: "Cerveza artesanal para tus mejores momentos".
+- Subtítulo: "Alquiler de barriles · Venta de cerveza · Servicio para eventos".
+- Botón CTA principal: "Pedí tu barril" (que lleve a WhatsApp).
+- Botón secundario: "Ver nuestros eventos".
+- Badge o sello que diga "Envíos y retiro en fábrica".
+
+**2. SERVICIOS**
+Mostrar en tarjetas o cards con íconos los siguientes servicios:
+- **Alquiler de barriles para eventos**: explicar que se alquilan barriles de 20L, 30L y 50L con chopera incluida, ideales para cumpleaños, casamientos, eventos corporativos, eventos políticos, fiestas de egresados, etc.
+- **Venta de cerveza artesanal**: porrones, growlers, latas, packs.
+- **Servicio de entrega y retiro**: explicar que hacemos entrega a domicilio del barril + chopera y luego lo retiramos. También ofrecer la opción de retiro en fábrica.
+- **Asesoramiento personalizado**: ayudamos a calcular cuánta cerveza necesitás según la cantidad de invitados.
+- Cada card debe tener un pequeño CTA a WhatsApp.
+
+**3. NUESTRAS CERVEZAS**
+- Grilla o carrusel con las variedades de cerveza (mínimo 6):
+  - Blonde Ale
+  - IPA
+  - APA (American Pale Ale)
+  - Red Ale / Amber
+  - Stout
+  - Honey / Wheat
+- Cada cerveza con: imagen placeholder, nombre, descripción corta, IBU y ABV (inventar datos de ejemplo), y badge de "disponible en barril".
+
+**4. EVENTOS ANTERIORES (Portfolio/Galería)**
+- Sección tipo galería/portfolio con fotos de eventos anteriores.
+- Usar imágenes placeholder con overlay.
+- Cada evento debe tener: foto, tipo de evento (ej: "Casamiento en Pilar", "Evento político en CABA", "Cumpleaños de 50 en Tigre", "Fiesta corporativa", "Festival de cerveza", "Despedida de soltero").
+- Incluir un contador animado: "+150 eventos realizados", "+5000 litros servidos", "+98% clientes satisfechos".
+- Diseño tipo masonry o grilla responsive.
+- Botón: "¿Querés que estemos en tu próximo evento?" → WhatsApp.
+
+**5. ¿CÓMO FUNCIONA? (Proceso de alquiler)**
+Mostrar en pasos (stepper o timeline visual):
+1. **Contactanos** — Escribinos por WhatsApp o completá el formulario.
+2. **Elegí tu cerveza** — Te asesoramos sobre estilos y cantidad.
+3. **Entrega** — Llevamos el barril y la chopera a tu evento.
+4. **Disfrutá** — Cerveza tirada fresca para todos tus invitados.
+5. **Retiro** — Pasamos a retirar todo al día siguiente.
+
+**6. CALCULADORA DE CERVEZA (Feature interactiva)**
+- Widget interactivo donde el usuario ingresa:
+  - Cantidad de invitados (slider o input numérico).
+  - Duración del evento (horas).
+  - Tipo de evento (casual / fiesta intensa).
+- Y el sitio le devuelve una estimación de cuántos litros/barriles necesita.
+- Botón: "Pedí esta cantidad por WhatsApp" que envíe el resultado precargado en el mensaje.
+
+**7. PREGUNTAS FRECUENTES (FAQ)**
+Acordeón/colapsable con estas preguntas:
+- ¿Qué incluye el alquiler del barril?
+- ¿Cuánto antes debo reservar?
+- ¿Hacen entregas a domicilio?
+- ¿Qué pasa si sobra cerveza?
+- ¿Puedo retirar el barril en la fábrica?
+- ¿Cuál es la zona de cobertura?
+- ¿Aceptan Mercado Pago / transferencia?
+
+**8. UBICACIÓN (Google Maps)**
+- Embed de Google Maps mostrando la ubicación de la fábrica.
+- Usar coordenadas de ejemplo en zona norte de Buenos Aires (ej: San Martín, Caseros, o inventar).
+- Mostrar dirección, horarios de atención, y datos de contacto al lado del mapa.
+- Indicar: "Retirá tu pedido en fábrica de Lunes a Sábados de 9 a 18hs".
+
+**9. CONTACTO / FOOTER**
+- Botón flotante de WhatsApp (siempre visible, esquina inferior derecha) que abra `https://wa.me/5491112345678?text=Hola!%20Quiero%20consultar%20por%20alquiler%20de%20barriles`.
+- Footer con:
+  - Logo
+  - Links a secciones
+  - Redes sociales (Instagram, Facebook, TikTok — usar links placeholder)
+  - Dirección y teléfono
+  - "© 2026 [Nombre Cervecería]. Todos los derechos reservados."
+  - Texto legal: "Beber con moderación. Prohibida la venta a menores de 18 años."
+
+---
+
+### REQUISITOS TÉCNICOS:
+
+- **Mobile-first**: todo debe verse perfecto en celular primero.
+- **Navbar**: sticky, con menú hamburguesa en mobile. Links a cada sección con scroll suave.
+- **Paleta de colores**: fondo oscuro (#0a0a0a o similar), acentos en dorado/ámbar (#d4a017, #f5c518), textos blancos y grises claros. Puede tener texturas sutiles o gradientes.
+- **Tipografía**: moderna, sans-serif. Títulos bold/impactantes, cuerpo legible.
+- **Animaciones**: scroll reveal suave en cada sección (fade in, slide up). Hover effects en cards y botones.
+- **Performance**: imágenes optimizadas, lazy loading.
+- **SEO básico**: meta tags, título, descripción, Open Graph para compartir en redes.
+- **Accesibilidad**: contraste adecuado, alt text en imágenes, navegación por teclado.
+
+---
+
+### EXTRAS DESEABLES (si es posible):
+
+- Modo claro/oscuro (toggle).
+- Sección de testimonios/reseñas de clientes con estrellas.
+- Banner superior con promo tipo: "🍺 10% OFF en tu primer alquiler — Usá el código PRIMERABIRRA".
+- Efecto parallax sutil en el hero.
+- Animación de burbujas de cerveza como detalle decorativo.
+- Favicon personalizado con ícono de cerveza.
+
+---
+
+### DATOS DE EJEMPLO PARA USAR:
+
+- **Nombre de la cervecería**: [REEMPLAZAR] (ej: "Lupulados", "Barril Dorado", "Birra & Co.")
+- **Teléfono WhatsApp**: +54 9 11 1234-5678
+- **Dirección**: Av. San Martín 1234, San Martín, Buenos Aires
+- **Instagram**: @lupulados
+- **Email**: info@lupulados.com.ar
+- **Horarios**: Lunes a Viernes 9 a 18hs · Sábados 9 a 14hs
+
+---
+
+### IMPORTANTE:
+- Todo el contenido debe estar en **español argentino** (usar "vos", "pedí", "contactanos", etc.).
+- No usar "usted" ni español de España.
+- Que el tono sea cercano, profesional pero cálido, como hablarle a un amigo que quiere armar una buena fiesta.
+- Todas las imágenes pueden ser placeholders con URLs de Unsplash o Pexels relacionadas a cerveza artesanal y eventos.

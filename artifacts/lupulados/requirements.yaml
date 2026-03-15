@@ -1,0 +1,16 @@
+packages:
+  "framer-motion": "Required for smooth scroll animations, entry reveals, and interactive elements"
+  "react-countup": "Required for the animated number counters in the events section"
+  "clsx": "Utility for conditionally joining classNames"
+  "tailwind-merge": "Utility for merging tailwind classes without style conflicts"
+  "lucide-react": "Beautiful consistent icons"
+
+images:
+  - path: "artifacts/lupulados/public/images/hero-texture.png"
+    description: "Dark, moody, subtle grunge texture in deep black and brown tones with very faint gold speckles, perfect for a premium craft brewery background overlay"
+    aspect_ratio: "16:9"
+
+notes:
+  - The application is a static landing page, but TanStack Query is configured for the contact form and newsletter simulation to show production-ready interactivity.
+  - All navigation is smooth-scrolling within the single page.
+  - Using Argentine Spanish localization.

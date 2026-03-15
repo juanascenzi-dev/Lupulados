@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Lupulados - Cervecería Artesanal"
+version = "1.0.0"
+id = "artifacts/lupulados"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+localPort = 19516
+name = "web"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/lupulados run dev"
+
+[services.env]
+PORT = "19516"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/lupulados", "run", "build"]
+publicDir = "artifacts/lupulados/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
