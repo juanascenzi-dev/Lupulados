@@ -21,6 +21,8 @@ export interface CartContextType {
     delivery: "norte" | "caba" | "fabrica";
     hielo: number;
     vasos: number;
+    promoCode: string;
+    discount: number;
   };
   setExtras: React.Dispatch<React.SetStateAction<CartContextType["extras"]>>;
 }
@@ -38,6 +40,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     delivery: "fabrica",
     hielo: 0,
     vasos: 0,
+    promoCode: "",
+    discount: 0,
   });
 
   useEffect(() => {
@@ -72,7 +76,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
-    setExtras({ chopera: false, delivery: "fabrica", hielo: 0, vasos: 0 });
+    setExtras({ chopera: false, delivery: "fabrica", hielo: 0, vasos: 0, promoCode: "", discount: 0 });
   };
 
   const totalItems = items.reduce((acc, item) => acc + item.qty, 0);
@@ -91,7 +95,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const baseItemsPrice = items.reduce((acc, item) => acc + item.price * item.qty, 0);
   const vasosCost = baseItemsPrice > 80000 ? 0 : extras.vasos * 800;
 
-  const totalPrice = baseItemsPrice + choperaCost + deliveryCost + hieloCost + vasosCost;
+  const subtotal = baseItemsPrice + choperaCost + deliveryCost + hieloCost + vasosCost;
+  const discountAmount = subtotal * extras.discount;
+  const totalPrice = subtotal - discountAmount;
 
   return (
     <CartContext.Provider

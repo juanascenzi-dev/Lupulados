@@ -11,7 +11,7 @@ const BEERS = [
     desc: "Suave, refrescante, ideal para los que arrancan en la artesanal.",
     abv: 4.8, ibu: 15,
     badge: "Popular",
-    img: "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?w=600&h=400&fit=crop",
     precios: {
       porrón: 1800,
       growler1L: 3200,
@@ -26,7 +26,7 @@ const BEERS = [
     desc: "Cítrica y lupulada, nuestro caballito de batalla.",
     abv: 5.2, ibu: 35,
     badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1585553616435-2dc0a54e271d?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600&h=400&fit=crop",
     precios: {
       porrón: 2000,
       growler1L: 3600,
@@ -41,7 +41,7 @@ const BEERS = [
     desc: "Intensa, aromática, para los que les gusta el lúpulo.",
     abv: 6.5, ibu: 55,
     badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600&h=400&fit=crop",
     precios: {
       porrón: 2200,
       growler1L: 4000,
@@ -56,7 +56,7 @@ const BEERS = [
     desc: "Maltosa, caramelo, equilibrada.",
     abv: 5.0, ibu: 25,
     badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1614316047463-5e921e155b41?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=600&h=400&fit=crop",
     precios: {
       porrón: 1900,
       growler1L: 3400,
@@ -71,7 +71,7 @@ const BEERS = [
     desc: "Oscura, con notas de café y chocolate.",
     abv: 5.8, ibu: 30,
     badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1505075955904-b552d0a52723?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?w=600&h=400&fit=crop",
     precios: {
       porrón: 2100,
       growler1L: 3800,
@@ -86,7 +86,7 @@ const BEERS = [
     desc: "Dulce, con miel patagónica, suavecita.",
     abv: 4.5, ibu: 12,
     badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1563514986873-10e05ee719fb?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?w=600&h=400&fit=crop",
     precios: {
       porrón: 1900,
       growler1L: 3400,
@@ -101,7 +101,7 @@ const BEERS = [
     desc: "Lupulada pero liviana, para tomar toda la noche.",
     abv: 4.2, ibu: 40,
     badge: "Novedad",
-    img: "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1436076863939-06870fe779c2?w=600&h=400&fit=crop",
     precios: {
       porrón: 2000,
       growler1L: 3600,
@@ -116,7 +116,7 @@ const BEERS = [
     desc: "Fuerte, maltosa, para el invierno.",
     abv: 7.5, ibu: 20,
     badge: "Temporada",
-    img: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?auto=format&fit=crop&q=80&w=800",
+    img: "https://images.unsplash.com/photo-1504502350688-00f5d59bbdeb?w=600&h=400&fit=crop",
     precios: {
       porrón: 2400,
       growler1L: 4400,

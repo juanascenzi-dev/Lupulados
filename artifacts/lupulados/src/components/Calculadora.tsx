@@ -13,6 +13,16 @@ export function Calculadora() {
   const [recommendation, setRecommendation] = useState("");
   const [estimatedPrice, setEstimatedPrice] = useState(0);
 
+  const handleGuestsChange = (val: number) => {
+    const clamped = Math.min(Math.max(val, 10), 500);
+    setGuests(clamped);
+  };
+
+  const handleHoursChange = (val: number) => {
+    const clamped = Math.min(Math.max(val, 2), 12);
+    setHours(clamped);
+  };
+
   useEffect(() => {
     // Base 1L per person for 4hs normal
     const baseLiters = guests;
@@ -100,7 +110,16 @@ export function Calculadora() {
                   <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
                     <Users className="w-4 h-4 text-primary" /> Invitados
                   </label>
-                  <span className="text-primary font-bold text-xl">{guests}</span>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      value={guests}
+                      onChange={(e) => handleGuestsChange(Number(e.target.value))}
+                      className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
+                      min="10"
+                      max="500"
+                    />
+                  </div>
                 </div>
                 <input 
                   type="range" 
@@ -119,11 +138,21 @@ export function Calculadora() {
 
               {/* Hours */}
               <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
-                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
-                  <Clock className="w-4 h-4 text-primary" /> Duración del evento
-                </label>
+                <div className="flex justify-between items-center mb-4">
+                  <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" /> Duración (hs)
+                  </label>
+                  <input
+                    type="number"
+                    value={hours}
+                    onChange={(e) => handleHoursChange(Number(e.target.value))}
+                    className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
+                    min="2"
+                    max="12"
+                  />
+                </div>
                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-                  {[2, 3, 4, 5, 6, 8].map(h => (
+                  {[2, 3, 4, 5, 6, 8, 10, 12].map(h => (
                     <button
                       key={h}
                       onClick={() => setHours(h)}
@@ -133,32 +162,32 @@ export function Calculadora() {
                         : 'bg-white/5 text-muted-foreground border-white/10 hover:border-white/30'
                       }`}
                     >
-                      {h === 8 ? '+6hs' : `${h}hs`}
+                      {h === 12 ? '12hs+' : `${h}hs`}
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* Event Type & Summer */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6">
                 <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                   <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
                     <Beer className="w-4 h-4 text-primary" /> Estilo de fiesta
                   </label>
-                  <div className="flex flex-col gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     {[
-                      { id: 'tranqui', label: 'Tranqui / Almuerzo' },
-                      { id: 'normal', label: 'Fiesta Normal' },
-                      { id: 'intensa', label: 'Fiesta Intensa' },
-                      { id: 'festival', label: 'Festival / Descontrol' }
+                      { id: 'tranqui', label: 'Tranqui 🍺' },
+                      { id: 'normal', label: 'Normal 🍻' },
+                      { id: 'intensa', label: 'Intensa 🔥' },
+                      { id: 'festival', label: 'Festival 🤘' }
                     ].map(t => (
                       <button
                         key={t.id}
                         onClick={() => setType(t.id as any)}
-                        className={`py-2 px-4 rounded-lg border transition-all text-sm font-bold text-left ${
+                        className={`py-3 px-4 rounded-xl border transition-all text-sm font-bold text-center flex items-center justify-center ${
                           type === t.id 
-                          ? 'bg-primary text-black border-primary' 
-                          : 'bg-transparent text-muted-foreground border-transparent hover:bg-white/5'
+                          ? 'bg-primary/20 text-primary border-primary shadow-[0_0_15px_rgba(217,119,6,0.2)]' 
+                          : 'bg-white/5 text-muted-foreground border-white/10 hover:border-white/20'
                         }`}
                       >
                         {t.label}
@@ -169,17 +198,21 @@ export function Calculadora() {
 
                 <div 
                   onClick={() => setIsSummer(!isSummer)}
-                  className={`p-6 rounded-2xl border cursor-pointer transition-all flex flex-col items-center justify-center text-center ${
+                  className={`p-6 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between ${
                     isSummer 
                       ? 'bg-amber-500/10 border-amber-500/30' 
                       : 'bg-white/5 border-white/10 hover:border-white/30'
                   }`}
                 >
-                  <Sun className={`w-10 h-10 mb-3 ${isSummer ? 'text-amber-500' : 'text-muted-foreground'}`} />
-                  <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-1">¿Es verano?</span>
-                  <span className="text-xs text-muted-foreground">La gente toma más con calor (+20%)</span>
+                  <div className="flex items-center gap-4">
+                    <Sun className={`w-10 h-10 ${isSummer ? 'text-amber-500' : 'text-muted-foreground'}`} />
+                    <div className="text-left">
+                      <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-0.5">¿Es verano?</span>
+                      <span className="text-xs text-muted-foreground">La gente toma más con calor (+20%)</span>
+                    </div>
+                  </div>
                   
-                  <div className={`mt-4 w-12 h-6 rounded-full p-1 transition-colors ${isSummer ? 'bg-amber-500' : 'bg-secondary'}`}>
+                  <div className={`w-12 h-6 rounded-full p-1 transition-colors ${isSummer ? 'bg-amber-500' : 'bg-secondary'}`}>
                     <div className={`w-4 h-4 rounded-full bg-white transition-transform ${isSummer ? 'translate-x-6' : 'translate-x-0'}`} />
                   </div>
                 </div>

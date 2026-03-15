@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { PromoBanner } from "@/components/PromoBanner";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
@@ -14,12 +15,23 @@ import { FloatingActions } from "@/components/FloatingActions";
 import { ArmaTuPedido } from "@/components/ArmaTuPedido";
 import { CartFloating } from "@/components/CartFloating";
 
+const BANNER_HEIGHT = 44;
+
 export default function Landing() {
+  const [showBanner, setShowBanner] = useState(() => {
+    return localStorage.getItem("promoBannerClosed") !== "true";
+  });
+
+  const closeBanner = () => {
+    setShowBanner(false);
+    localStorage.setItem("promoBannerClosed", "true");
+  };
+
   return (
-    <div className="relative w-full overflow-hidden bg-background">
-      <PromoBanner />
-      <Navbar />
-      
+    <div className="relative w-full bg-background">
+      <PromoBanner visible={showBanner} onClose={closeBanner} />
+      <Navbar bannerVisible={showBanner} bannerHeight={BANNER_HEIGHT} />
+
       <main>
         <Hero />
         <Services />
