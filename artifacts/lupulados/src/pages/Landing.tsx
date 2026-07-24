@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { PromoBanner } from "@/components/PromoBanner";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
@@ -15,17 +15,29 @@ import { FloatingActions } from "@/components/FloatingActions";
 import { ArmaTuPedido } from "@/components/ArmaTuPedido";
 import { CartFloating } from "@/components/CartFloating";
 import { promotionConfig } from "@/domain/businessConfig";
+import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 
 const BANNER_HEIGHT = 44;
 
 export default function Landing() {
+  const orderSectionRef = useRef<HTMLElement | null>(null);
   const [showBanner, setShowBanner] = useState(() => {
     return localStorage.getItem(promotionConfig.bannerClosedStorageKey) !== "true";
   });
+  const [pendingRecommendation, setPendingRecommendation] =
+    useState<BarrelRecommendation | null>(null);
 
   const closeBanner = () => {
     setShowBanner(false);
     localStorage.setItem(promotionConfig.bannerClosedStorageKey, "true");
+  };
+
+  const useRecommendation = (recommendation: BarrelRecommendation) => {
+    setPendingRecommendation({
+      ...recommendation,
+      parts: recommendation.parts.map((part) => ({ ...part })),
+    });
+    orderSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
@@ -37,8 +49,11 @@ export default function Landing() {
         <Hero />
         <Services />
         <Cervezas />
-        <Calculadora />
-        <ArmaTuPedido />
+        <Calculadora onUseRecommendation={useRecommendation} />
+        <ArmaTuPedido
+          pendingRecommendation={pendingRecommendation}
+          sectionRef={orderSectionRef}
+        />
         <ComoFunciona />
         <Eventos />
         <Testimonios />

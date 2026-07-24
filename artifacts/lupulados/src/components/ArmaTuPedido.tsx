@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type RefObject } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import {
@@ -44,9 +44,20 @@ import {
   formatDeliveryForMessage,
   promotionConfig,
 } from "@/domain/businessConfig";
-import { hasCurrentSelectionInCart, hasTastingPack, type OrderType } from "@/domain/orderFlow";
+import {
+  buildRecommendedBarrelItems,
+  hasCurrentSelectionInCart,
+  hasTastingPack,
+  type OrderType,
+} from "@/domain/orderFlow";
+import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 
 type Step = 1 | 2 | 3 | 4 | 5;
+
+interface ArmaTuPedidoProps {
+  pendingRecommendation: BarrelRecommendation | null;
+  sectionRef: RefObject<HTMLElement | null>;
+}
 
 const STEP_LABELS = ["Tipo", "Cerveza", "Cantidad", "Extras", "Ticket"];
 
@@ -326,7 +337,10 @@ function LiveOrderSummary({
   );
 }
 
-export function ArmaTuPedido() {
+export function ArmaTuPedido({
+  pendingRecommendation,
+  sectionRef,
+}: ArmaTuPedidoProps) {
   const {
     items,
     addItem,
@@ -353,6 +367,27 @@ export function ArmaTuPedido() {
     direccion: "",
     comentarios: "",
   });
+  const [recommendationStatus, setRecommendationStatus] =
+    useState<"idle" | "added" | "error">("idle");
+  const [recommendationError, setRecommendationError] = useState("");
+  const appliedRecommendationKeyRef = useRef("");
+
+  useEffect(() => {
+    if (!pendingRecommendation) return;
+
+    setOrderType("barril");
+    setStep(2);
+    setDirection(1);
+    setRecommendationStatus("idle");
+    setRecommendationError("");
+    appliedRecommendationKeyRef.current = "";
+  }, [pendingRecommendation]);
+
+  useEffect(() => {
+    setRecommendationStatus("idle");
+    setRecommendationError("");
+    appliedRecommendationKeyRef.current = "";
+  }, [selectedBeer?.id]);
 
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
     .toISOString()
@@ -392,6 +427,36 @@ export function ArmaTuPedido() {
       return;
     }
     setStep((s) => Math.max(s - 1, 1) as Step);
+  };
+
+  const applyPendingRecommendation = () => {
+    if (!pendingRecommendation || !selectedBeer) return;
+
+    const recommendationKey = [
+      selectedBeer.id,
+      pendingRecommendation.requiredLiters,
+      pendingRecommendation.coveredLiters,
+      pendingRecommendation.label,
+      ...pendingRecommendation.parts.map((part) => `${part.presentationId}:${part.count}`),
+    ].join("|");
+    if (appliedRecommendationKeyRef.current === recommendationKey) return;
+
+    try {
+      appliedRecommendationKeyRef.current = recommendationKey;
+      const recommendedItems = buildRecommendedBarrelItems(selectedBeer, pendingRecommendation);
+      recommendedItems.forEach((item) => {
+        const { qty, ...cartDraft } = item;
+        for (let index = 0; index < qty; index += 1) {
+          addItem(cartDraft);
+        }
+      });
+      setRecommendationStatus("added");
+      setRecommendationError("");
+    } catch (error) {
+      appliedRecommendationKeyRef.current = "";
+      setRecommendationStatus("error");
+      setRecommendationError(error instanceof Error ? error.message : "No se pudo agregar la recomendación");
+    }
   };
 
   const applyPromo = () => {
@@ -475,6 +540,7 @@ export function ArmaTuPedido() {
   return (
     <section
       id="arma-tu-pedido"
+      ref={sectionRef}
       className="py-24 bg-background relative border-t border-white/5 overflow-hidden"
     >
       {/* Beer bubble decorations */}
@@ -514,6 +580,60 @@ export function ArmaTuPedido() {
             Configurá tu experiencia cervecera paso a paso.
           </p>
         </div>
+
+        {pendingRecommendation && (
+          <div className="max-w-3xl mx-auto mb-10 rounded-2xl border border-primary/20 bg-primary/10 p-5">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">
+                  Recomendación calculada
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
+                      Necesitás
+                    </p>
+                    <p className="text-white font-bold text-lg">
+                      {pendingRecommendation.requiredLiters} L
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
+                      Sugerimos
+                    </p>
+                    <p className="text-white font-bold text-lg">
+                      {pendingRecommendation.label}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
+                      Total
+                    </p>
+                    <p className="text-white font-bold text-lg">
+                      {pendingRecommendation.coveredLiters} L
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
+                      Excedente
+                    </p>
+                    <p className="text-white font-bold text-lg">
+                      {pendingRecommendation.excessLiters} L
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="md:text-right shrink-0">
+                <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
+                  Estimado desde
+                </p>
+                <p className="text-primary font-mono font-bold text-2xl">
+                  {formatPrice(pendingRecommendation.estimatedPrice)}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <BeerGlassStepper step={step} />
 
@@ -929,6 +1049,46 @@ export function ArmaTuPedido() {
                       </div>
                     )}
                   </div>
+
+                  {pendingRecommendation && selectedBeer && orderType === "barril" && (
+                    <div className="mt-6 rounded-2xl border border-primary/20 bg-black/30 p-5">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                          <p className="text-white font-bold">
+                            Aplicar recomendación a {selectedBeer.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Podés ajustar cantidades o sumar otros estilos después.
+                          </p>
+                        </div>
+                        <button
+                          onClick={applyPendingRecommendation}
+                          disabled={recommendationStatus === "added"}
+                          className={cn(
+                            "shrink-0 px-5 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
+                            recommendationStatus === "added"
+                              ? "bg-green-500/20 text-green-300 border border-green-500/30 cursor-default"
+                              : "bg-primary text-black hover:bg-amber-400",
+                          )}
+                        >
+                          {recommendationStatus === "added" ? (
+                            <>
+                              <Check className="w-4 h-4" /> Agregada al pedido
+                            </>
+                          ) : (
+                            <>
+                              <ShoppingCart className="w-4 h-4" /> Agregar recomendación al pedido
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      {recommendationStatus === "error" && (
+                        <p className="text-red-400 text-xs font-bold mt-3">
+                          {recommendationError}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   <div className="relative">
                     <NavButtons />

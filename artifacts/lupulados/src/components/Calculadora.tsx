@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calculator, Sun, Users, Clock, Beer, Check } from "lucide-react";
-import { calculateBarrelRecommendation } from "@/domain/barrelCalculator";
+import { calculateBarrelRecommendation, type BarrelRecommendation } from "@/domain/barrelCalculator";
 import { formatPrice } from "@/domain/format";
-import { scrollToSection } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 const EVENT_TYPES = [
@@ -39,6 +38,10 @@ const EVENT_TYPES = [
 
 type EventTypeId = (typeof EVENT_TYPES)[number]["id"];
 
+interface CalculadoraProps {
+  onUseRecommendation: (recommendation: BarrelRecommendation) => void;
+}
+
 const DURATION_CHIPS: { label: string; hours: number; minutes: number }[] = [
   { label: "2hs", hours: 2, minutes: 0 },
   { label: "2:30", hours: 2, minutes: 30 },
@@ -49,7 +52,7 @@ const DURATION_CHIPS: { label: string; hours: number; minutes: number }[] = [
   { label: "6hs", hours: 6, minutes: 0 },
 ];
 
-export function Calculadora() {
+export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
   const [guests, setGuests] = useState(50);
   const [hours, setHours] = useState(4);
   const [minutes, setMinutes] = useState(0);
@@ -57,8 +60,9 @@ export function Calculadora() {
   const [isSummer, setIsSummer] = useState(false);
 
   const [totalLiters, setTotalLiters] = useState(0);
-  const [recommendation, setRecommendation] = useState("");
-  const [estimatedPrice, setEstimatedPrice] = useState(0);
+  const [barrelPlan, setBarrelPlan] = useState<BarrelRecommendation>(() =>
+    calculateBarrelRecommendation(0),
+  );
 
   const handleGuestsChange = (val: number) => {
     setGuests(Math.min(Math.max(val, 10), 500));
@@ -105,8 +109,7 @@ export function Calculadora() {
     setTotalLiters(finalLiters);
 
     const barrelRecommendation = calculateBarrelRecommendation(finalLiters);
-    setRecommendation(barrelRecommendation.label);
-    setEstimatedPrice(barrelRecommendation.estimatedPrice);
+    setBarrelPlan(barrelRecommendation);
   }, [guests, hours, minutes, type, isSummer, totalHoursDecimal]);
 
   const isChipActive = (chip: { hours: number; minutes: number }) =>
@@ -323,19 +326,20 @@ export function Calculadora() {
 
                   <span className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-3 block">Sugerencia de barriles</span>
                   <div className="bg-primary/10 text-primary border border-primary/20 rounded-xl px-4 py-3 mb-6 font-mono font-bold text-lg w-full">
-                    {recommendation}
+                    {barrelPlan.label}
                   </div>
 
                   <div className="mb-8">
-                    <span className="text-white/40 text-xs block mb-1">Presupuesto estimado (aprox)</span>
-                    <span className="text-white font-bold text-2xl">{formatPrice(estimatedPrice)}</span>
+                    <span className="text-white/40 text-xs block mb-1">Estimado desde</span>
+                    <span className="text-white font-bold text-2xl">{formatPrice(barrelPlan.estimatedPrice)}</span>
                   </div>
 
                   <button
-                    onClick={() => scrollToSection("arma-tu-pedido")}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all"
+                    onClick={() => onUseRecommendation(barrelPlan)}
+                    disabled={barrelPlan.parts.length === 0}
+                    className="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    Armá tu pedido →
+                    Usar esta recomendación
                   </button>
                 </div>
               </div>
