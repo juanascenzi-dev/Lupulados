@@ -24,171 +24,29 @@ import {
   Edit,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  barrelPresentationIds,
+  beerCatalog as BEERS,
+  createBeerCartItem,
+  getBeerPresentation,
+  getCartItemImage,
+  getCartItemLiters,
+  growlerPresentationIds,
+  orderTypeOptions as ORDER_TYPES,
+  packagedPresentationIds,
+  tastingPack,
+  type Beer as CatalogBeer,
+} from "@/domain/beerCatalog";
+import { formatPrice } from "@/domain/format";
+import {
+  buildWhatsAppUrl,
+  deliveryOptions,
+  formatDeliveryForMessage,
+  promotionConfig,
+} from "@/domain/businessConfig";
+import { hasCurrentSelectionInCart, hasTastingPack, type OrderType } from "@/domain/orderFlow";
 
 type Step = 1 | 2 | 3 | 4 | 5;
-type OrderType = "barril" | "growler" | "porrón" | "paquete" | null;
-
-const BEERS = [
-  {
-    name: "Blonde Ale",
-    desc: "Suave, refrescante, ideal para los que arrancan.",
-    abv: 4.8,
-    ibu: 15,
-    img: "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 1800,
-      growler1L: 3200,
-      growler2L: 5800,
-      barril20L: 38000,
-      barril30L: 54000,
-      barril50L: 85000,
-    },
-  },
-  {
-    name: "American Pale Ale (APA)",
-    desc: "Cítrica y lupulada, nuestro caballito de batalla.",
-    abv: 5.2,
-    ibu: 35,
-    img: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2000,
-      growler1L: 3600,
-      growler2L: 6500,
-      barril20L: 42000,
-      barril30L: 60000,
-      barril50L: 95000,
-    },
-  },
-  {
-    name: "IPA",
-    desc: "Intensa, aromática, para los que les gusta el lúpulo.",
-    abv: 6.5,
-    ibu: 55,
-    img: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2200,
-      growler1L: 4000,
-      growler2L: 7200,
-      barril20L: 46000,
-      barril30L: 66000,
-      barril50L: 105000,
-    },
-  },
-  {
-    name: "Red Ale / Amber",
-    desc: "Maltosa, caramelo, equilibrada.",
-    abv: 5.0,
-    ibu: 25,
-    img: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 1900,
-      growler1L: 3400,
-      growler2L: 6200,
-      barril20L: 40000,
-      barril30L: 57000,
-      barril50L: 90000,
-    },
-  },
-  {
-    name: "Stout",
-    desc: "Oscura, con notas de café y chocolate.",
-    abv: 5.8,
-    ibu: 30,
-    img: "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2100,
-      growler1L: 3800,
-      growler2L: 6800,
-      barril20L: 44000,
-      barril30L: 63000,
-      barril50L: 100000,
-    },
-  },
-  {
-    name: "Honey / Wheat",
-    desc: "Dulce, con miel patagónica, suavecita.",
-    abv: 4.5,
-    ibu: 12,
-    img: "https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 1900,
-      growler1L: 3400,
-      growler2L: 6200,
-      barril20L: 40000,
-      barril30L: 57000,
-      barril50L: 90000,
-    },
-  },
-  {
-    name: "Session IPA",
-    desc: "Lupulada pero liviana, para tomar toda la noche.",
-    abv: 4.2,
-    ibu: 40,
-    img: "https://images.unsplash.com/photo-1436076863939-06870fe779c2?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2000,
-      growler1L: 3600,
-      growler2L: 6500,
-      barril20L: 42000,
-      barril30L: 60000,
-      barril50L: 95000,
-    },
-  },
-  {
-    name: "Scotch Ale",
-    desc: "Fuerte, maltosa, para el invierno.",
-    abv: 7.5,
-    ibu: 20,
-    img: "https://images.unsplash.com/photo-1504502350688-00f5d59bbdeb?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2400,
-      growler1L: 4400,
-      growler2L: 7800,
-      barril20L: 48000,
-      barril30L: 69000,
-      barril50L: 110000,
-    },
-  },
-];
-
-const ORDER_TYPES = [
-  {
-    id: "barril",
-    emoji: "🛢️",
-    title: "Barril",
-    desc: "La experiencia completa para eventos de +20 personas.",
-    desde: "Desde $38.000",
-    detail: "20L · 30L · 50L disponibles",
-    img: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600&h=400&fit=crop",
-  },
-  {
-    id: "growler",
-    emoji: "🫙",
-    title: "Growler",
-    desc: "Recargable de 1L o 2L. Ideal para compartir en casa.",
-    desde: "Desde $3.200",
-    detail: "1L y 2L disponibles",
-    img: "https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?w=600&h=400&fit=crop",
-  },
-  {
-    id: "porrón",
-    emoji: "🍺",
-    title: "Pack Porrones",
-    desc: "Botellas individuales 500ml. Perfecto para regalo o probar.",
-    desde: "Desde $1.800 c/u",
-    detail: "Botella 500ml artesanal",
-    img: "https://images.unsplash.com/photo-1572463395542-3e951278d04c?w=600&h=400&fit=crop",
-  },
-  {
-    id: "paquete",
-    emoji: "🎁",
-    title: "Pack Degustación",
-    desc: "6 estilos surtidos para descubrir tu favorita.",
-    desde: "$10.500",
-    detail: "6 botellas · 6 estilos distintos",
-    img: "https://images.unsplash.com/photo-1505075106905-fb052892c116?w=600&h=400&fit=crop",
-  },
-];
 
 const STEP_LABELS = ["Tipo", "Cerveza", "Cantidad", "Extras", "Ticket"];
 
@@ -323,14 +181,11 @@ function LiveOrderSummary({
     extras,
     clearCart,
   } = useCart();
-  const formatPrice = (p: number) => `$${p.toLocaleString("es-AR")}`;
-  const deliveryCost =
-    extras.delivery === "norte" ? 8000 : extras.delivery === "caba" ? 12000 : 0;
+  const deliveryCost = deliveryOptions.find((option) => option.id === extras.delivery)?.cost ?? 0;
   const totalLiters = items
     .filter((i) => i.category === "barril")
     .reduce((acc, i) => {
-      const liters = i.id.includes("50L") ? 50 : i.id.includes("30L") ? 30 : 20;
-      return acc + liters * i.qty;
+      return acc + getCartItemLiters(i.id) * i.qty;
     }, 0);
 
   return (
@@ -374,9 +229,7 @@ function LiveOrderSummary({
         ) : (
           <AnimatePresence>
             {items.map((item) => {
-              const beerImg = BEERS.find((b) =>
-                item.name.startsWith(b.name),
-              )?.img;
+              const beerImg = getCartItemImage(item.name);
               return (
                 <motion.div
                   key={item.id}
@@ -482,15 +335,12 @@ export function ArmaTuPedido() {
     totalPrice,
     extras,
     setExtras,
-    clearCart,
   } = useCart();
   const [step, setStep] = useState<Step>(1);
   const [direction, setDirection] = useState(1);
   const [orderId] = useState(() => Math.floor(10000 + Math.random() * 90000));
   const [orderType, setOrderType] = useState<OrderType>(null);
-  const [selectedBeer, setSelectedBeer] = useState<(typeof BEERS)[0] | null>(
-    null,
-  );
+  const [selectedBeer, setSelectedBeer] = useState<CatalogBeer | null>(null);
   const [promoInput, setPromoInput] = useState("");
   const [promoStatus, setPromoStatus] = useState<"none" | "valid" | "invalid">(
     "none",
@@ -504,16 +354,19 @@ export function ArmaTuPedido() {
     comentarios: "",
   });
 
-  const formatPrice = (p: number) => `$${p.toLocaleString("es-AR")}`;
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 10);
 
   const canProceed = (() => {
     if (step === 1) return orderType !== null;
     if (step === 2) return selectedBeer !== null;
-    if (step === 3) return totalItems > 0;
+    if (step === 3) return hasCurrentSelectionInCart(items, selectedBeer, orderType);
     if (step === 4)
       return (
         !!formData.nombre &&
         !!formData.fecha &&
+        formData.fecha >= today &&
         (extras.delivery === "fabrica" || !!formData.direccion)
       );
     return true;
@@ -523,12 +376,9 @@ export function ArmaTuPedido() {
     if (!canProceed) return;
     setDirection(1);
     if (step === 1 && orderType === "paquete") {
-      addItem({
-        id: "pack-degustacion",
-        name: "Pack Degustación — 6 estilos",
-        price: 10500,
-        category: "pack",
-      });
+      if (!hasTastingPack(items)) {
+        addItem(tastingPack);
+      }
       setStep(4);
       return;
     }
@@ -545,8 +395,8 @@ export function ArmaTuPedido() {
   };
 
   const applyPromo = () => {
-    if (promoInput.toUpperCase() === "PRIMERABIRRA") {
-      setExtras((p) => ({ ...p, promoCode: "PRIMERABIRRA", discount: 0.1 }));
+    if (promoInput.toUpperCase() === promotionConfig.code) {
+      setExtras((p) => ({ ...p, promoCode: promotionConfig.code, discount: promotionConfig.discountRate }));
       setPromoStatus("valid");
     } else {
       setExtras((p) => ({ ...p, promoCode: "", discount: 0 }));
@@ -559,17 +409,17 @@ export function ArmaTuPedido() {
     msg += `*Orden #${orderId}*\n`;
     msg += `*Cliente:* ${formData.nombre}\n`;
     msg += `*Entrega:* ${formData.fecha} (${formData.horario})\n`;
-    msg += `*Método:* ${extras.delivery === "norte" ? "Zona Norte GBA (+$8.000)" : extras.delivery === "caba" ? "CABA / Sur (+$12.000)" : "Retiro en fábrica (Gratis)"}\n`;
+    msg += `*Método:* ${formatDeliveryForMessage(extras.delivery)}\n`;
     if (extras.delivery !== "fabrica")
       msg += `*Dirección:* ${formData.direccion}\n`;
     msg += `\n*DETALLE:*\n`;
     items.forEach((i) => {
       msg += `• ${i.qty}x ${i.name} — ${formatPrice(i.price * i.qty)}\n`;
     });
-    if (extras.promoCode) msg += `\n*PROMO ${extras.promoCode}:* -10%\n`;
+    if (extras.promoCode) msg += `\n*PROMO ${extras.promoCode}:* -${promotionConfig.discountRate * 100}%\n`;
     if (formData.comentarios) msg += `\n*Notas:* ${formData.comentarios}\n`;
     msg += `\n*TOTAL: ${formatPrice(totalPrice)}*`;
-    return `https://wa.me/5491133971210?text=${encodeURIComponent(msg)}`;
+    return buildWhatsAppUrl(msg);
   };
 
   const slideVariants: Variants = {
@@ -810,10 +660,10 @@ export function ArmaTuPedido() {
                   </h3>
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     {BEERS.map((beer) => {
-                      const sel = selectedBeer?.name === beer.name;
+                      const sel = selectedBeer?.id === beer.id;
                       return (
                         <div
-                          key={beer.name}
+                          key={beer.id}
                           onClick={() => setSelectedBeer(beer)}
                           className={cn(
                             "group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-200",
@@ -872,7 +722,7 @@ export function ArmaTuPedido() {
                                   ? beer.precios.barril20L
                                   : orderType === "growler"
                                     ? beer.precios.growler1L
-                                    : beer.precios.porrón,
+                                    : beer.precios.porron500ml,
                               )}
                             </p>
                           </div>
@@ -908,31 +758,16 @@ export function ArmaTuPedido() {
 
                   <div className="grid gap-4">
                     {orderType === "barril" &&
-                      [
-                        {
-                          label: "Barril 20L",
-                          key: "barril20L",
-                          desc: "Aprox 40 pintas · hasta 50 personas",
-                          price: selectedBeer?.precios.barril20L,
-                        },
-                        {
-                          label: "Barril 30L",
-                          key: "barril30L",
-                          desc: "Aprox 60 pintas · hasta 80 personas",
-                          price: selectedBeer?.precios.barril30L,
-                        },
-                        {
-                          label: "Barril 50L",
-                          key: "barril50L",
-                          desc: "Aprox 100 pintas · +100 personas",
-                          price: selectedBeer?.precios.barril50L,
-                        },
-                      ].map((size) => {
-                        const itemId = `${selectedBeer?.name}-${size.key}`;
+                      barrelPresentationIds.map((presentationId) => {
+                        if (!selectedBeer) return null;
+                        const size = getBeerPresentation(selectedBeer, presentationId);
+                        if (!size) return null;
+                        const cartDraft = createBeerCartItem(selectedBeer, presentationId);
+                        const itemId = cartDraft.id;
                         const cartItem = items.find((i) => i.id === itemId);
                         return (
                           <div
-                            key={size.key}
+                            key={size.id}
                             className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4"
                           >
                             <div className="flex-1">
@@ -940,10 +775,10 @@ export function ArmaTuPedido() {
                                 {size.label}
                               </h4>
                               <p className="text-xs text-muted-foreground">
-                                {size.desc}
+                                {size.description}
                               </p>
                               <p className="text-primary font-mono font-bold mt-1">
-                                {formatPrice(size.price || 0)}
+                                {formatPrice(size.price)}
                               </p>
                             </div>
                             {cartItem ? (
@@ -971,12 +806,7 @@ export function ArmaTuPedido() {
                             ) : (
                               <button
                                 onClick={() =>
-                                  addItem({
-                                    id: itemId,
-                                    name: `${selectedBeer?.name} — ${size.label}`,
-                                    price: size.price || 0,
-                                    category: "barril",
-                                  })
+                                  addItem(cartDraft)
                                 }
                                 className="shrink-0 px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
                               >
@@ -988,23 +818,16 @@ export function ArmaTuPedido() {
                       })}
 
                     {orderType === "growler" &&
-                      [
-                        {
-                          label: "Growler 1L",
-                          key: "growler1L",
-                          price: selectedBeer?.precios.growler1L,
-                        },
-                        {
-                          label: "Growler 2L",
-                          key: "growler2L",
-                          price: selectedBeer?.precios.growler2L,
-                        },
-                      ].map((size) => {
-                        const itemId = `${selectedBeer?.name}-${size.key}`;
+                      growlerPresentationIds.map((presentationId) => {
+                        if (!selectedBeer) return null;
+                        const size = getBeerPresentation(selectedBeer, presentationId);
+                        if (!size) return null;
+                        const cartDraft = createBeerCartItem(selectedBeer, presentationId);
+                        const itemId = cartDraft.id;
                         const cartItem = items.find((i) => i.id === itemId);
                         return (
                           <div
-                            key={size.key}
+                            key={size.id}
                             className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4"
                           >
                             <div>
@@ -1012,7 +835,7 @@ export function ArmaTuPedido() {
                                 {size.label}
                               </h4>
                               <p className="text-primary font-mono font-bold mt-1">
-                                {formatPrice(size.price || 0)}
+                                {formatPrice(size.price)}
                               </p>
                             </div>
                             {cartItem ? (
@@ -1041,10 +864,7 @@ export function ArmaTuPedido() {
                               <button
                                 onClick={() =>
                                   addItem({
-                                    id: itemId,
-                                    name: `${selectedBeer?.name} — ${size.label}`,
-                                    price: size.price || 0,
-                                    category: "growler",
+                                    ...cartDraft,
                                   })
                                 }
                                 className="shrink-0 px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
@@ -1063,18 +883,23 @@ export function ArmaTuPedido() {
                             Botellas 500ml
                           </h4>
                           <p className="text-primary font-mono font-bold mt-1 text-xl">
-                            {formatPrice(selectedBeer?.precios.porrón || 0)} c/u
+                            {formatPrice(selectedBeer?.precios.porron500ml || 0)} c/u
                           </p>
                         </div>
                         <div className="flex items-center gap-6">
+                          {(() => {
+                            if (!selectedBeer) return null;
+                            const presentationId = packagedPresentationIds[0];
+                            const cartDraft = createBeerCartItem(selectedBeer, presentationId);
+                            const cartItem = items.find((i) => i.id === cartDraft.id);
+
+                            return (
+                            <>
                           <button
                             onClick={() =>
                               updateQty(
-                                `${selectedBeer?.name}-porrón`,
-                                (items.find(
-                                  (i) =>
-                                    i.id === `${selectedBeer?.name}-porrón`,
-                                )?.qty || 0) - 1,
+                                cartDraft.id,
+                                (cartItem?.qty || 0) - 1,
                               )
                             }
                             className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-black transition-all"
@@ -1082,27 +907,21 @@ export function ArmaTuPedido() {
                             <Minus className="w-6 h-6" />
                           </button>
                           <span className="text-4xl font-display font-bold text-white w-16 text-center">
-                            {items.find(
-                              (i) => i.id === `${selectedBeer?.name}-porrón`,
-                            )?.qty || 0}
+                            {cartItem?.qty || 0}
                           </span>
                           <button
                             onClick={() =>
-                              addItem({
-                                id: `${selectedBeer?.name}-porrón`,
-                                name: `${selectedBeer?.name} — Porrón 500ml`,
-                                price: selectedBeer?.precios.porrón || 0,
-                                category: "porrón",
-                              })
+                              addItem(cartDraft)
                             }
                             className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-black transition-all"
                           >
                             <Plus className="w-6 h-6" />
                           </button>
+                            </>
+                            );
+                          })()}
                         </div>
-                        {(items.find(
-                          (i) => i.id === `${selectedBeer?.name}-porrón`,
-                        )?.qty || 0) === 0 && (
+                        {!hasCurrentSelectionInCart(items, selectedBeer, orderType) && (
                           <p className="text-muted-foreground text-sm italic">
                             Elegí la cantidad para continuar
                           </p>
@@ -1134,32 +953,21 @@ export function ArmaTuPedido() {
                           <Truck className="w-5 h-5 text-primary" /> Entrega
                         </h3>
                         <div className="grid gap-3">
-                          {[
-                            {
-                              id: "fabrica",
-                              label: "Retiro en fábrica",
-                              desc: "San Martín — Gratis",
-                              icon: Store,
-                            },
-                            {
-                              id: "norte",
-                              label: "Zona Norte GBA",
-                              desc: "+$8.000",
-                              icon: Truck,
-                            },
-                            {
-                              id: "caba",
-                              label: "CABA / Zona Sur",
-                              desc: "+$12.000",
-                              icon: MapPin,
-                            },
-                          ].map((d) => (
+                          {deliveryOptions.map((d) => {
+                            const iconByDelivery = {
+                              fabrica: Store,
+                              norte: Truck,
+                              caba: MapPin,
+                            };
+                            const Icon = iconByDelivery[d.id];
+
+                            return (
                             <button
                               key={d.id}
                               onClick={() =>
                                 setExtras((p) => ({
                                   ...p,
-                                  delivery: d.id as any,
+                                  delivery: d.id,
                                 }))
                               }
                               className={cn(
@@ -1177,7 +985,7 @@ export function ArmaTuPedido() {
                                     : "bg-white/10 text-white",
                                 )}
                               >
-                                <d.icon className="w-5 h-5" />
+                                <Icon className="w-5 h-5" />
                               </div>
                               <div className="flex-1">
                                 <p className="font-bold text-white leading-none mb-1">
@@ -1191,7 +999,8 @@ export function ArmaTuPedido() {
                                 <Check className="w-5 h-5 text-primary shrink-0" />
                               )}
                             </button>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
 
@@ -1209,7 +1018,7 @@ export function ArmaTuPedido() {
                               onKeyDown={(e) =>
                                 e.key === "Enter" && applyPromo()
                               }
-                              placeholder="Ej: PRIMERABIRRA"
+                              placeholder={`Ej: ${promotionConfig.code}`}
                               className={cn(
                                 "w-full bg-white/5 border-2 rounded-xl py-3 px-4 text-white focus:outline-none transition-all uppercase placeholder:normal-case placeholder:text-white/30",
                                 promoStatus === "valid"
@@ -1235,7 +1044,7 @@ export function ArmaTuPedido() {
                         </div>
                         {promoStatus === "valid" && (
                           <p className="text-green-400 text-xs mt-2 font-bold">
-                            ✓ ¡Descuento del 10% aplicado!
+                            ✓ ¡Descuento del {promotionConfig.discountRate * 100}% aplicado!
                           </p>
                         )}
                         {promoStatus === "invalid" && (
@@ -1271,6 +1080,7 @@ export function ArmaTuPedido() {
                           </label>
                           <input
                             type="date"
+                            min={today}
                             value={formData.fecha}
                             onChange={(e) =>
                               setFormData({
@@ -1423,12 +1233,7 @@ export function ArmaTuPedido() {
                           { label: "HORARIO", value: formData.horario },
                           {
                             label: "ENVÍO",
-                            value:
-                              extras.delivery === "fabrica"
-                                ? "Retiro en fábrica"
-                                : extras.delivery === "norte"
-                                  ? "Zona Norte GBA"
-                                  : "CABA / Sur",
+                            value: deliveryOptions.find((option) => option.id === extras.delivery)?.label ?? "Retiro en fábrica",
                           },
                         ].map((row) => (
                           <div key={row.label} className="flex items-end gap-1">
@@ -1505,10 +1310,7 @@ export function ArmaTuPedido() {
                     <button
                       onClick={() => {
                         setDirection(-1);
-                        setStep(1);
-                        setOrderType(null);
-                        setSelectedBeer(null);
-                        clearCart();
+                        setStep(4);
                       }}
                       className="w-full py-3.5 rounded-2xl bg-white/5 text-white font-bold hover:bg-white/10 transition-colors flex items-center justify-center gap-2 border border-white/10"
                     >

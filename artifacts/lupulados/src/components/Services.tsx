@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Truck, Users, Beer, GlassWater } from "lucide-react";
 import { scrollToSection } from "@/lib/utils";
+import { buildWhatsAppUrl } from "@/domain/businessConfig";
 
 const SERVICES = [
   {
@@ -19,7 +20,7 @@ const SERVICES = [
     icon: <Truck className="w-8 h-8 text-primary" />,
     title: "Entrega y Retiro",
     description: "Llevamos todo a domicilio, lo dejamos instalado funcionando y lo retiramos al día siguiente.",
-    href: "https://wa.me/5491133971210?text=Hola!%20Quiero%20consultar%20por%20envíos",
+    href: buildWhatsAppUrl("Hola! Quiero consultar por envíos"),
   },
   {
     icon: <Users className="w-8 h-8 text-primary" />,

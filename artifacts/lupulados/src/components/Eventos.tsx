@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import CountUp from "react-countup";
 import { useInView } from "react-intersection-observer";
+import { buildWhatsAppUrl } from "@/domain/businessConfig";
 
 const EVENTS = [
   {
@@ -105,7 +106,7 @@ export function Eventos() {
 
         <div className="text-center">
           <a
-            href="https://wa.me/5491133971210?text=Hola!%20Vi%20los%20eventos%20en%20la%20web%20y%20quiero%20que%20estén%20en%20mi%20próximo%20evento!%20🍻"
+            href={buildWhatsAppUrl("Hola! Vi los eventos en la web y quiero que estén en mi próximo evento! 🍻")}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center px-8 py-4 rounded-full text-lg font-bold bg-white/5 text-white border border-white/10 hover:bg-white/10 transition-all hover:-translate-y-1"

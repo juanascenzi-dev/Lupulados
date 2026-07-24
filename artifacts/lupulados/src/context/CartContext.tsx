@@ -1,16 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { additionalCosts, getDeliveryOption, type DeliveryOptionId } from "@/domain/businessConfig";
+import { readCartItems, writeCartItems, type StoredCartItem } from "@/domain/cartStorage";
+import type { CartCategory } from "@/domain/beerCatalog";
 
-export interface CartItem {
-  id: string; // e.g. "IPA-barril30L"
-  name: string; // e.g. "IPA - Barril 30L"
-  price: number;
-  qty: number;
-  category: "barril" | "growler" | "porrón" | "pack";
-}
+export type CartItem = StoredCartItem;
 
 export interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "qty">) => void;
+  addItem: (item: Omit<CartItem, "qty"> & { category: CartCategory }) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
@@ -18,7 +15,7 @@ export interface CartContextType {
   totalPrice: number;
   extras: {
     chopera: boolean;
-    delivery: "norte" | "caba" | "fabrica";
+    delivery: DeliveryOptionId;
     hielo: number;
     vasos: number;
     promoCode: string;
@@ -31,8 +28,8 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem("lupulados-cart");
-    return saved ? JSON.parse(saved) : [];
+    if (typeof window === "undefined") return [];
+    return readCartItems(window.localStorage);
   });
 
   const [extras, setExtras] = useState<CartContextType["extras"]>({
@@ -45,10 +42,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    localStorage.setItem("lupulados-cart", JSON.stringify(items));
+    if (typeof window !== "undefined") {
+      writeCartItems(window.localStorage, items);
+    }
   }, [items]);
 
-  const addItem = (newItem: Omit<CartItem, "qty">) => {
+  const addItem = (newItem: Omit<CartItem, "qty"> & { category: CartCategory }) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === newItem.id);
       if (existing) {
@@ -83,17 +82,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   // Consider free chopera if 50L barrel exists
   const has50L = items.some(i => i.id.includes("barril50L"));
-  const choperaCost = extras.chopera && !has50L ? 15000 : 0;
+  const choperaCost = extras.chopera && !has50L ? additionalCosts.chopera : 0;
   
-  const deliveryCost = 
-    extras.delivery === "norte" ? 8000 : 
-    extras.delivery === "caba" ? 12000 : 0;
+  const deliveryCost = getDeliveryOption(extras.delivery).cost;
     
-  const hieloCost = extras.hielo * 3000;
+  const hieloCost = extras.hielo * additionalCosts.hielo;
   
-  // Free glasses if items base cost > 80000
+  // Free glasses once the configured purchase threshold is reached.
   const baseItemsPrice = items.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const vasosCost = baseItemsPrice > 80000 ? 0 : extras.vasos * 800;
+  const vasosCost = baseItemsPrice > additionalCosts.freeGlassesThreshold ? 0 : extras.vasos * additionalCosts.vasos;
 
   const subtotal = baseItemsPrice + choperaCost + deliveryCost + hieloCost + vasosCost;
   const discountAmount = subtotal * extras.discount;

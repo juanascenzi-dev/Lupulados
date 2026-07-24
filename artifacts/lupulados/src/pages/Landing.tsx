@@ -14,17 +14,18 @@ import { Footer } from "@/components/Footer";
 import { FloatingActions } from "@/components/FloatingActions";
 import { ArmaTuPedido } from "@/components/ArmaTuPedido";
 import { CartFloating } from "@/components/CartFloating";
+import { promotionConfig } from "@/domain/businessConfig";
 
 const BANNER_HEIGHT = 44;
 
 export default function Landing() {
   const [showBanner, setShowBanner] = useState(() => {
-    return localStorage.getItem("promoBannerClosed") !== "true";
+    return localStorage.getItem(promotionConfig.bannerClosedStorageKey) !== "true";
   });
 
   const closeBanner = () => {
     setShowBanner(false);
-    localStorage.setItem("promoBannerClosed", "true");
+    localStorage.setItem(promotionConfig.bannerClosedStorageKey, "true");
   };
 
   return (

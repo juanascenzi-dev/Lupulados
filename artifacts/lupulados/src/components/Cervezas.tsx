@@ -1,140 +1,28 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
+import {
+  barrelPresentationIds,
+  beerCatalog as BEERS,
+  createBeerCartItem,
+  getBeerPresentation,
+  growlerPresentationIds,
+  packagedPresentationIds,
+  type Beer,
+  type BeerPresentationId,
+} from "@/domain/beerCatalog";
+import { formatPrice } from "@/domain/format";
+import { additionalCosts, deliveryOptions } from "@/domain/businessConfig";
 import { useToast } from "@/hooks/use-toast";
 import { X, Plus, Minus, ShoppingCart, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const BEERS = [
-  {
-    name: "Blonde Ale",
-    desc: "Suave, refrescante, ideal para los que arrancan en la artesanal.",
-    abv: 4.8, ibu: 15,
-    badge: "Popular",
-    img: "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 1800,
-      growler1L: 3200,
-      growler2L: 5800,
-      barril20L: 38000,
-      barril30L: 54000,
-      barril50L: 85000,
-    }
-  },
-  {
-    name: "American Pale Ale (APA)",
-    desc: "Cítrica y lupulada, nuestro caballito de batalla.",
-    abv: 5.2, ibu: 35,
-    badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2000,
-      growler1L: 3600,
-      growler2L: 6500,
-      barril20L: 42000,
-      barril30L: 60000,
-      barril50L: 95000,
-    }
-  },
-  {
-    name: "IPA",
-    desc: "Intensa, aromática, para los que les gusta el lúpulo.",
-    abv: 6.5, ibu: 55,
-    badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2200,
-      growler1L: 4000,
-      growler2L: 7200,
-      barril20L: 46000,
-      barril30L: 66000,
-      barril50L: 105000,
-    }
-  },
-  {
-    name: "Red Ale / Amber",
-    desc: "Maltosa, caramelo, equilibrada.",
-    abv: 5.0, ibu: 25,
-    badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 1900,
-      growler1L: 3400,
-      growler2L: 6200,
-      barril20L: 40000,
-      barril30L: 57000,
-      barril50L: 90000,
-    }
-  },
-  {
-    name: "Stout",
-    desc: "Oscura, con notas de café y chocolate.",
-    abv: 5.8, ibu: 30,
-    badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2100,
-      growler1L: 3800,
-      growler2L: 6800,
-      barril20L: 44000,
-      barril30L: 63000,
-      barril50L: 100000,
-    }
-  },
-  {
-    name: "Honey / Wheat",
-    desc: "Dulce, con miel patagónica, suavecita.",
-    abv: 4.5, ibu: 12,
-    badge: "Disponible en barril",
-    img: "https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 1900,
-      growler1L: 3400,
-      growler2L: 6200,
-      barril20L: 40000,
-      barril30L: 57000,
-      barril50L: 90000,
-    }
-  },
-  {
-    name: "Session IPA",
-    desc: "Lupulada pero liviana, para tomar toda la noche.",
-    abv: 4.2, ibu: 40,
-    badge: "Novedad",
-    img: "https://images.unsplash.com/photo-1436076863939-06870fe779c2?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2000,
-      growler1L: 3600,
-      growler2L: 6500,
-      barril20L: 42000,
-      barril30L: 60000,
-      barril50L: 95000,
-    }
-  },
-  {
-    name: "Scotch Ale",
-    desc: "Fuerte, maltosa, para el invierno.",
-    abv: 7.5, ibu: 20,
-    badge: "Temporada",
-    img: "https://images.unsplash.com/photo-1504502350688-00f5d59bbdeb?w=600&h=400&fit=crop",
-    precios: {
-      porrón: 2400,
-      growler1L: 4400,
-      growler2L: 7800,
-      barril20L: 48000,
-      barril30L: 69000,
-      barril50L: 110000,
-    }
-  },
-];
-
-const formatPrice = (price: number) => {
-  return `$${price.toLocaleString("es-AR")}`;
-};
+const FILTER_OPTIONS = ["Todas", "Livianas", "Lupuladas", "Oscuras"] as const;
+type BeerFilter = (typeof FILTER_OPTIONS)[number];
 
 export function Cervezas() {
-  const [filter, setFilter] = useState<"Todas" | "Livianas" | "Lupuladas" | "Oscuras">("Todas");
-  const [selectedBeer, setSelectedBeer] = useState<typeof BEERS[0] | null>(null);
+  const [filter, setFilter] = useState<BeerFilter>("Todas");
+  const [selectedBeer, setSelectedBeer] = useState<Beer | null>(null);
   
   const { addItem } = useCart();
   const { toast } = useToast();
@@ -147,19 +35,15 @@ export function Cervezas() {
     return true;
   });
 
-  const handleAddToCart = (presentation: string, price: number, category: "barril" | "growler" | "porrón") => {
+  const handleAddToCart = (presentationId: BeerPresentationId) => {
     if (!selectedBeer) return;
+    const item = createBeerCartItem(selectedBeer, presentationId);
     
-    addItem({
-      id: `${selectedBeer.name}-${presentation}`,
-      name: `${selectedBeer.name} - ${presentation}`,
-      price,
-      category
-    });
+    addItem(item);
 
     toast({
       title: "¡Agregado al pedido!",
-      description: `${selectedBeer.name} en ${presentation} se sumó a tu carrito.`,
+      description: `${item.name} se sumó a tu carrito.`,
     });
     
     setSelectedBeer(null);
@@ -195,10 +79,10 @@ export function Cervezas() {
               transition={{ delay: 0.2 }}
               className="flex flex-wrap gap-2"
             >
-              {["Todas", "Livianas", "Lupuladas", "Oscuras"].map((f) => (
+              {FILTER_OPTIONS.map((f) => (
                 <button
                   key={f}
-                  onClick={() => setFilter(f as any)}
+                  onClick={() => setFilter(f)}
                   className={cn(
                     "px-4 py-2 rounded-full text-sm font-medium transition-all",
                     filter === f 
@@ -269,19 +153,19 @@ export function Cervezas() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="flex flex-col">
               <span className="text-white/60 text-sm mb-1">Alquiler Chopera</span>
-              <span className="text-white font-bold">$15.000 <span className="text-primary text-xs font-normal ml-1">(Gratis c/ 50L)</span></span>
+              <span className="text-white font-bold">{formatPrice(additionalCosts.chopera)} <span className="text-primary text-xs font-normal ml-1">(Gratis c/ 50L)</span></span>
             </div>
             <div className="flex flex-col">
               <span className="text-white/60 text-sm mb-1">Delivery Zona Norte</span>
-              <span className="text-white font-bold">$8.000</span>
+              <span className="text-white font-bold">{formatPrice(deliveryOptions.find((option) => option.id === "norte")?.cost ?? 0)}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-white/60 text-sm mb-1">Delivery CABA/Sur</span>
-              <span className="text-white font-bold">$12.000</span>
+              <span className="text-white font-bold">{formatPrice(deliveryOptions.find((option) => option.id === "caba")?.cost ?? 0)}</span>
             </div>
             <div className="flex flex-col">
               <span className="text-white/60 text-sm mb-1">Beneficios</span>
-              <span className="text-white font-bold text-sm text-primary">Vasos de regalo +$80.000</span>
+              <span className="text-white font-bold text-sm text-primary">Vasos de regalo +{formatPrice(additionalCosts.freeGlassesThreshold)}</span>
             </div>
           </div>
         </motion.div>
@@ -327,24 +211,25 @@ export function Cervezas() {
                   <div>
                     <h5 className="text-white font-semibold mb-3 border-b border-white/10 pb-2">Barriles</h5>
                     <div className="space-y-2">
-                      {[
-                        { label: 'Barril 20L', key: 'barril20L', price: selectedBeer.precios.barril20L },
-                        { label: 'Barril 30L', key: 'barril30L', price: selectedBeer.precios.barril30L },
-                        { label: 'Barril 50L', key: 'barril50L', price: selectedBeer.precios.barril50L }
-                      ].map(item => (
-                        <div key={item.key} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                      {barrelPresentationIds.map((presentationId) => {
+                        const item = getBeerPresentation(selectedBeer, presentationId);
+                        if (!item) return null;
+
+                        return (
+                        <div key={item.id} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
                           <span className="text-white">{item.label}</span>
                           <div className="flex items-center gap-4">
                             <span className="text-primary font-bold">{formatPrice(item.price)}</span>
                             <button 
-                              onClick={() => handleAddToCart(item.label, item.price, "barril")}
+                              onClick={() => handleAddToCart(item.id)}
                               className="w-8 h-8 rounded-lg bg-primary text-black flex items-center justify-center hover:bg-amber-400 transition-colors"
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -352,24 +237,25 @@ export function Cervezas() {
                   <div>
                     <h5 className="text-white font-semibold mb-3 border-b border-white/10 pb-2">Envasado</h5>
                     <div className="space-y-2">
-                      {[
-                        { label: 'Growler 1L', key: 'growler1L', price: selectedBeer.precios.growler1L, cat: 'growler' },
-                        { label: 'Growler 2L', key: 'growler2L', price: selectedBeer.precios.growler2L, cat: 'growler' },
-                        { label: 'Porrón 330ml', key: 'porrón', price: selectedBeer.precios.porrón, cat: 'porrón' }
-                      ].map(item => (
-                        <div key={item.key} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                      {[...growlerPresentationIds, ...packagedPresentationIds].map((presentationId) => {
+                        const item = getBeerPresentation(selectedBeer, presentationId);
+                        if (!item) return null;
+
+                        return (
+                        <div key={item.id} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
                           <span className="text-white">{item.label}</span>
                           <div className="flex items-center gap-4">
                             <span className="text-primary font-bold">{formatPrice(item.price)}</span>
                             <button 
-                              onClick={() => handleAddToCart(item.label, item.price, item.cat as any)}
+                              onClick={() => handleAddToCart(item.id)}
                               className="w-8 h-8 rounded-lg bg-primary text-black flex items-center justify-center hover:bg-amber-400 transition-colors"
                             >
                               <Plus className="w-4 h-4" />
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

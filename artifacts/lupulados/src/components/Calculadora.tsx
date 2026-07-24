@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calculator, Sun, Users, Clock, Beer, Check } from "lucide-react";
+import { calculateBarrelRecommendation } from "@/domain/barrelCalculator";
+import { formatPrice } from "@/domain/format";
 import { scrollToSection } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -33,7 +35,9 @@ const EVENT_TYPES = [
     desc: "Esto es Oktoberfest",
     multiplier: 1.8,
   },
-];
+] as const;
+
+type EventTypeId = (typeof EVENT_TYPES)[number]["id"];
 
 const DURATION_CHIPS: { label: string; hours: number; minutes: number }[] = [
   { label: "2hs", hours: 2, minutes: 0 },
@@ -49,7 +53,7 @@ export function Calculadora() {
   const [guests, setGuests] = useState(50);
   const [hours, setHours] = useState(4);
   const [minutes, setMinutes] = useState(0);
-  const [type, setType] = useState<"tranqui" | "normal" | "intensa" | "festival">("normal");
+  const [type, setType] = useState<EventTypeId>("normal");
   const [isSummer, setIsSummer] = useState(false);
 
   const [totalLiters, setTotalLiters] = useState(0);
@@ -80,7 +84,7 @@ export function Calculadora() {
   })();
 
   useEffect(() => {
-    const typeMultipliers: Record<string, number> = {
+    const typeMultipliers: Record<EventTypeId, number> = {
       tranqui: 0.6,
       normal: 1.0,
       intensa: 1.4,
@@ -100,26 +104,10 @@ export function Calculadora() {
     const finalLiters = Math.ceil(calculatedLiters);
     setTotalLiters(finalLiters);
 
-    let remaining = finalLiters;
-    const b50 = Math.floor(remaining / 50); remaining %= 50;
-    const b30 = Math.floor(remaining / 30); remaining %= 30;
-    const b20 = remaining > 0 ? 1 : 0;
-
-    const parts = [];
-    if (b50 > 0) parts.push(`${b50}x 50L`);
-    if (b30 > 0) parts.push(`${b30}x 30L`);
-    if (b20 > 0) parts.push(`${b20}x 20L`);
-
-    setRecommendation(
-      parts.length === 0
-        ? "No llegamos a un barril de 20L, ¡mejor pedí packs o growlers!"
-        : parts.join(" + ")
-    );
-
-    setEstimatedPrice(finalLiters * 2000);
+    const barrelRecommendation = calculateBarrelRecommendation(finalLiters);
+    setRecommendation(barrelRecommendation.label);
+    setEstimatedPrice(barrelRecommendation.estimatedPrice);
   }, [guests, hours, minutes, type, isSummer, totalHoursDecimal]);
-
-  const formatPrice = (price: number) => `$${price.toLocaleString("es-AR")}`;
 
   const isChipActive = (chip: { hours: number; minutes: number }) =>
     hours === chip.hours && minutes === chip.minutes;
@@ -273,7 +261,7 @@ export function Calculadora() {
                     return (
                       <button
                         key={t.id}
-                        onClick={() => setType(t.id as any)}
+                        onClick={() => setType(t.id)}
                         className={cn(
                           "relative flex flex-col items-center text-center p-4 rounded-xl border transition-all duration-200",
                           selected

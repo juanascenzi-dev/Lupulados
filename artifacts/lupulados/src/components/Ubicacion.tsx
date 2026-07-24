@@ -1,7 +1,8 @@
 import { MapPin, Clock, Phone, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { contactSchema, type ContactInput, useSubmitContact } from "@/hooks/use-contact";
+import { contactSchema, type ContactInput } from "@/domain/contact";
+import { buildWhatsAppUrl, businessLocation, whatsappDisplayNumber } from "@/domain/businessConfig";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 
 export function Ubicacion() {
   const { toast } = useToast();
-  const mutation = useSubmitContact();
   
   const form = useForm<ContactInput>({
     resolver: zodResolver(contactSchema),
@@ -18,12 +18,16 @@ export function Ubicacion() {
   });
 
   function onSubmit(data: ContactInput) {
-    mutation.mutate(data, {
-      onSuccess: () => {
-        toast({ title: "Mensaje enviado", description: "Te contactaremos a la brevedad." });
-        form.reset();
-      }
-    });
+    const message = [
+      "Hola! Quiero hacer una consulta desde la web de Lupulados.",
+      "",
+      `Nombre: ${data.name}`,
+      `Email: ${data.email}`,
+      `Mensaje: ${data.message}`,
+    ].join("\n");
+
+    window.open(buildWhatsAppUrl(message), "_blank", "noopener,noreferrer");
+    toast({ title: "Consulta preparada", description: "Se abrió WhatsApp para que puedas enviar el mensaje." });
   }
 
   return (
@@ -47,7 +51,7 @@ export function Ubicacion() {
                 </div>
                 <div>
                   <h4 className="text-white font-bold mb-1">Ubicación (Fábrica)</h4>
-                  <p className="text-muted-foreground">Av. San Martín 1234<br/>San Martín, Buenos Aires</p>
+                  <p className="text-muted-foreground">{businessLocation.factoryLabel}<br/>{businessLocation.locality}</p>
                 </div>
               </div>
 
@@ -67,7 +71,7 @@ export function Ubicacion() {
                 </div>
                 <div>
                   <h4 className="text-white font-bold mb-1">WhatsApp</h4>
-                  <a href="https://wa.me/5491112345678" className="text-primary hover:underline">+54 9 11 1234-5678</a>
+                  <a href={buildWhatsAppUrl("Hola! Quiero hacer una consulta")} className="text-primary hover:underline">{whatsappDisplayNumber}</a>
                 </div>
               </div>
 
@@ -139,10 +143,9 @@ export function Ubicacion() {
 
                 <Button 
                   type="submit" 
-                  disabled={mutation.isPending}
                   className="w-full bg-primary hover:bg-amber-500 text-black font-bold h-12 text-lg shadow-[0_0_15px_rgba(217,119,6,0.3)] hover:shadow-[0_0_25px_rgba(217,119,6,0.5)] transition-all"
                 >
-                  {mutation.isPending ? "Enviando..." : "Enviar Mensaje"}
+                  Consultar por WhatsApp
                 </Button>
               </form>
             </Form>
