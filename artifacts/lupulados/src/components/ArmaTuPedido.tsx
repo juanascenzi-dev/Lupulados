@@ -39,11 +39,11 @@ import {
 } from "@/domain/beerCatalog";
 import { formatPrice } from "@/domain/format";
 import {
-  buildWhatsAppUrl,
   deliveryOptions,
-  formatDeliveryForMessage,
   promotionConfig,
+  whatsappNumber,
 } from "@/domain/businessConfig";
+import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
 import {
   buildRecommendedBarrelItems,
   hasCurrentSelectionInCart,
@@ -348,6 +348,7 @@ export function ArmaTuPedido({
     updateQty,
     totalItems,
     totalPrice,
+    orderSummary,
     extras,
     setExtras,
   } = useCart();
@@ -482,24 +483,22 @@ export function ArmaTuPedido({
     }
   };
 
-  const generateWhatsAppURL = () => {
-    let msg = `Hola! Quiero hacer un pedido 🍺\n\n`;
-    msg += `*Orden #${orderId}*\n`;
-    msg += `*Cliente:* ${formData.nombre}\n`;
-    msg += `*Entrega:* ${formData.fecha} (${formData.horario})\n`;
-    msg += `*Método:* ${formatDeliveryForMessage(extras.delivery)}\n`;
-    if (extras.delivery !== "fabrica")
-      msg += `*Dirección:* ${formData.direccion}\n`;
-    msg += `\n*DETALLE:*\n`;
-    items.forEach((i) => {
-      msg += `• ${i.qty}x ${i.name} — ${formatPrice(i.price * i.qty)}\n`;
-    });
-    if (extras.promoCode) msg += `\n*PROMO ${extras.promoCode}:* -${promotionConfig.discountRate * 100}%\n`;
-    if (formData.comentarios) msg += `\n*Notas:* ${formData.comentarios}\n`;
-    msg += `\n*TOTAL: ${formatPrice(totalPrice)}*`;
-    return buildWhatsAppUrl(msg);
-  };
-
+  const whatsAppOrderMessage = buildWhatsAppOrderMessage({
+    customer: {
+      name: formData.nombre,
+      eventDate: formData.fecha,
+      timeSlot: formData.horario,
+      address: formData.direccion,
+      notes: formData.comentarios,
+    },
+    summary: orderSummary,
+  });
+  let whatsAppOrderUrl: string | null = null;
+  try {
+    whatsAppOrderUrl = buildWhatsAppOrderUrl(whatsappNumber, whatsAppOrderMessage);
+  } catch {
+    whatsAppOrderUrl = null;
+  }
   const slideVariants: Variants = {
     initial: (dir: number) => ({ opacity: 0, x: dir * 60 }),
     animate: {
@@ -1404,7 +1403,7 @@ export function ArmaTuPedido({
                           { label: "HORARIO", value: formData.horario },
                           {
                             label: "ENVÍO",
-                            value: deliveryOptions.find((option) => option.id === extras.delivery)?.label ?? "Retiro en fábrica",
+                            value: orderSummary.delivery.label,
                           },
                         ].map((row) => (
                           <div key={row.label} className="flex items-end gap-1">
@@ -1445,16 +1444,33 @@ export function ArmaTuPedido({
                         </div>
                       </div>
 
-                      {extras.promoCode && (
-                        <div className="mt-3 flex justify-between font-mono text-xs text-green-600 font-bold">
-                          <span>DESCUENTO {extras.promoCode}</span>
-                          <span>-10%</span>
+                      {orderSummary.extraLines.length > 0 && (
+                        <div className="mt-3 space-y-1 font-mono text-xs">
+                          {orderSummary.extraLines.map((extra) => (
+                            <div key={extra.id} className="flex justify-between text-[#555]">
+                              <span>{extra.label.toUpperCase()}</span>
+                              <span>{formatPrice(extra.total)}</span>
+                            </div>
+                          ))}
                         </div>
                       )}
 
+                      {orderSummary.deliveryCost > 0 && (
+                        <div className="mt-3 flex justify-between font-mono text-xs text-[#555]">
+                          <span>ENVIO</span>
+                          <span>{formatPrice(orderSummary.deliveryCost)}</span>
+                        </div>
+                      )}
+
+                      {orderSummary.discountAmount > 0 && (
+                        <div className="mt-3 flex justify-between font-mono text-xs text-green-600 font-bold">
+                          <span>DESCUENTO {orderSummary.discountCode}</span>
+                          <span>-{formatPrice(orderSummary.discountAmount)}</span>
+                        </div>
+                      )}
                       <div className="mt-4 pt-4 border-t-2 border-dashed border-[#ccc] text-center">
                         <p className="text-[10px] font-mono text-[#999] uppercase tracking-widest mb-1">
-                          Total a pagar
+                          Total estimado
                         </p>
                         <p className="text-4xl font-black tracking-tight text-[#111]">
                           {formatPrice(totalPrice)}
@@ -1470,14 +1486,24 @@ export function ArmaTuPedido({
                   </div>
 
                   <div className="mt-6 space-y-3">
-                    <a
-                      href={generateWhatsAppURL()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-4 rounded-2xl bg-[#25D366] text-white font-bold text-lg shadow-lg hover:bg-[#1db954] transition-all flex items-center justify-center gap-3"
-                    >
-                      Enviar por WhatsApp 📲
-                    </a>
+                    {whatsAppOrderUrl ? (
+                      <a
+                        href={whatsAppOrderUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-4 rounded-2xl bg-[#25D366] text-white font-bold text-lg shadow-lg hover:bg-[#1db954] transition-all flex items-center justify-center gap-3 text-center"
+                      >
+                        Consultar pedido por WhatsApp
+                      </a>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full py-4 rounded-2xl bg-white/10 text-white/40 font-bold text-lg cursor-not-allowed flex items-center justify-center gap-3 text-center"
+                      >
+                        WhatsApp no disponible
+                      </button>
+                    )}
                     <button
                       onClick={() => {
                         setDirection(-1);

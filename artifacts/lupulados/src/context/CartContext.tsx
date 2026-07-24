@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { additionalCosts, getDeliveryOption, type DeliveryOptionId } from "@/domain/businessConfig";
+import type { DeliveryOptionId } from "@/domain/businessConfig";
 import { readCartItems, writeCartItems, type StoredCartItem } from "@/domain/cartStorage";
 import type { CartCategory } from "@/domain/beerCatalog";
+import { calculateOrderSummary, type OrderSummary } from "@/domain/orderSummary";
 
 export type CartItem = StoredCartItem;
 
@@ -13,6 +14,7 @@ export interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPrice: number;
+  orderSummary: OrderSummary;
   extras: {
     chopera: boolean;
     delivery: DeliveryOptionId;
@@ -78,23 +80,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setExtras({ chopera: false, delivery: "fabrica", hielo: 0, vasos: 0, promoCode: "", discount: 0 });
   };
 
-  const totalItems = items.reduce((acc, item) => acc + item.qty, 0);
-
-  // Consider free chopera if 50L barrel exists
-  const has50L = items.some(i => i.id.includes("barril50L"));
-  const choperaCost = extras.chopera && !has50L ? additionalCosts.chopera : 0;
-  
-  const deliveryCost = getDeliveryOption(extras.delivery).cost;
-    
-  const hieloCost = extras.hielo * additionalCosts.hielo;
-  
-  // Free glasses once the configured purchase threshold is reached.
-  const baseItemsPrice = items.reduce((acc, item) => acc + item.price * item.qty, 0);
-  const vasosCost = baseItemsPrice > additionalCosts.freeGlassesThreshold ? 0 : extras.vasos * additionalCosts.vasos;
-
-  const subtotal = baseItemsPrice + choperaCost + deliveryCost + hieloCost + vasosCost;
-  const discountAmount = subtotal * extras.discount;
-  const totalPrice = subtotal - discountAmount;
+  const orderSummary = calculateOrderSummary(items, extras);
+  const totalItems = orderSummary.totalItems;
+  const totalPrice = orderSummary.total;
 
   return (
     <CartContext.Provider
@@ -106,6 +94,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         clearCart,
         totalItems,
         totalPrice,
+        orderSummary,
         extras,
         setExtras,
       }}

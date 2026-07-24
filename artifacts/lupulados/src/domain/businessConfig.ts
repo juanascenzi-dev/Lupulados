@@ -1,4 +1,5 @@
 import { formatPrice } from "./format";
+import { buildWhatsAppOrderUrl } from "./whatsAppOrder";
 
 export const whatsappNumber = "5491133971210";
 export const whatsappDisplayLabel = "Abrir consulta por WhatsApp";
@@ -42,7 +43,7 @@ export function getDeliveryOption(id: DeliveryOptionId) {
 }
 
 export function buildWhatsAppUrl(message: string) {
-  return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  return buildWhatsAppOrderUrl(whatsappNumber, message);
 }
 
 export function formatDeliveryForMessage(id: DeliveryOptionId) {
