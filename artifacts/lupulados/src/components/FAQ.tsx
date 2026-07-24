@@ -15,7 +15,7 @@ const FAQS = [
   },
   {
     q: "¿Hacen entregas a domicilio?",
-    a: "Sí, llevamos los equipos a CABA y Gran Buenos Aires. El costo de envío se calcula según la zona. También podés retirar sin cargo por nuestra fábrica en San Martín."
+    a: "Sí, contemplamos entrega según zona y retiro en fábrica. El costo o punto de retiro se confirma al coordinar el pedido."
   },
   {
     q: "¿Qué pasa si sobra cerveza?",

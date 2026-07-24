@@ -10,28 +10,28 @@ const EVENT_TYPES = [
     id: "tranqui",
     emoji: "🍽️",
     label: "Tranqui / Almuerzo",
-    desc: "Birra de a sorbitos",
+    desc: "Consumo moderado",
     multiplier: 0.6,
   },
   {
     id: "normal",
     emoji: "🎉",
     label: "Fiesta Normal",
-    desc: "El clásico cumple/juntada",
+    desc: "Cumple o juntada",
     multiplier: 1.0,
   },
   {
     id: "intensa",
     emoji: "🔥",
     label: "Fiesta Intensa",
-    desc: "Se viene pesada",
+    desc: "Más consumo por persona",
     multiplier: 1.4,
   },
   {
     id: "festival",
     emoji: "🎪",
     label: "Festival",
-    desc: "Esto es Oktoberfest",
+    desc: "Evento largo y activo",
     multiplier: 1.8,
   },
 ] as const;
@@ -129,7 +129,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
           </div>
 
           <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
-            Ajustá los detalles de tu evento y descubrí exactamente qué cantidad de cerveza necesitás para que la fiesta sea un éxito.
+            Ajustá los detalles de tu evento y estimá cuánta cerveza conviene pedir.
           </p>
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">

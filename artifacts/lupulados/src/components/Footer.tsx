@@ -1,5 +1,6 @@
-import { Beer, Instagram, Facebook, Send } from "lucide-react";
+import { Beer } from "lucide-react";
 import { scrollToSection } from "@/lib/utils";
+import { businessLocation, publicContactEmail, whatsappDisplayLabel } from "@/domain/businessConfig";
 
 export function Footer() {
   return (
@@ -17,17 +18,7 @@ export function Footer() {
             <p className="text-muted-foreground text-sm leading-relaxed mb-6">
               Cerveza artesanal de calidad superior. Llevamos la mejor experiencia directo a tu evento con alquiler de barriles y choperas.
             </p>
-            <div className="flex gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-colors">
-                <Instagram className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-colors">
-                <Facebook className="w-4 h-4" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white hover:bg-primary hover:text-black transition-colors">
-                <Send className="w-4 h-4" /> {/* TikTok icon replacement */}
-              </a>
-            </div>
+            <p className="text-white/35 text-xs">Redes sociales a confirmar.</p>
           </div>
 
           <div>
@@ -52,9 +43,10 @@ export function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6">Ubicación</h4>
             <ul className="space-y-3">
-              <li className="text-muted-foreground text-sm">Av. San Martín 1234, CABA</li>
-              <li className="text-muted-foreground text-sm">+54 9 11 1234-5678</li>
-              <li className="text-muted-foreground text-sm">info@lupulados.com.ar</li>
+              <li className="text-muted-foreground text-sm">{businessLocation.factoryLabel}</li>
+              <li className="text-muted-foreground text-sm">{businessLocation.locality}</li>
+              <li className="text-muted-foreground text-sm">{whatsappDisplayLabel}</li>
+              {publicContactEmail && <li className="text-muted-foreground text-sm">{publicContactEmail}</li>}
             </ul>
           </div>
         </div>

@@ -1,11 +1,12 @@
 import { formatPrice } from "./format";
 
 export const whatsappNumber = "5491133971210";
-export const whatsappDisplayNumber = "+54 9 11 3397-1210";
+export const whatsappDisplayLabel = "Abrir consulta por WhatsApp";
+export const publicContactEmail: string | null = null;
 
 export const businessLocation = {
-  factoryLabel: "Av. San Martín 1234",
-  locality: "San Martín, Buenos Aires",
+  factoryLabel: "Retiro en fábrica",
+  locality: "Dirección exacta a confirmar al coordinar el pedido",
 };
 
 const deliveryCosts = {
@@ -15,7 +16,7 @@ const deliveryCosts = {
 } as const;
 
 export const deliveryOptions = [
-  { id: "fabrica", label: "Retiro en fábrica", desc: "San Martín — Gratis", cost: deliveryCosts.fabrica },
+  { id: "fabrica", label: "Retiro en fábrica", desc: "Coordinamos punto y horario — Gratis", cost: deliveryCosts.fabrica },
   { id: "norte", label: "Zona Norte GBA", desc: `+${formatPrice(deliveryCosts.norte)}`, cost: deliveryCosts.norte },
   { id: "caba", label: "CABA / Zona Sur", desc: `+${formatPrice(deliveryCosts.caba)}`, cost: deliveryCosts.caba },
 ] as const;

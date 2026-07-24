@@ -50,6 +50,7 @@ import {
   hasTastingPack,
   type OrderType,
 } from "@/domain/orderFlow";
+import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 
 type Step = 1 | 2 | 3 | 4 | 5;
@@ -133,7 +134,7 @@ function BeerGlass({
 function BeerGlassStepper({ step }: { step: Step }) {
   const progress = ((step - 1) / 4) * 100;
   return (
-    <div className="mb-12">
+    <div className="mb-8 md:mb-9">
       <div className="hidden md:flex justify-between items-end relative max-w-xl mx-auto">
         <div className="absolute left-4 right-4 h-0.5 bg-white/10 bottom-7 z-0" />
         <motion.div
@@ -393,19 +394,31 @@ export function ArmaTuPedido({
     .toISOString()
     .slice(0, 10);
 
+  const hasCurrentSelection = hasCurrentSelectionInCart(items, selectedBeer, orderType);
   const canProceed = (() => {
     if (step === 1) return orderType !== null;
     if (step === 2) return selectedBeer !== null;
-    if (step === 3) return hasCurrentSelectionInCart(items, selectedBeer, orderType);
+    if (step === 3) return hasCurrentSelection;
     if (step === 4)
       return (
-        !!formData.nombre &&
+        !!formData.nombre.trim() &&
         !!formData.fecha &&
         formData.fecha >= today &&
-        (extras.delivery === "fabrica" || !!formData.direccion)
+        (extras.delivery === "fabrica" || !!formData.direccion.trim())
       );
     return true;
   })();
+  const validationMessage = getOrderWizardValidationMessage({
+    step,
+    orderType,
+    hasSelectedBeer: selectedBeer !== null,
+    hasCurrentSelection,
+    customerName: formData.nombre,
+    date: formData.fecha,
+    today,
+    delivery: extras.delivery,
+    address: formData.direccion,
+  });
 
   const goNext = () => {
     if (!canProceed) return;
@@ -502,11 +515,11 @@ export function ArmaTuPedido({
   };
 
   const NavButtons = () => (
-    <div className="mt-10 flex items-center gap-3">
+    <div className="mt-7 md:mt-8 flex items-center gap-3">
       {step > 1 && step < 5 && (
         <button
           onClick={goPrev}
-          className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-white/5 text-white font-bold hover:bg-white/10 transition-colors border border-white/10"
+          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 text-white font-bold hover:bg-white/10 transition-colors border border-white/10"
         >
           <ChevronLeft className="w-5 h-5" /> Anterior
         </button>
@@ -515,11 +528,9 @@ export function ArmaTuPedido({
         <button
           onClick={goNext}
           disabled={!canProceed}
-          title={
-            !canProceed ? "Seleccioná una opción para continuar" : undefined
-          }
+          title={!canProceed ? validationMessage ?? undefined : undefined}
           className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl font-bold text-base transition-all",
+            "flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-bold text-base transition-all",
             canProceed
               ? "bg-gradient-to-r from-primary to-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.25)] hover:shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:-translate-y-0.5"
               : "bg-white/10 text-white/30 cursor-not-allowed",
@@ -531,7 +542,7 @@ export function ArmaTuPedido({
       )}
       {!canProceed && step < 5 && (
         <p className="text-white/30 text-xs absolute -bottom-6 left-0">
-          Seleccioná al menos una opción para continuar
+          {validationMessage}
         </p>
       )}
     </div>
@@ -541,7 +552,7 @@ export function ArmaTuPedido({
     <section
       id="arma-tu-pedido"
       ref={sectionRef}
-      className="py-24 bg-background relative border-t border-white/5 overflow-hidden"
+      className="py-16 md:py-20 bg-background relative border-t border-white/5 overflow-hidden"
     >
       {/* Beer bubble decorations */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -572,8 +583,8 @@ export function ArmaTuPedido({
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-14">
-          <h2 className="text-3xl md:text-5xl font-display font-bold text-white mb-4">
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-3">
             Armá tu pedido
           </h2>
           <p className="text-muted-foreground">
@@ -582,7 +593,7 @@ export function ArmaTuPedido({
         </div>
 
         {pendingRecommendation && (
-          <div className="max-w-3xl mx-auto mb-10 rounded-2xl border border-primary/20 bg-primary/10 p-5">
+          <div className="max-w-3xl mx-auto mb-7 rounded-2xl border border-primary/20 bg-primary/10 p-4">
             <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-5">
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-primary mb-2">
@@ -593,7 +604,7 @@ export function ArmaTuPedido({
                     <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
                       Necesitás
                     </p>
-                    <p className="text-white font-bold text-lg">
+                    <p className="text-white font-bold text-base">
                       {pendingRecommendation.requiredLiters} L
                     </p>
                   </div>
@@ -601,7 +612,7 @@ export function ArmaTuPedido({
                     <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
                       Sugerimos
                     </p>
-                    <p className="text-white font-bold text-lg">
+                    <p className="text-white font-bold text-base">
                       {pendingRecommendation.label}
                     </p>
                   </div>
@@ -609,7 +620,7 @@ export function ArmaTuPedido({
                     <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
                       Total
                     </p>
-                    <p className="text-white font-bold text-lg">
+                    <p className="text-white font-bold text-base">
                       {pendingRecommendation.coveredLiters} L
                     </p>
                   </div>
@@ -617,7 +628,7 @@ export function ArmaTuPedido({
                     <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
                       Excedente
                     </p>
-                    <p className="text-white font-bold text-lg">
+                    <p className="text-white font-bold text-base">
                       {pendingRecommendation.excessLiters} L
                     </p>
                   </div>
@@ -627,7 +638,7 @@ export function ArmaTuPedido({
                 <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
                   Estimado desde
                 </p>
-                <p className="text-primary font-mono font-bold text-2xl">
+                <p className="text-primary font-mono font-bold text-xl">
                   {formatPrice(pendingRecommendation.estimatedPrice)}
                 </p>
               </div>
@@ -637,9 +648,9 @@ export function ArmaTuPedido({
 
         <BeerGlassStepper step={step} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
           {/* Wizard */}
-          <div className="relative min-h-[400px]">
+          <div className="relative min-h-[360px]">
             <AnimatePresence mode="wait" custom={direction}>
               {/* STEP 1: TIPO */}
               {step === 1 && (
@@ -651,10 +662,10 @@ export function ArmaTuPedido({
                   animate="animate"
                   exit="exit"
                 >
-                  <h3 className="text-xl font-bold text-white mb-6 text-center">
+                  <h3 className="text-xl font-bold text-white mb-5 text-center">
                     ¿Qué querés pedir?
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3">
                     {ORDER_TYPES.map((opt) => {
                       const selected = orderType === opt.id;
                       return (
@@ -668,7 +679,7 @@ export function ArmaTuPedido({
                               : "border-white/10 hover:border-amber-500/50 hover:scale-[1.02]",
                           )}
                         >
-                          <div className="relative h-36 overflow-hidden">
+                          <div className="relative h-28 md:h-32 overflow-hidden">
                             <img
                               src={opt.img}
                               alt={opt.title}
@@ -712,7 +723,7 @@ export function ArmaTuPedido({
                           </div>
                           <div
                             className={cn(
-                              "p-4 flex-1 transition-colors",
+                              "p-3.5 flex-1 transition-colors",
                               selected ? "bg-amber-500/10" : "bg-white/5",
                             )}
                           >
@@ -743,7 +754,7 @@ export function ArmaTuPedido({
                       );
                     })}
                   </div>
-                  <div className="relative mt-10">
+                  <div className="relative mt-7">
                     <button
                       onClick={goNext}
                       disabled={!canProceed}
@@ -758,7 +769,7 @@ export function ArmaTuPedido({
                     </button>
                     {!canProceed && (
                       <p className="text-white/30 text-xs text-center mt-2">
-                        Seleccioná una opción para continuar
+                        {validationMessage}
                       </p>
                     )}
                   </div>
@@ -775,10 +786,10 @@ export function ArmaTuPedido({
                   animate="animate"
                   exit="exit"
                 >
-                  <h3 className="text-xl font-bold text-white mb-6 text-center">
+                  <h3 className="text-xl font-bold text-white mb-5 text-center">
                     Elegí el estilo
                   </h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     {BEERS.map((beer) => {
                       const sel = selectedBeer?.id === beer.id;
                       return (
@@ -792,7 +803,7 @@ export function ArmaTuPedido({
                               : "border-transparent bg-white/5 hover:border-amber-500/40 hover:scale-[1.02]",
                           )}
                         >
-                          <div className="relative h-32 overflow-hidden">
+                          <div className="relative h-24 md:h-28 overflow-hidden">
                             <img
                               src={beer.img}
                               alt={beer.name}
@@ -823,13 +834,13 @@ export function ArmaTuPedido({
                           </div>
                           <div
                             className={cn(
-                              "p-3 transition-colors",
+                              "p-2.5 transition-colors",
                               sel ? "bg-amber-500/10" : "bg-white/5",
                             )}
                           >
                             <h4
                               className={cn(
-                                "font-bold text-sm mb-0.5",
+                                "font-bold text-sm mb-0.5 leading-tight",
                                 sel ? "text-amber-300" : "text-white",
                               )}
                             >
@@ -867,11 +878,11 @@ export function ArmaTuPedido({
                   exit="exit"
                   className="max-w-2xl mx-auto w-full"
                 >
-                  <div className="text-center mb-8">
+                  <div className="text-center mb-6">
                     <div className="inline-block px-4 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2">
                       {selectedBeer?.name}
                     </div>
-                    <h3 className="text-2xl font-bold text-white">
+                    <h3 className="text-xl md:text-2xl font-bold text-white">
                       ¿Cuánto necesitás?
                     </h3>
                   </div>
@@ -888,10 +899,10 @@ export function ArmaTuPedido({
                         return (
                           <div
                             key={size.id}
-                            className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4"
+                            className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4"
                           >
                             <div className="flex-1">
-                              <h4 className="text-xl font-bold text-white">
+                              <h4 className="text-lg font-bold text-white">
                                 {size.label}
                               </h4>
                               <p className="text-xs text-muted-foreground">
@@ -948,10 +959,10 @@ export function ArmaTuPedido({
                         return (
                           <div
                             key={size.id}
-                            className="bg-white/5 border border-white/10 rounded-2xl p-5 flex items-center justify-between gap-4"
+                            className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4"
                           >
                             <div>
-                              <h4 className="text-xl font-bold text-white">
+                              <h4 className="text-lg font-bold text-white">
                                 {size.label}
                               </h4>
                               <p className="text-primary font-mono font-bold mt-1">
@@ -997,7 +1008,7 @@ export function ArmaTuPedido({
                       })}
 
                     {orderType === "porrón" && (
-                      <div className="bg-white/5 border border-white/10 rounded-2xl p-8 flex flex-col items-center gap-6">
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center gap-5">
                         <div className="text-center">
                           <h4 className="text-2xl font-bold text-white">
                             Botellas 500ml
@@ -1051,7 +1062,7 @@ export function ArmaTuPedido({
                   </div>
 
                   {pendingRecommendation && selectedBeer && orderType === "barril" && (
-                    <div className="mt-6 rounded-2xl border border-primary/20 bg-black/30 p-5">
+                    <div className="mt-5 rounded-2xl border border-primary/20 bg-black/30 p-4">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                           <p className="text-white font-bold">
@@ -1106,8 +1117,8 @@ export function ArmaTuPedido({
                   animate="animate"
                   exit="exit"
                 >
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                    <div className="space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-7">
+                    <div className="space-y-6">
                       <div>
                         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
                           <Truck className="w-5 h-5 text-primary" /> Entrega
@@ -1131,7 +1142,7 @@ export function ArmaTuPedido({
                                 }))
                               }
                               className={cn(
-                                "w-full p-4 rounded-2xl border-2 text-left transition-all flex items-center gap-4",
+                                "w-full p-3 rounded-xl border-2 text-left transition-all flex items-center gap-3",
                                 extras.delivery === d.id
                                   ? "bg-primary/10 border-primary"
                                   : "bg-white/5 border-transparent hover:bg-white/10",
@@ -1139,7 +1150,7 @@ export function ArmaTuPedido({
                             >
                               <div
                                 className={cn(
-                                  "w-10 h-10 rounded-full flex items-center justify-center shrink-0",
+                                  "w-9 h-9 rounded-full flex items-center justify-center shrink-0",
                                   extras.delivery === d.id
                                     ? "bg-primary text-black"
                                     : "bg-white/10 text-white",
@@ -1215,7 +1226,7 @@ export function ArmaTuPedido({
                       </div>
                     </div>
 
-                    <div className="space-y-5">
+                    <div className="space-y-4">
                       <h3 className="text-lg font-bold text-white flex items-center gap-2">
                         <User className="w-5 h-5 text-primary" /> Tus datos
                       </h3>
@@ -1230,7 +1241,7 @@ export function ArmaTuPedido({
                             setFormData({ ...formData, nombre: e.target.value })
                           }
                           placeholder="Ej: Juan Pérez"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
@@ -1248,7 +1259,7 @@ export function ArmaTuPedido({
                                 fecha: e.target.value,
                               })
                             }
-                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary [color-scheme:dark]"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary [color-scheme:dark]"
                           />
                         </div>
                         <div>
@@ -1263,7 +1274,7 @@ export function ArmaTuPedido({
                                 horario: e.target.value,
                               })
                             }
-                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-primary focus:outline-none"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none"
                           >
                             <option value="Mañana 9-12hs">
                               Mañana (9-12hs)
@@ -1292,7 +1303,7 @@ export function ArmaTuPedido({
                               })
                             }
                             placeholder="Ej: Av. Corrientes 1234, CABA"
-                            className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20"
                           />
                         </div>
                       )}
@@ -1309,7 +1320,7 @@ export function ArmaTuPedido({
                             })
                           }
                           placeholder="Detalles de entrega, preferencias, etc."
-                          className="w-full bg-white/5 border border-white/10 rounded-xl py-3 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary h-24 resize-none placeholder:text-white/20"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary h-20 resize-none placeholder:text-white/20"
                         />
                       </div>
                     </div>
@@ -1370,14 +1381,14 @@ export function ArmaTuPedido({
                       </svg>
                     </div>
 
-                    <div className="pt-10 pb-10 px-7">
-                      <div className="text-center mb-6">
-                        <p className="text-4xl mb-1">🍺</p>
+                    <div className="pt-8 pb-8 px-7">
+                      <div className="text-center mb-5">
+                        <p className="text-3xl mb-1">🍺</p>
                         <h3 className="text-2xl font-black uppercase tracking-tighter">
                           LUPULADOS
                         </h3>
                         <p className="text-[10px] font-mono text-[#999] mt-0.5">
-                          CERVECERÍA ARTESANAL · AV. SAN MARTÍN 1234
+                          CERVECERÍA ARTESANAL · ENTREGA A COORDINAR
                         </p>
                         <div className="mt-4 py-2 border-y-2 border-dashed border-[#ccc]">
                           <p className="font-mono font-bold text-sm tracking-widest">
@@ -1408,7 +1419,7 @@ export function ArmaTuPedido({
                         ))}
                       </div>
 
-                      <div className="mt-5 pt-4 border-t border-[#ddd]">
+                      <div className="mt-4 pt-3 border-t border-[#ddd]">
                         <p className="font-mono font-bold text-[10px] uppercase tracking-widest text-[#999] mb-3">
                           Detalle del pedido
                         </p>
@@ -1450,7 +1461,7 @@ export function ArmaTuPedido({
                         </p>
                       </div>
 
-                      <p className="text-center text-[9px] font-mono text-[#bbb] mt-6 leading-relaxed">
+                      <p className="text-center text-[9px] font-mono text-[#bbb] mt-5 leading-relaxed">
                         NO ES COMPROBANTE FISCAL
                         <br />
                         GRACIAS POR ELEGIRNOS 🍻 LUPULADOS.AR
@@ -1458,7 +1469,7 @@ export function ArmaTuPedido({
                     </div>
                   </div>
 
-                  <div className="mt-8 space-y-3">
+                  <div className="mt-6 space-y-3">
                     <a
                       href={generateWhatsAppURL()}
                       target="_blank"

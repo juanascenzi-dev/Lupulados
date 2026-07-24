@@ -1,8 +1,8 @@
-import { MapPin, Clock, Phone, Mail } from "lucide-react";
+import { MapPin, Clock, MessageCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contactSchema, type ContactInput } from "@/domain/contact";
-import { buildWhatsAppUrl, businessLocation, whatsappDisplayNumber } from "@/domain/businessConfig";
+import { buildWhatsAppUrl, businessLocation, whatsappDisplayLabel, publicContactEmail } from "@/domain/businessConfig";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -41,7 +41,7 @@ export function Ubicacion() {
               Contactanos
             </h2>
             <p className="text-muted-foreground text-lg mb-10">
-              Ya sea para encargar un barril, reservar una chata o consultar por ventas mayoristas, estamos para ayudarte.
+              Ya sea para encargar un barril, reservar una chopera o consultar por ventas mayoristas, estamos para ayudarte.
             </p>
 
             <div className="space-y-8">
@@ -50,7 +50,7 @@ export function Ubicacion() {
                   <MapPin className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-bold mb-1">Ubicación (Fábrica)</h4>
+                  <h4 className="text-white font-bold mb-1">Retiro en fábrica</h4>
                   <p className="text-muted-foreground">{businessLocation.factoryLabel}<br/>{businessLocation.locality}</p>
                 </div>
               </div>
@@ -60,30 +60,29 @@ export function Ubicacion() {
                   <Clock className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-bold mb-1">Horarios de Retiro</h4>
-                  <p className="text-muted-foreground">Lunes a Viernes: 9:00 a 18:00hs<br/>Sábados: 9:00 a 14:00hs</p>
+                  <h4 className="text-white font-bold mb-1">Coordinación</h4>
+                  <p className="text-muted-foreground">El retiro o la entrega se coordinan al confirmar el pedido.</p>
                 </div>
               </div>
 
               <div className="flex gap-4">
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Phone className="w-5 h-5 text-primary" />
+                  <MessageCircle className="w-5 h-5 text-primary" />
                 </div>
                 <div>
                   <h4 className="text-white font-bold mb-1">WhatsApp</h4>
-                  <a href={buildWhatsAppUrl("Hola! Quiero hacer una consulta")} className="text-primary hover:underline">{whatsappDisplayNumber}</a>
+                  <a href={buildWhatsAppUrl("Hola! Quiero hacer una consulta")} className="text-primary hover:underline">{whatsappDisplayLabel}</a>
                 </div>
               </div>
 
-              <div className="flex gap-4">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <Mail className="w-5 h-5 text-primary" />
+              {publicContactEmail && (
+                <div className="flex gap-4">
+                  <div>
+                    <h4 className="text-white font-bold mb-1">Email</h4>
+                    <a href={`mailto:${publicContactEmail}`} className="text-primary hover:underline">{publicContactEmail}</a>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="text-white font-bold mb-1">Email</h4>
-                  <a href="mailto:info@lupulados.com.ar" className="text-primary hover:underline">info@lupulados.com.ar</a>
-                </div>
-              </div>
+              )}
             </div>
           </div>
 

@@ -1,24 +1,18 @@
 import { motion } from "framer-motion";
-import { Star } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 
-const REVIEWS = [
+const SERVICE_PROMISES = [
   {
-    name: "Martín G.",
-    event: "Cumpleaños 40",
-    text: "Excelente servicio. Me llevaron el barril de IPA, armaron la chopera en 5 minutos y la cerveza estaba helada toda la noche. ¡Un lujo!",
-    rating: 5
+    title: "Pedido claro",
+    detail: "Antes de enviar la consulta ves estilos, cantidades, modalidad de entrega y total estimado.",
   },
   {
-    name: "Sofía R.",
-    event: "Casamiento",
-    text: "Contratamos 3 barriles para nuestra boda y fue un éxito total. La Honey voló. Super recomendables, cumplieron con todo a la perfección.",
-    rating: 5
+    title: "Cantidad razonada",
+    detail: "La calculadora ayuda a elegir barriles según invitados, duración y tipo de evento.",
   },
   {
-    name: "Juan Pablo C.",
-    event: "Juntada con amigos",
-    text: "Pedí un barril de 20L de Blonde para ver el partido. Nada que envidiarle a estar sentado en la cervecería. Muy buena onda los chicos que entregan.",
-    rating: 5
+    title: "Coordinación simple",
+    detail: "El resumen queda listo para consultar por WhatsApp y ajustar los detalles pendientes.",
   }
 ];
 
@@ -33,29 +27,27 @@ export function Testimonios() {
             viewport={{ once: true }}
             className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white"
           >
-            Nuestros clientes opinan
+            Pensado para pedir sin vueltas
           </motion.h2>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {REVIEWS.map((review, i) => (
+          {SERVICE_PROMISES.map((item, i) => (
             <motion.div
-              key={i}
+              key={item.title}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               className="bg-card border border-white/5 p-8 rounded-2xl relative"
             >
-              <div className="flex gap-1 mb-6">
-                {[...Array(review.rating)].map((_, i) => (
-                  <Star key={i} className="w-5 h-5 fill-primary text-primary" />
-                ))}
+              <div className="w-11 h-11 rounded-full bg-primary/10 flex items-center justify-center mb-6">
+                <CheckCircle2 className="w-5 h-5 text-primary" />
               </div>
-              <p className="text-muted-foreground text-lg mb-8 italic">"{review.text}"</p>
+              <p className="text-muted-foreground text-lg mb-8">{item.detail}</p>
               <div className="mt-auto">
-                <h5 className="text-white font-bold">{review.name}</h5>
-                <span className="text-primary text-sm uppercase tracking-wider font-semibold">{review.event}</span>
+                <h5 className="text-white font-bold">{item.title}</h5>
+                <span className="text-primary text-sm uppercase tracking-wider font-semibold">Experiencia de pedido</span>
               </div>
             </motion.div>
           ))}

@@ -13,7 +13,7 @@ const SERVICES = [
   {
     icon: <GlassWater className="w-8 h-8 text-primary" />,
     title: "Venta Directa",
-    description: "Latas, porrones, growlers y packs surtidos para que disfrutes en casa la mejor birra.",
+    description: "Porrones, growlers y packs surtidos para disfrutar en casa o resolver una juntada chica.",
     action: () => scrollToSection("arma-tu-pedido"),
   },
   {
