@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Calculator, Sun, Users, Clock, Beer, Check } from "lucide-react";
 import { calculateBarrelRecommendation, type BarrelRecommendation } from "@/domain/barrelCalculator";
 import { formatPrice } from "@/domain/format";
+import { priceDisclaimer } from "@/domain/businessConfig";
 import { cn } from "@/lib/utils";
 
 const EVENT_TYPES = [
@@ -332,6 +333,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   <div className="mb-8">
                     <span className="text-white/40 text-xs block mb-1">Estimado desde</span>
                     <span className="text-white font-bold text-2xl">{formatPrice(barrelPlan.estimatedPrice)}</span>
+                    <span className="text-white/35 text-xs block mt-2">{priceDisclaimer}</span>
                   </div>
 
                   <button

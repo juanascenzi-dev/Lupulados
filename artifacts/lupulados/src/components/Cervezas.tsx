@@ -12,7 +12,7 @@ import {
   type BeerPresentationId,
 } from "@/domain/beerCatalog";
 import { formatPrice } from "@/domain/format";
-import { additionalCosts, deliveryOptions } from "@/domain/businessConfig";
+import { additionalCosts, deliveryOptions, priceDisclaimer } from "@/domain/businessConfig";
 import { useToast } from "@/hooks/use-toast";
 import { X, Plus, Minus, ShoppingCart, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -71,6 +71,9 @@ export function Cervezas() {
             >
               Estilos con personalidad
             </motion.h3>
+            <p className="text-xs text-white/40 mb-5">
+              {priceDisclaimer}
+            </p>
             
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
@@ -100,7 +103,7 @@ export function Cervezas() {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-16">
           {filteredBeers.map((beer, i) => (
             <motion.div
-              key={beer.name}
+              key={beer.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}

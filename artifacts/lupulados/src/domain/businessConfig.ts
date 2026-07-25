@@ -1,40 +1,61 @@
 import { formatPrice } from "./format";
 import { buildWhatsAppOrderUrl } from "./whatsAppOrder";
+import {
+  getBusinessProfile,
+  getFreeGlassesThreshold,
+  getPricingConfig,
+  getPrimaryOrderWhatsAppChannelFromSnapshot,
+  listActiveDeliveryOptions,
+  listActiveExtraOptions,
+  listActivePromotions,
+  listActiveWhatsAppChannels,
+} from "./commercialSelectors";
 
-export const whatsappNumber = "5491133971210";
-export const whatsappDisplayLabel = "Abrir consulta por WhatsApp";
-export const publicContactEmail: string | null = null;
+export const businessProfile = getBusinessProfile();
+export const pricing = getPricingConfig();
+export const priceDisclaimer = pricing.disclaimer;
+export const whatsappChannels = listActiveWhatsAppChannels();
+export const primaryOrderWhatsAppChannel = getPrimaryOrderWhatsAppChannelFromSnapshot();
+export const whatsappNumber = primaryOrderWhatsAppChannel?.phoneE164 ?? "";
+export const whatsappDisplayLabel = primaryOrderWhatsAppChannel
+  ? `${primaryOrderWhatsAppChannel.label}: ${primaryOrderWhatsAppChannel.phoneDisplay}`
+  : "WhatsApp no disponible";
+export const publicContactEmail: string | null = businessProfile.email;
 
 export const businessLocation = {
   factoryLabel: "Retiro en fábrica",
-  locality: "Dirección exacta a confirmar al coordinar el pedido",
+  locality: businessProfile.address,
+  address: businessProfile.address,
+  openingHours: businessProfile.openingHours,
 };
 
-const deliveryCosts = {
-  fabrica: 0,
-  norte: 8000,
-  caba: 12000,
-} as const;
-
-export const deliveryOptions = [
-  { id: "fabrica", label: "Retiro en fábrica", desc: "Coordinamos punto y horario — Gratis", cost: deliveryCosts.fabrica },
-  { id: "norte", label: "Zona Norte GBA", desc: `+${formatPrice(deliveryCosts.norte)}`, cost: deliveryCosts.norte },
-  { id: "caba", label: "CABA / Zona Sur", desc: `+${formatPrice(deliveryCosts.caba)}`, cost: deliveryCosts.caba },
-] as const;
+export const deliveryOptions = listActiveDeliveryOptions().map((option) => ({
+  id: option.id,
+  label: option.label,
+  desc: option.price > 0 ? `+${formatPrice(option.price)}` : "Gratis",
+  cost: option.price,
+  requiresAddress: option.requiresAddress,
+})) as [
+  { id: "fabrica"; label: string; desc: string; cost: number; requiresAddress: boolean },
+  { id: "norte"; label: string; desc: string; cost: number; requiresAddress: boolean },
+  { id: "caba"; label: string; desc: string; cost: number; requiresAddress: boolean },
+];
 
 export type DeliveryOptionId = (typeof deliveryOptions)[number]["id"];
 
+const extrasById = Object.fromEntries(listActiveExtraOptions().map((extra) => [extra.id, extra]));
+
 export const additionalCosts = {
-  chopera: 15000,
-  hielo: 3000,
-  vasos: 800,
-  freeGlassesThreshold: 80000,
+  chopera: extrasById.chopera?.price ?? 0,
+  hielo: extrasById.hielo?.price ?? 0,
+  vasos: extrasById.vasos?.price ?? 0,
+  freeGlassesThreshold: getFreeGlassesThreshold(),
 };
 
-// El código sigue hardcodeado hasta que exista una fuente comercial editable.
+const activePromotion = listActivePromotions()[0];
 export const promotionConfig = {
-  code: "PRIMERABIRRA",
-  discountRate: 0.1,
+  code: activePromotion?.code ?? "",
+  discountRate: activePromotion?.type === "percentage" ? activePromotion.value : 0,
   bannerClosedStorageKey: "promoBannerClosed",
 };
 
@@ -42,8 +63,8 @@ export function getDeliveryOption(id: DeliveryOptionId) {
   return deliveryOptions.find((option) => option.id === id) ?? deliveryOptions[0];
 }
 
-export function buildWhatsAppUrl(message: string) {
-  return buildWhatsAppOrderUrl(whatsappNumber, message);
+export function buildWhatsAppUrl(message: string, phone = whatsappNumber) {
+  return buildWhatsAppOrderUrl(phone, message);
 }
 
 export function formatDeliveryForMessage(id: DeliveryOptionId) {

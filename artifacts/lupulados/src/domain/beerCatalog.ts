@@ -1,14 +1,13 @@
 import { formatPrice } from "./format";
+import { commercialSnapshot } from "./commercialData";
+import {
+  listActiveProductPresentations,
+  listActiveProducts,
+} from "./commercialSelectors";
+import type { PresentationType } from "./commercialTypes";
 
 export type CartCategory = "barril" | "growler" | "porrón" | "pack";
-
-export type BeerPresentationId =
-  | "barril20L"
-  | "barril30L"
-  | "barril50L"
-  | "growler1L"
-  | "growler2L"
-  | "porron500ml";
+export type BeerPresentationId = PresentationType;
 
 export interface BeerPresentation {
   id: BeerPresentationId;
@@ -40,118 +39,45 @@ export interface CartItemDraft {
   category: CartCategory;
 }
 
-const presentationDefinitions: Omit<BeerPresentation, "price">[] = [
-  { id: "barril20L", label: "Barril 20L", category: "barril", liters: 20, description: "Aprox 40 pintas · hasta 50 personas" },
-  { id: "barril30L", label: "Barril 30L", category: "barril", liters: 30, description: "Aprox 60 pintas · hasta 80 personas" },
-  { id: "barril50L", label: "Barril 50L", category: "barril", liters: 50, description: "Aprox 100 pintas · +100 personas" },
-  { id: "growler1L", label: "Growler 1L", category: "growler", liters: 1 },
-  { id: "growler2L", label: "Growler 2L", category: "growler", liters: 2 },
-  { id: "porron500ml", label: "Porrón 500ml", category: "porrón", liters: 0.5 },
+const presentationIds: BeerPresentationId[] = [
+  "barril20L",
+  "barril30L",
+  "barril50L",
+  "growler1L",
+  "growler2L",
+  "porron500ml",
 ];
 
-const rawBeers = [
-  {
-    id: "blonde-ale",
-    name: "Blonde Ale",
-    description: "Suave, refrescante, ideal para los que arrancan en la artesanal.",
-    abv: 4.8,
-    ibu: 15,
-    badge: "Suave",
-    image: "https://images.unsplash.com/photo-1566633806327-68e152aaf26d?w=600&h=400&fit=crop",
-    prices: [38000, 54000, 85000, 3200, 5800, 1800],
-  },
-  {
-    id: "apa",
-    name: "American Pale Ale (APA)",
-    description: "Cítrica y lupulada, con amargor presente y final fácil.",
-    abv: 5.2,
-    ibu: 35,
-    badge: "Cítrica",
-    image: "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600&h=400&fit=crop",
-    prices: [42000, 60000, 95000, 3600, 6500, 2000],
-  },
-  {
-    id: "ipa",
-    name: "IPA",
-    description: "Intensa, aromática, para los que les gusta el lúpulo.",
-    abv: 6.5,
-    ibu: 55,
-    badge: "Lupulada",
-    image: "https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600&h=400&fit=crop",
-    prices: [46000, 66000, 105000, 4000, 7200, 2200],
-  },
-  {
-    id: "red-ale",
-    name: "Red Ale / Amber",
-    description: "Maltosa, caramelo, equilibrada.",
-    abv: 5,
-    ibu: 25,
-    badge: "Maltosa",
-    image: "https://images.unsplash.com/photo-1608270586620-248524c67de9?w=600&h=400&fit=crop",
-    prices: [40000, 57000, 90000, 3400, 6200, 1900],
-  },
-  {
-    id: "stout",
-    name: "Stout",
-    description: "Oscura, con notas de café y chocolate.",
-    abv: 5.8,
-    ibu: 30,
-    badge: "Oscura",
-    image: "https://images.unsplash.com/photo-1532634922-8fe0b757fb13?w=600&h=400&fit=crop",
-    prices: [44000, 63000, 100000, 3800, 6800, 2100],
-  },
-  {
-    id: "honey-wheat",
-    name: "Honey / Wheat",
-    description: "Dulce, suave y fácil de tomar.",
-    abv: 4.5,
-    ibu: 12,
-    badge: "Suave",
-    image: "https://images.unsplash.com/photo-1571613316887-6f8d5cbf7ef7?w=600&h=400&fit=crop",
-    prices: [40000, 57000, 90000, 3400, 6200, 1900],
-  },
-  {
-    id: "session-ipa",
-    name: "Session IPA",
-    description: "Lupulada pero liviana, para tomar toda la noche.",
-    abv: 4.2,
-    ibu: 40,
-    badge: "Liviana",
-    image: "https://images.unsplash.com/photo-1436076863939-06870fe779c2?w=600&h=400&fit=crop",
-    prices: [42000, 60000, 95000, 3600, 6500, 2000],
-  },
-  {
-    id: "scotch-ale",
-    name: "Scotch Ale",
-    description: "Fuerte, maltosa y de cuerpo pleno.",
-    abv: 7.5,
-    ibu: 20,
-    badge: "Intensa",
-    image: "https://images.unsplash.com/photo-1504502350688-00f5d59bbdeb?w=600&h=400&fit=crop",
-    prices: [48000, 69000, 110000, 4400, 7800, 2400],
-  },
-] as const;
+export const beerCatalog: Beer[] = listActiveProducts()
+  .filter((product) => product.category === "beer")
+  .map((product) => {
+    const presentations = listActiveProductPresentations(product.id).map((presentation) => ({
+      id: presentation.presentationType,
+      label: presentation.label,
+      price: presentation.unitPrice,
+      category: presentation.category,
+      liters: presentation.volumeLiters,
+      description: presentation.description,
+    }));
 
-const presentationIds = presentationDefinitions.map((p) => p.id);
+    const precios = Object.fromEntries(
+      presentationIds.map((id) => [id, presentations.find((presentation) => presentation.id === id)?.price ?? 0]),
+    ) as Record<BeerPresentationId, number>;
 
-export const beerCatalog: Beer[] = rawBeers.map((beer) => {
-  const precios = Object.fromEntries(
-    presentationIds.map((id, index) => [id, beer.prices[index]]),
-  ) as Record<BeerPresentationId, number>;
-
-  const presentations = presentationDefinitions.map((presentation) => ({
-    ...presentation,
-    price: precios[presentation.id],
-  }));
-
-  return {
-    ...beer,
-    desc: beer.description,
-    img: beer.image,
-    precios,
-    presentations,
-  };
-});
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      desc: product.description,
+      abv: product.abv ?? 0,
+      ibu: product.ibu ?? 0,
+      badge: product.badge,
+      image: product.image,
+      img: product.image,
+      precios,
+      presentations,
+    };
+  });
 
 export const barrelPresentationIds: BeerPresentationId[] = ["barril20L", "barril30L", "barril50L"];
 export const growlerPresentationIds: BeerPresentationId[] = ["growler1L", "growler2L"];
@@ -164,9 +90,9 @@ export const tastingPack = {
   category: "pack" as CartCategory,
 };
 
-function getMinimumPresentationPrice(presentationIds: BeerPresentationId[]) {
+function getMinimumPresentationPrice(ids: BeerPresentationId[]) {
   return Math.min(
-    ...beerCatalog.flatMap((beer) => presentationIds.map((presentationId) => beer.precios[presentationId])),
+    ...beerCatalog.flatMap((beer) => ids.map((presentationId) => beer.precios[presentationId])),
   );
 }
 
@@ -255,5 +181,5 @@ export function getCartItemPresentationId(itemId: string): BeerPresentationId | 
 export function getCartItemLiters(itemId: string) {
   const presentationId = getCartItemPresentationId(itemId);
   if (!presentationId) return 0;
-  return presentationDefinitions.find((presentation) => presentation.id === presentationId)?.liters ?? 0;
+  return commercialSnapshot.productPresentations.find((presentation) => presentation.presentationType === presentationId)?.volumeLiters ?? 0;
 }

@@ -1,4 +1,5 @@
 import { formatPrice } from "./format";
+import { getPricingConfig } from "./commercialSelectors";
 import type { OrderSummary } from "./orderSummary";
 
 export interface WhatsAppOrderCustomer {
@@ -93,6 +94,7 @@ export function buildWhatsAppOrderMessage({ customer, summary }: WhatsAppOrderIn
     );
   }
   lines.push(`Total estimado: ${formatPrice(summary.total)}`);
+  lines.push(getPricingConfig().disclaimer);
 
   const notes = clean(customer.notes);
   if (notes) {
@@ -103,7 +105,6 @@ export function buildWhatsAppOrderMessage({ customer, summary }: WhatsAppOrderIn
 
   lines.push("");
   lines.push("Quedo a la espera de confirmacion de disponibilidad, precio final y coordinacion.");
-  lines.push("Sujeto a confirmacion.");
 
   return lines.join("\n");
 }

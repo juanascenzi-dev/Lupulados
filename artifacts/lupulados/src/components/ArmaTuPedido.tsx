@@ -40,8 +40,9 @@ import {
 import { formatPrice } from "@/domain/format";
 import {
   deliveryOptions,
+  priceDisclaimer,
+  primaryOrderWhatsAppChannel,
   promotionConfig,
-  whatsappNumber,
 } from "@/domain/businessConfig";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
 import {
@@ -321,11 +322,14 @@ function LiveOrderSummary({
             </div>
           )}
           <div className="flex justify-between font-bold text-white">
-            <span>Total</span>
+            <span>Total estimado</span>
             <span className="text-primary text-lg">
               {formatPrice(totalPrice)}
             </span>
           </div>
+          <p className="text-[11px] text-white/35 leading-snug">
+            {priceDisclaimer}
+          </p>
           <button
             onClick={clearCart}
             className="w-full mt-2 py-2 rounded-xl bg-white/5 text-white/40 text-xs hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
@@ -495,7 +499,9 @@ export function ArmaTuPedido({
   });
   let whatsAppOrderUrl: string | null = null;
   try {
-    whatsAppOrderUrl = buildWhatsAppOrderUrl(whatsappNumber, whatsAppOrderMessage);
+    whatsAppOrderUrl = primaryOrderWhatsAppChannel
+      ? buildWhatsAppOrderUrl(primaryOrderWhatsAppChannel.phoneE164, whatsAppOrderMessage)
+      : null;
   } catch {
     whatsAppOrderUrl = null;
   }
@@ -588,6 +594,9 @@ export function ArmaTuPedido({
           </h2>
           <p className="text-muted-foreground">
             Configurá tu experiencia cervecera paso a paso.
+          </p>
+          <p className="text-xs text-white/40 mt-2">
+            {priceDisclaimer}
           </p>
         </div>
 
@@ -1474,6 +1483,9 @@ export function ArmaTuPedido({
                         </p>
                         <p className="text-4xl font-black tracking-tight text-[#111]">
                           {formatPrice(totalPrice)}
+                        </p>
+                        <p className="text-[9px] font-mono text-[#777] mt-2 leading-snug">
+                          {priceDisclaimer}
                         </p>
                       </div>
 

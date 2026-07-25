@@ -40,7 +40,8 @@ describe("whatsAppOrder", () => {
     expect(message).toContain("IPA — Barril 50L");
     expect(message).toContain("1 unidad x $105.000 = $105.000");
     expect(message).toContain("Total estimado: $105.000");
-    expect(message).toContain("Sujeto a confirmacion.");
+    expect(message).toContain("Los precios son estimativos y están sujetos a confirmación.");
+    expect(message).toContain("precio final");
     expect(message).not.toContain("confirmado");
     expect(message).not.toContain("reservado");
   });

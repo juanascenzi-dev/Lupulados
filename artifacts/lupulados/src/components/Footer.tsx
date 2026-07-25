@@ -1,6 +1,6 @@
 import { Beer } from "lucide-react";
 import { scrollToSection } from "@/lib/utils";
-import { businessLocation, publicContactEmail, whatsappDisplayLabel } from "@/domain/businessConfig";
+import { businessLocation, publicContactEmail, whatsappChannels } from "@/domain/businessConfig";
 
 export function Footer() {
   return (
@@ -41,11 +41,15 @@ export function Footer() {
           </div>
 
           <div>
-            <h4 className="text-white font-bold mb-6">Ubicación</h4>
+            <h4 className="text-white font-bold mb-6">Contacto</h4>
             <ul className="space-y-3">
-              <li className="text-muted-foreground text-sm">{businessLocation.factoryLabel}</li>
-              <li className="text-muted-foreground text-sm">{businessLocation.locality}</li>
-              <li className="text-muted-foreground text-sm">{whatsappDisplayLabel}</li>
+              <li className="text-muted-foreground text-sm">{businessLocation.address}</li>
+              <li className="text-muted-foreground text-sm">{businessLocation.openingHours}</li>
+              {whatsappChannels.map((channel) => (
+                <li key={channel.id} className="text-muted-foreground text-sm">
+                  {channel.label}: {channel.phoneDisplay}
+                </li>
+              ))}
               {publicContactEmail && <li className="text-muted-foreground text-sm">{publicContactEmail}</li>}
             </ul>
           </div>

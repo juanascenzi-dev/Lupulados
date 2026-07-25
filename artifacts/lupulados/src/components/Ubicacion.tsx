@@ -2,7 +2,7 @@ import { MapPin, Clock, MessageCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contactSchema, type ContactInput } from "@/domain/contact";
-import { buildWhatsAppUrl, businessLocation, whatsappDisplayLabel, publicContactEmail } from "@/domain/businessConfig";
+import { buildWhatsAppUrl, businessLocation, publicContactEmail, whatsappChannels } from "@/domain/businessConfig";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,8 +50,8 @@ export function Ubicacion() {
                   <MapPin className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-bold mb-1">Retiro en fábrica</h4>
-                  <p className="text-muted-foreground">{businessLocation.factoryLabel}<br/>{businessLocation.locality}</p>
+                  <h4 className="text-white font-bold mb-1">Dirección</h4>
+                  <p className="text-muted-foreground">{businessLocation.address}</p>
                 </div>
               </div>
 
@@ -60,8 +60,8 @@ export function Ubicacion() {
                   <Clock className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-bold mb-1">Coordinación</h4>
-                  <p className="text-muted-foreground">El retiro o la entrega se coordinan al confirmar el pedido.</p>
+                  <h4 className="text-white font-bold mb-1">Horario</h4>
+                  <p className="text-muted-foreground">{businessLocation.openingHours}</p>
                 </div>
               </div>
 
@@ -70,8 +70,20 @@ export function Ubicacion() {
                   <MessageCircle className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <h4 className="text-white font-bold mb-1">WhatsApp</h4>
-                  <a href={buildWhatsAppUrl("Hola! Quiero hacer una consulta")} className="text-primary hover:underline">{whatsappDisplayLabel}</a>
+                  <h4 className="text-white font-bold mb-2">WhatsApp</h4>
+                  <div className="space-y-1">
+                    {whatsappChannels.map((channel) => (
+                      <a
+                        key={channel.id}
+                        href={buildWhatsAppUrl("Hola! Quiero hacer una consulta", channel.phoneE164)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-primary hover:underline"
+                      >
+                        {channel.label}: {channel.phoneDisplay}
+                      </a>
+                    ))}
+                  </div>
                 </div>
               </div>
 

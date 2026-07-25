@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { MessageCircle, ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { buildWhatsAppUrl } from "@/domain/businessConfig";
+import { buildWhatsAppUrl, primaryOrderWhatsAppChannel } from "@/domain/businessConfig";
 
 export function FloatingActions() {
   const [showTop, setShowTop] = useState(false);
@@ -36,15 +36,26 @@ export function FloatingActions() {
         )}
       </AnimatePresence>
 
-      <a
-        href={buildWhatsAppUrl("Hola! Quiero hacer una consulta 🍺")}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-14 h-14 bg-green-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] hover:scale-110 transition-all"
-        aria-label="Chatear por WhatsApp"
-      >
-        <MessageCircle className="w-7 h-7" />
-      </a>
+      {primaryOrderWhatsAppChannel ? (
+        <a
+          href={buildWhatsAppUrl("Hola! Quiero hacer una consulta 🍺", primaryOrderWhatsAppChannel.phoneE164)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-14 h-14 bg-green-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] hover:scale-110 transition-all"
+          aria-label="Chatear por WhatsApp"
+        >
+          <MessageCircle className="w-7 h-7" />
+        </a>
+      ) : (
+        <button
+          type="button"
+          disabled
+          className="w-14 h-14 bg-white/10 text-white/40 rounded-full flex items-center justify-center cursor-not-allowed"
+          aria-label="WhatsApp no disponible"
+        >
+          <MessageCircle className="w-7 h-7" />
+        </button>
+      )}
       
     </div>
   );
