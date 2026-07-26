@@ -116,6 +116,8 @@ export function Cervezas() {
                 <img 
                   src={beer.img} 
                   alt={`Cerveza artesanal ${beer.name}`} 
+                  loading="lazy"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                 />
                 {beer.badge && (
@@ -193,7 +195,7 @@ export function Cervezas() {
               className="relative w-full max-w-lg bg-card border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-10 flex flex-col max-h-[90vh]"
             >
               <div className="h-48 relative shrink-0">
-                <img src={selectedBeer.img} alt={selectedBeer.name} className="w-full h-full object-cover" />
+                <img src={selectedBeer.img} alt={selectedBeer.name} decoding="async" className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
                 <button 
                   onClick={() => setSelectedBeer(null)}

@@ -68,6 +68,8 @@ export function Eventos() {
               <img 
                 src={ev.img} 
                 alt={ev.name} 
+                loading="lazy"
+                decoding="async"
                 className="w-full h-full object-cover"
               />
               <div className="absolute bottom-6 left-6 z-20">

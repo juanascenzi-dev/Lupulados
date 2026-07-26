@@ -1,23 +1,24 @@
-import { useRef, useState } from "react";
+import { lazy, Suspense, useRef, useState } from "react";
 import { PromoBanner } from "@/components/PromoBanner";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
 import { Services } from "@/components/Services";
 import { Cervezas } from "@/components/Cervezas";
-import { Eventos } from "@/components/Eventos";
-import { ComoFunciona } from "@/components/ComoFunciona";
-import { Calculadora } from "@/components/Calculadora";
-import { Testimonios } from "@/components/Testimonios";
-import { FAQ } from "@/components/FAQ";
-import { Ubicacion } from "@/components/Ubicacion";
 import { Footer } from "@/components/Footer";
 import { FloatingActions } from "@/components/FloatingActions";
-import { ArmaTuPedido } from "@/components/ArmaTuPedido";
 import { CartFloating } from "@/components/CartFloating";
+import { RouteFallback } from "@/components/RouteFallback";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 
 const BANNER_HEIGHT = 44;
+const Calculadora = lazy(() => import("@/components/Calculadora").then((module) => ({ default: module.Calculadora })));
+const ArmaTuPedido = lazy(() => import("@/components/ArmaTuPedido").then((module) => ({ default: module.ArmaTuPedido })));
+const ComoFunciona = lazy(() => import("@/components/ComoFunciona").then((module) => ({ default: module.ComoFunciona })));
+const Eventos = lazy(() => import("@/components/Eventos").then((module) => ({ default: module.Eventos })));
+const Testimonios = lazy(() => import("@/components/Testimonios").then((module) => ({ default: module.Testimonios })));
+const FAQ = lazy(() => import("@/components/FAQ").then((module) => ({ default: module.FAQ })));
+const Ubicacion = lazy(() => import("@/components/Ubicacion").then((module) => ({ default: module.Ubicacion })));
 
 export default function Landing() {
   const { promotionConfig } = useCommercialDerivedData();
@@ -50,16 +51,39 @@ export default function Landing() {
         <Hero />
         <Services />
         <Cervezas />
-        <Calculadora onUseRecommendation={useRecommendation} />
-        <ArmaTuPedido
-          pendingRecommendation={pendingRecommendation}
-          sectionRef={orderSectionRef}
-        />
-        <ComoFunciona />
-        <Eventos />
-        <Testimonios />
-        <FAQ />
-        <Ubicacion />
+        <Suspense fallback={<RouteFallback label="Cargando calculadora..." minHeightClassName="min-h-[420px]" />}>
+          <Calculadora onUseRecommendation={useRecommendation} />
+        </Suspense>
+        <Suspense
+          fallback={
+            <RouteFallback
+              id="arma-tu-pedido"
+              label="Cargando pedido..."
+              minHeightClassName="min-h-[680px]"
+              sectionRef={orderSectionRef}
+            />
+          }
+        >
+          <ArmaTuPedido
+            pendingRecommendation={pendingRecommendation}
+            sectionRef={orderSectionRef}
+          />
+        </Suspense>
+        <Suspense fallback={<RouteFallback label="Cargando contenido..." minHeightClassName="min-h-[360px]" />}>
+          <ComoFunciona />
+        </Suspense>
+        <Suspense fallback={<RouteFallback id="eventos" label="Cargando eventos..." minHeightClassName="min-h-[560px]" />}>
+          <Eventos />
+        </Suspense>
+        <Suspense fallback={<RouteFallback label="Cargando testimonios..." minHeightClassName="min-h-[320px]" />}>
+          <Testimonios />
+        </Suspense>
+        <Suspense fallback={<RouteFallback label="Cargando preguntas frecuentes..." minHeightClassName="min-h-[360px]" />}>
+          <FAQ />
+        </Suspense>
+        <Suspense fallback={<RouteFallback label="Cargando ubicacion..." minHeightClassName="min-h-[520px]" />}>
+          <Ubicacion />
+        </Suspense>
       </main>
 
       <Footer />
