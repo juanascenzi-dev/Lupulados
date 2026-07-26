@@ -124,7 +124,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="glass-panel p-8 md:p-12 rounded-3xl">
           <div className="flex items-center justify-center gap-3 mb-4">
-            <Calculator className="w-8 h-8 text-primary" />
+            <Calculator className="w-8 h-8 text-primary" aria-hidden="true" />
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white text-center">
               Calculadora de Barriles
             </h2>
@@ -142,29 +142,39 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               {/* Guests */}
               <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                 <div className="flex justify-between items-center mb-4">
-                  <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Users className="w-4 h-4 text-primary" /> Invitados
+                  <label htmlFor="calculator-guests" className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Users className="w-4 h-4 text-primary" aria-hidden="true" /> Invitados
                   </label>
                   <div className="flex items-center gap-2">
                     <button
+                      type="button"
+                      aria-label="Restar 5 invitados"
                       onClick={() => handleGuestsChange(guests - 5)}
                       className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold"
                     >−</button>
                     <input
+                      id="calculator-guests"
                       type="number"
                       value={guests}
                       onChange={(e) => handleGuestsChange(Number(e.target.value))}
                       className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                       min="10"
                       max="500"
+                      required
+                      inputMode="numeric"
+                      aria-describedby="calculator-guests-help"
                     />
                     <button
+                      type="button"
+                      aria-label="Sumar 5 invitados"
                       onClick={() => handleGuestsChange(guests + 5)}
                       className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold"
                     >+</button>
                   </div>
                 </div>
                 <input
+                  aria-label="Cantidad de invitados"
+                  aria-describedby="calculator-guests-help"
                   type="range"
                   min="10"
                   max="500"
@@ -177,32 +187,42 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   <span>10</span>
                   <span>500+</span>
                 </div>
+                <p id="calculator-guests-help" className="sr-only">
+                  Elegi una cantidad entre 10 y 500 invitados.
+                </p>
               </div>
 
               {/* Duration */}
               <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                 <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-5">
-                  <Clock className="w-4 h-4 text-primary" /> ¿Cuánto dura el evento?
+                  <Clock className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Cuánto dura el evento?
                 </label>
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   {/* Hours input */}
                   <div>
-                    <span className="text-xs text-muted-foreground block mb-2">Horas</span>
+                    <label htmlFor="calculator-hours" className="text-xs text-muted-foreground block mb-2">Horas</label>
                     <div className="flex items-center gap-2">
                       <button
+                        type="button"
+                        aria-label="Restar una hora"
                         onClick={() => handleHoursChange(hours - 1)}
                         className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
                       >−</button>
                       <input
+                        id="calculator-hours"
                         type="number"
                         value={hours}
                         onChange={(e) => handleHoursChange(Number(e.target.value))}
                         className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                         min="1"
                         max="12"
+                        required
+                        inputMode="numeric"
                       />
                       <button
+                        type="button"
+                        aria-label="Sumar una hora"
                         onClick={() => handleHoursChange(hours + 1)}
                         className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
                       >+</button>
@@ -211,13 +231,16 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
 
                   {/* Minutes input */}
                   <div>
-                    <span className="text-xs text-muted-foreground block mb-2">Minutos</span>
+                    <label htmlFor="calculator-minutes" className="text-xs text-muted-foreground block mb-2">Minutos</label>
                     <div className="flex items-center gap-2">
                       <button
+                        type="button"
+                        aria-label="Restar 15 minutos"
                         onClick={() => handleMinutesChange(minutes - 15)}
                         className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
                       >−</button>
                       <input
+                        id="calculator-minutes"
                         type="number"
                         value={minutes}
                         onChange={(e) => handleMinutesChange(Number(e.target.value))}
@@ -225,8 +248,12 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         min="0"
                         max="45"
                         step="15"
+                        required
+                        inputMode="numeric"
                       />
                       <button
+                        type="button"
+                        aria-label="Sumar 15 minutos"
                         onClick={() => handleMinutesChange(minutes + 15)}
                         className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
                       >+</button>
@@ -241,6 +268,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   {DURATION_CHIPS.map((chip) => (
                     <button
                       key={chip.label}
+                      type="button"
                       onClick={() => { setHours(chip.hours); setMinutes(chip.minutes); }}
                       className={cn(
                         "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
@@ -258,7 +286,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               {/* Event Type — 4 large cards */}
               <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
                 <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
-                  <Beer className="w-4 h-4 text-primary" /> Estilo de fiesta
+                  <Beer className="w-4 h-4 text-primary" aria-hidden="true" /> Estilo de fiesta
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {EVENT_TYPES.map((t) => {
@@ -266,7 +294,9 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                     return (
                       <button
                         key={t.id}
+                        type="button"
                         onClick={() => setType(t.id)}
+                        aria-pressed={selected}
                         className={cn(
                           "relative flex flex-col items-center text-center p-4 rounded-xl border transition-all duration-200",
                           selected
@@ -276,7 +306,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                       >
                         {selected && (
                           <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-black" strokeWidth={3} />
+                            <Check className="w-3 h-3 text-black" strokeWidth={3} aria-hidden="true" />
                           </span>
                         )}
                         <span className="text-3xl mb-2">{t.emoji}</span>
@@ -291,15 +321,17 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               </div>
 
               {/* Summer toggle */}
-              <div
+              <button
+                type="button"
                 onClick={() => setIsSummer(!isSummer)}
+                aria-pressed={isSummer}
                 className={cn(
-                  "p-6 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between",
+                  "w-full p-6 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between",
                   isSummer ? "bg-amber-500/10 border-amber-500/30" : "bg-white/5 border-white/10 hover:border-white/30"
                 )}
               >
                 <div className="flex items-center gap-4">
-                  <Sun className={cn("w-10 h-10", isSummer ? "text-amber-500" : "text-muted-foreground")} />
+                  <Sun className={cn("w-10 h-10", isSummer ? "text-amber-500" : "text-muted-foreground")} aria-hidden="true" />
                   <div className="text-left">
                     <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-0.5">¿Es verano?</span>
                     <span className="text-xs text-muted-foreground">La gente toma más con calor (+20%)</span>
@@ -308,7 +340,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                 <div className={cn("w-12 h-6 rounded-full p-1 transition-colors", isSummer ? "bg-amber-500" : "bg-secondary")}>
                   <div className={cn("w-4 h-4 rounded-full bg-white transition-transform", isSummer ? "translate-x-6" : "translate-x-0")} />
                 </div>
-              </div>
+              </button>
 
             </div>
 

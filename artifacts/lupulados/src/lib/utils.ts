@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { getMotionAwareScrollBehavior } from "./reducedMotion";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,7 +17,7 @@ export function scrollToSection(id: string) {
 
     window.scrollTo({
       top: offsetPosition,
-      behavior: "smooth"
+      behavior: getMotionAwareScrollBehavior(),
     });
   }
 }

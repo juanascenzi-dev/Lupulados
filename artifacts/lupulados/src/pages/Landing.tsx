@@ -10,6 +10,7 @@ import { CartFloating } from "@/components/CartFloating";
 import { RouteFallback } from "@/components/RouteFallback";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
+import { getMotionAwareScrollBehavior } from "@/lib/reducedMotion";
 
 const BANNER_HEIGHT = 44;
 const Calculadora = lazy(() => import("@/components/Calculadora").then((module) => ({ default: module.Calculadora })));
@@ -39,15 +40,18 @@ export default function Landing() {
       ...recommendation,
       parts: recommendation.parts.map((part) => ({ ...part })),
     });
-    orderSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    orderSectionRef.current?.scrollIntoView({ behavior: getMotionAwareScrollBehavior(), block: "start" });
   };
 
   return (
     <div className="relative w-full bg-background">
+      <a href="#contenido-principal" className="skip-link">
+        Saltar al contenido
+      </a>
       <PromoBanner visible={showBanner} onClose={closeBanner} />
       <Navbar bannerVisible={showBanner} bannerHeight={BANNER_HEIGHT} />
 
-      <main>
+      <main id="contenido-principal" tabIndex={-1}>
         <Hero />
         <Services />
         <Cervezas />

@@ -46,7 +46,7 @@ export default function AdminLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-background text-white flex items-center justify-center px-4">
+    <main id="contenido-principal" tabIndex={-1} className="min-h-screen bg-background text-white flex items-center justify-center px-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-card border border-white/10 rounded-lg p-6 space-y-5">
         <div className="space-y-2">
           <div className="w-10 h-10 rounded-lg bg-primary text-black flex items-center justify-center">
@@ -68,8 +68,11 @@ export default function AdminLogin() {
             id="admin-email"
             type="email"
             autoComplete="email"
+            required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            aria-invalid={!!error}
+            aria-describedby={error ? "admin-login-error" : undefined}
             className="bg-black/40 border-white/10 text-white"
           />
         </div>
@@ -81,19 +84,22 @@ export default function AdminLogin() {
               id="admin-password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
+              required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              aria-invalid={!!error}
+              aria-describedby={error ? "admin-login-error" : undefined}
               className="bg-black/40 border-white/10 text-white"
             />
             <Button type="button" variant="outline" onClick={() => setShowPassword((value) => !value)} aria-label="Mostrar u ocultar contraseña">
-              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {showPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
             </Button>
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-300">{error}</p>}
+        {error && <p id="admin-login-error" className="text-sm text-red-300" role="alert">{error}</p>}
 
-        <Button type="submit" disabled={submitting || access === "unconfigured"} className="w-full bg-primary text-black hover:bg-amber-500">
+        <Button type="submit" disabled={submitting || access === "unconfigured"} aria-busy={submitting} className="w-full bg-primary text-black hover:bg-amber-500">
           {submitting ? "Ingresando..." : "Iniciar sesión"}
         </Button>
       </form>

@@ -167,7 +167,7 @@ export default function AdminDashboard() {
   const whatsappChannels = adminData.whatsappChannels.filter((item) => matchesStatus(item.active, whatsappStatus));
 
   return (
-    <main className="min-h-screen bg-background text-white">
+    <main id="contenido-principal" tabIndex={-1} className="min-h-screen bg-background text-white">
       <header className="border-b border-white/10 bg-card">
         <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
@@ -686,11 +686,12 @@ function PromotionForm({ disabled, initial, onCancel, onSubmit }: { disabled: bo
 }
 
 function AdminForm({ title, error, disabled, submitLabel, children, onCancel, onSubmit }: { title: string; error: string; disabled: boolean; submitLabel: string; children: ReactNode; onCancel?: () => void; onSubmit: React.FormEventHandler<HTMLFormElement> }) {
+  const errorId = error ? `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-error` : undefined;
   return (
-    <form className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-card border border-white/10 rounded-lg p-4" onSubmit={onSubmit}>
+    <form className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-card border border-white/10 rounded-lg p-4" onSubmit={onSubmit} aria-describedby={errorId}>
       <h2 className="md:col-span-4 text-lg font-semibold">{title}</h2>
       {children}
-      {error && <p className="md:col-span-4 text-sm text-red-300">{error}</p>}
+      {error && <p id={errorId} className="md:col-span-4 text-sm text-red-300" role="alert">{error}</p>}
       <div className="md:col-span-4 flex flex-wrap gap-2">
         <Button disabled={disabled} className="bg-primary text-black hover:bg-amber-500">
           {submitLabel === "Guardar cambios" ? <Save className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
@@ -742,7 +743,7 @@ function Field({ name, label, className, required = true, ...props }: { name: st
   return (
     <div className={className}>
       <Label htmlFor={name}>{label}</Label>
-      <Input id={name} name={name} required={required} className="bg-black/40 border-white/10 text-white disabled:opacity-70" {...props} />
+      <Input id={name} name={name} required={required} aria-required={required} className="bg-black/40 border-white/10 text-white disabled:opacity-70" {...props} />
     </div>
   );
 }

@@ -1,11 +1,14 @@
 import { Suspense } from "react";
 import type { ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 import { Switch, Route, Router as WouterRouter } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RouteFallback } from "@/components/RouteFallback";
+import { RouteFocusManager } from "@/components/RouteFocusManager";
+import { SeoManager } from "@/components/SeoManager";
 import { CartProvider } from "@/context/CartContext";
 import { CommercialDataProvider } from "@/context/CommercialDataContext";
 import { createLazyPages } from "@/routes/lazyRoutes";
@@ -56,14 +59,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <CommercialDataProvider>
-          <CartProvider>
-            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <Router />
-            </WouterRouter>
-            <Toaster />
-          </CartProvider>
-        </CommercialDataProvider>
+        <MotionConfig reducedMotion="user">
+          <CommercialDataProvider>
+            <CartProvider>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <SeoManager />
+                <RouteFocusManager />
+                <Router />
+              </WouterRouter>
+              <Toaster />
+            </CartProvider>
+          </CommercialDataProvider>
+        </MotionConfig>
       </TooltipProvider>
     </QueryClientProvider>
   );

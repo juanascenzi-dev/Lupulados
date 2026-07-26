@@ -25,7 +25,7 @@ export class ErrorBoundary extends React.Component<React.PropsWithChildren, Erro
     if (!this.state.hasError) return this.props.children;
 
     return (
-      <main className="min-h-screen bg-background text-white flex items-center justify-center px-4">
+      <main id="contenido-principal" tabIndex={-1} className="min-h-screen bg-background text-white flex items-center justify-center px-4">
         <section className="max-w-md w-full rounded-lg border border-white/10 bg-card p-6 text-center">
           <h1 className="text-2xl font-display font-bold mb-3">No pudimos mostrar esta seccion</h1>
           <p className="text-muted-foreground mb-6">

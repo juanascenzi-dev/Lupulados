@@ -3,6 +3,7 @@ import { MessageCircle, ArrowUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { buildWhatsAppUrlFromSnapshot } from "@/domain/commercialAdapters";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
+import { getMotionAwareScrollBehavior } from "@/lib/reducedMotion";
 
 export function FloatingActions() {
   const [showTop, setShowTop] = useState(false);
@@ -17,7 +18,7 @@ export function FloatingActions() {
   }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: getMotionAwareScrollBehavior() });
   };
 
   return (
@@ -32,7 +33,7 @@ export function FloatingActions() {
             className="w-12 h-12 bg-card border border-white/10 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-white/10 transition-colors"
             aria-label="Volver arriba"
           >
-            <ArrowUp className="w-5 h-5" />
+            <ArrowUp className="w-5 h-5" aria-hidden="true" />
           </motion.button>
         )}
       </AnimatePresence>
@@ -45,7 +46,7 @@ export function FloatingActions() {
           className="w-14 h-14 bg-green-500 text-white rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)] hover:shadow-[0_0_30px_rgba(34,197,94,0.6)] hover:scale-110 transition-all"
           aria-label="Chatear por WhatsApp"
         >
-          <MessageCircle className="w-7 h-7" />
+          <MessageCircle className="w-7 h-7" aria-hidden="true" />
         </a>
       ) : (
         <button
@@ -54,7 +55,7 @@ export function FloatingActions() {
           className="w-14 h-14 bg-white/10 text-white/40 rounded-full flex items-center justify-center cursor-not-allowed"
           aria-label="WhatsApp no disponible"
         >
-          <MessageCircle className="w-7 h-7" />
+          <MessageCircle className="w-7 h-7" aria-hidden="true" />
         </button>
       )}
     </div>

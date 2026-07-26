@@ -61,6 +61,16 @@
   body {
     @apply bg-background text-foreground antialiased font-sans selection:bg-primary/30 selection:text-primary-foreground;
   }
+
+  :focus-visible {
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 3px;
+  }
+
+  main:focus {
+    outline: none;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     @apply font-semibold tracking-tight;
@@ -79,6 +89,24 @@
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-border;
   }
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 100;
+  transform: translateY(-150%);
+  border-radius: 0.5rem;
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  padding: 0.75rem 1rem;
+  font-weight: 700;
+  transition: transform 150ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
 }
 
 @keyframes float-up {
@@ -110,4 +138,19 @@
 
 .glass-panel {
   @apply bg-card/80 backdrop-blur-md border border-white/5 shadow-xl;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  .beer-bubble {
+    display: none;
+  }
 }

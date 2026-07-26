@@ -19,9 +19,10 @@ export function CartFloating() {
           whileTap={{ scale: 0.95 }}
           onClick={() => scrollToSection("arma-tu-pedido")}
           className="fixed bottom-6 left-6 z-50 bg-primary text-black px-4 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(217,119,6,0.4)] border border-amber-300 font-bold"
+          aria-label={`Ver pedido, ${totalItems} items, total ${formatPrice(totalPrice)}`}
         >
           <div className="relative">
-            <ShoppingCart className="w-6 h-6" />
+            <ShoppingCart className="w-6 h-6" aria-hidden="true" />
             <motion.div 
               key={totalItems} // triggers animation on change
               initial={{ scale: 1.5 }}

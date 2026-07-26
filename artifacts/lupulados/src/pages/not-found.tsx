@@ -2,7 +2,7 @@ import { AlertCircle } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-background text-foreground">
+    <main id="contenido-principal" tabIndex={-1} className="min-h-screen w-full flex items-center justify-center bg-background text-foreground">
       <div className="max-w-md w-full px-6 py-8 bg-card border border-white/10 rounded-2xl shadow-xl flex flex-col items-center text-center">
         <AlertCircle className="w-16 h-16 text-primary mb-6" />
         <h1 className="text-3xl font-display font-bold text-white mb-2">Página no encontrada</h1>
@@ -16,6 +16,6 @@ export default function NotFound() {
           Volver al Inicio
         </a>
       </div>
-    </div>
+    </main>
   );
 }

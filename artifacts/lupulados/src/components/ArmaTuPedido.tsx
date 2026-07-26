@@ -218,10 +218,14 @@ function LiveOrderSummary({
         </div>
         {asDrawer && onClose && (
           <button
-            onClick={onClose}
+            type="button"
+            onClick={() => {
+              onClose();
+            }}
             className="p-1 text-white/50 hover:text-white"
+            aria-label="Cerrar carrito"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         )}
       </div>
@@ -271,19 +275,23 @@ function LiveOrderSummary({
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <button
+                        type="button"
+                        aria-label={`Restar una unidad de ${item.name}`}
                         onClick={() => updateQty(item.id, item.qty - 1)}
                         className="w-5 h-5 rounded bg-white/10 flex items-center justify-center hover:bg-primary hover:text-black transition-colors"
                       >
-                        <Minus className="w-3 h-3" />
+                        <Minus className="w-3 h-3" aria-hidden="true" />
                       </button>
                       <span className="text-primary text-xs font-bold w-4 text-center">
                         {item.qty}
                       </span>
                       <button
+                        type="button"
+                        aria-label={`Sumar una unidad de ${item.name}`}
                         onClick={() => updateQty(item.id, item.qty + 1)}
                         className="w-5 h-5 rounded bg-white/10 flex items-center justify-center hover:bg-primary hover:text-black transition-colors"
                       >
-                        <Plus className="w-3 h-3" />
+                        <Plus className="w-3 h-3" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
@@ -292,10 +300,12 @@ function LiveOrderSummary({
                       {formatPrice(item.price * item.qty)}
                     </span>
                     <button
+                      type="button"
+                      aria-label={`Eliminar ${item.name} del carrito`}
                       onClick={() => removeItem(item.id)}
                       className="text-white/30 hover:text-red-400 transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
                     </button>
                   </div>
                 </motion.div>
@@ -334,10 +344,11 @@ function LiveOrderSummary({
             {priceDisclaimer}
           </p>
           <button
+            type="button"
             onClick={clearCart}
             className="w-full mt-2 py-2 rounded-xl bg-white/5 text-white/40 text-xs hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
           >
-            <Trash2 className="w-3.5 h-3.5" /> Vaciar carrito
+            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Vaciar carrito
           </button>
         </div>
       )}
@@ -389,6 +400,7 @@ export function ArmaTuPedido({
     useState<"idle" | "added" | "error">("idle");
   const [recommendationError, setRecommendationError] = useState("");
   const appliedRecommendationKeyRef = useRef("");
+  const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     if (!pendingRecommendation) return;
@@ -406,6 +418,20 @@ export function ArmaTuPedido({
     setRecommendationError("");
     appliedRecommendationKeyRef.current = "";
   }, [selectedBeer?.id]);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setDrawerOpen(false);
+        drawerToggleRef.current?.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [drawerOpen]);
 
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
     .toISOString()
@@ -551,6 +577,7 @@ export function ArmaTuPedido({
           onClick={goNext}
           disabled={!canProceed}
           title={!canProceed ? validationMessage ?? undefined : undefined}
+          aria-describedby={!canProceed ? `order-step-${step}-error` : undefined}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-bold text-base transition-all",
             canProceed
@@ -563,7 +590,7 @@ export function ArmaTuPedido({
         </button>
       )}
       {!canProceed && step < 5 && (
-        <p className="text-white/30 text-xs absolute -bottom-6 left-0">
+        <p id={`order-step-${step}-error`} className="text-white/70 text-xs absolute -bottom-6 left-0" role="alert">
           {validationMessage}
         </p>
       )}
@@ -1208,6 +1235,7 @@ export function ArmaTuPedido({
                         <div className="flex gap-2">
                           <div className="relative flex-1">
                             <input
+                              id="promo-code"
                               type="text"
                               value={promoInput}
                               onChange={(e) => setPromoInput(e.target.value)}
@@ -1215,6 +1243,9 @@ export function ArmaTuPedido({
                                 e.key === "Enter" && applyPromo()
                               }
                               placeholder={`Ej: ${promotionConfig.code}`}
+                              autoComplete="off"
+                              aria-invalid={promoStatus === "invalid"}
+                              aria-describedby={promoStatus === "invalid" ? "promo-code-error" : promoStatus === "valid" ? "promo-code-success" : undefined}
                               className={cn(
                                 "w-full bg-white/5 border-2 rounded-xl py-3 px-4 text-white focus:outline-none transition-all uppercase placeholder:normal-case placeholder:text-white/30",
                                 promoStatus === "valid"
@@ -1225,13 +1256,14 @@ export function ArmaTuPedido({
                               )}
                             />
                             {promoStatus === "valid" && (
-                              <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 w-5 h-5" />
+                              <Check className="absolute right-3 top-1/2 -translate-y-1/2 text-green-400 w-5 h-5" aria-hidden="true" />
                             )}
                             {promoStatus === "invalid" && (
-                              <X className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 w-5 h-5" />
+                              <X className="absolute right-3 top-1/2 -translate-y-1/2 text-red-400 w-5 h-5" aria-hidden="true" />
                             )}
                           </div>
                           <button
+                            type="button"
                             onClick={applyPromo}
                             className="px-5 rounded-xl bg-white/10 text-white font-bold hover:bg-white/20 transition-colors border border-white/10"
                           >
@@ -1239,12 +1271,12 @@ export function ArmaTuPedido({
                           </button>
                         </div>
                         {promoStatus === "valid" && (
-                          <p className="text-green-400 text-xs mt-2 font-bold">
+                          <p id="promo-code-success" className="text-green-400 text-xs mt-2 font-bold" role="status">
                             ✓ ¡Descuento del {promotionConfig.discountRate * 100}% aplicado!
                           </p>
                         )}
                         {promoStatus === "invalid" && (
-                          <p className="text-red-400 text-xs mt-2 font-bold">
+                          <p id="promo-code-error" className="text-red-300 text-xs mt-2 font-bold" role="alert">
                             ✗ Código no válido
                           </p>
                         )}
@@ -1256,25 +1288,31 @@ export function ArmaTuPedido({
                         <User className="w-5 h-5 text-primary" /> Tus datos
                       </h3>
                       <div>
-                        <label className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5 block">
+                        <label htmlFor="order-name" className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1.5 block">
                           Nombre Completo *
                         </label>
                         <input
+                          id="order-name"
                           type="text"
                           value={formData.nombre}
                           onChange={(e) =>
                             setFormData({ ...formData, nombre: e.target.value })
                           }
                           placeholder="Ej: Juan Pérez"
+                          required
+                          autoComplete="name"
+                          aria-invalid={step === 4 && !formData.nombre.trim()}
+                          aria-describedby={step === 4 && !canProceed ? `order-step-${step}-error` : undefined}
                           className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20"
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5 block">
+                          <label htmlFor="order-date" className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1.5 block">
                             Fecha *
                           </label>
                           <input
+                            id="order-date"
                             type="date"
                             min={today}
                             value={formData.fecha}
@@ -1284,14 +1322,18 @@ export function ArmaTuPedido({
                                 fecha: e.target.value,
                               })
                             }
+                            required
+                            aria-invalid={step === 4 && (!formData.fecha || formData.fecha < today)}
+                            aria-describedby={step === 4 && !canProceed ? `order-step-${step}-error` : undefined}
                             className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary [color-scheme:dark]"
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5 block">
+                          <label htmlFor="order-time-slot" className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1.5 block">
                             Horario
                           </label>
                           <select
+                            id="order-time-slot"
                             value={formData.horario}
                             onChange={(e) =>
                               setFormData({
@@ -1315,10 +1357,11 @@ export function ArmaTuPedido({
                       </div>
                       {deliveryRequiresAddress && (
                         <div>
-                          <label className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5 block">
+                          <label htmlFor="order-address" className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1.5 block">
                             Dirección *
                           </label>
                           <input
+                            id="order-address"
                             type="text"
                             value={formData.direccion}
                             onChange={(e) =>
@@ -1328,15 +1371,20 @@ export function ArmaTuPedido({
                               })
                             }
                             placeholder="Ej: Av. Corrientes 1234, CABA"
+                            required
+                            autoComplete="street-address"
+                            aria-invalid={step === 4 && deliveryRequiresAddress && !formData.direccion.trim()}
+                            aria-describedby={step === 4 && !canProceed ? `order-step-${step}-error` : undefined}
                             className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary placeholder:text-white/20"
                           />
                         </div>
                       )}
                       <div>
-                        <label className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5 block">
+                        <label htmlFor="order-comments" className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1.5 block">
                           Comentarios
                         </label>
                         <textarea
+                          id="order-comments"
                           value={formData.comentarios}
                           onChange={(e) =>
                             setFormData({
@@ -1345,6 +1393,7 @@ export function ArmaTuPedido({
                             })
                           }
                           placeholder="Detalles de entrega, preferencias, etc."
+                          autoComplete="off"
                           className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary h-20 resize-none placeholder:text-white/20"
                         />
                       </div>
@@ -1570,6 +1619,7 @@ export function ArmaTuPedido({
             <AnimatePresence>
               {drawerOpen && (
                 <motion.div
+                  id="mobile-order-drawer"
                   initial={{ height: 0 }}
                   animate={{ height: "auto" }}
                   exit={{ height: 0 }}
@@ -1578,7 +1628,10 @@ export function ArmaTuPedido({
                   <div className="p-5 max-h-[65vh] overflow-y-auto">
                     <LiveOrderSummary
                       asDrawer
-                      onClose={() => setDrawerOpen(false)}
+                      onClose={() => {
+                        setDrawerOpen(false);
+                        drawerToggleRef.current?.focus();
+                      }}
                     />
                   </div>
                 </motion.div>
@@ -1589,11 +1642,15 @@ export function ArmaTuPedido({
             <div className="bg-[#0f0f0f]/95 backdrop-blur-md border-t border-primary/20 px-4 py-3">
               <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
                 <button
+                  ref={drawerToggleRef}
+                  type="button"
                   onClick={() => setDrawerOpen(!drawerOpen)}
                   className="flex items-center gap-2 text-left"
+                  aria-expanded={drawerOpen}
+                  aria-controls="mobile-order-drawer"
                 >
                   <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
-                    <ShoppingCart className="w-4 h-4 text-primary" />
+                    <ShoppingCart className="w-4 h-4 text-primary" aria-hidden="true" />
                     {totalItems > 0 && (
                       <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-black text-[9px] font-bold flex items-center justify-center">
                         {totalItems}
@@ -1609,14 +1666,16 @@ export function ArmaTuPedido({
                     </p>
                   </div>
                   {drawerOpen ? (
-                    <ChevronDown className="w-4 h-4 text-white/40 ml-1" />
+                    <ChevronDown className="w-4 h-4 text-white/40 ml-1" aria-hidden="true" />
                   ) : (
-                    <ChevronUp className="w-4 h-4 text-white/40 ml-1" />
+                    <ChevronUp className="w-4 h-4 text-white/40 ml-1" aria-hidden="true" />
                   )}
                 </button>
                 <button
+                  type="button"
                   onClick={goNext}
                   disabled={!canProceed}
+                  aria-describedby={!canProceed ? `order-step-${step}-error` : undefined}
                   className={cn(
                     "flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all",
                     canProceed
@@ -1624,7 +1683,7 @@ export function ArmaTuPedido({
                       : "bg-white/10 text-white/30 cursor-not-allowed",
                   )}
                 >
-                  Continuar <ChevronRight className="w-4 h-4" />
+                  Continuar <ChevronRight className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>
