@@ -23,28 +23,28 @@ export interface SectionPosition {
 const DEFAULT_HEADER_OFFSET = 80;
 const DEFAULT_SECTION_ENTRY_GAP = 12;
 
-export function getSiteHeaderOffset() {
-  if (typeof window === "undefined") return DEFAULT_HEADER_OFFSET;
+function getCssPixelVariable(name: string, defaultValue: number) {
+  if (
+    typeof window === "undefined" ||
+    typeof document === "undefined" ||
+    !document.documentElement ||
+    typeof window.getComputedStyle !== "function"
+  ) {
+    return defaultValue;
+  }
 
-  const rawValue = window
-    .getComputedStyle(document.documentElement)
-    .getPropertyValue("--site-header-offset")
-    .trim();
+  const rawValue = window.getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   const parsedValue = Number.parseFloat(rawValue);
 
-  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : DEFAULT_HEADER_OFFSET;
+  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : defaultValue;
+}
+
+export function getSiteHeaderOffset() {
+  return getCssPixelVariable("--site-header-offset", DEFAULT_HEADER_OFFSET);
 }
 
 export function getSectionEntryGap() {
-  if (typeof window === "undefined") return DEFAULT_SECTION_ENTRY_GAP;
-
-  const rawValue = window
-    .getComputedStyle(document.documentElement)
-    .getPropertyValue("--section-entry-gap")
-    .trim();
-  const parsedValue = Number.parseFloat(rawValue);
-
-  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : DEFAULT_SECTION_ENTRY_GAP;
+  return getCssPixelVariable("--section-entry-gap", DEFAULT_SECTION_ENTRY_GAP);
 }
 
 export function setSiteHeaderOffset(offset: number) {

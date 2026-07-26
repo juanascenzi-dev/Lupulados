@@ -32,6 +32,20 @@ const sections: SectionPosition[] = [
   { id: "ubicacion", top: 5000, bottom: 5600 },
 ];
 
+const setDocument = (value: unknown) => {
+  Object.defineProperty(globalThis, "document", {
+    configurable: true,
+    value,
+  });
+};
+
+const setWindow = (value: unknown) => {
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value,
+  });
+};
+
 describe("section navigation helpers", () => {
   it("selects inicio near the top", () => {
     expect(
@@ -101,17 +115,11 @@ describe("section navigation helpers", () => {
       }),
     };
 
-    Object.defineProperty(globalThis, "document", {
-      configurable: true,
-      value: { documentElement: { style } },
-    });
-    Object.defineProperty(globalThis, "window", {
-      configurable: true,
-      value: {
-        getComputedStyle: vi.fn(() => ({
-          getPropertyValue: vi.fn(() => style.value),
-        })),
-      },
+    setDocument({ documentElement: { style } });
+    setWindow({
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn(() => style.value),
+      })),
     });
 
     setSiteHeaderOffset(91.2);
@@ -120,17 +128,71 @@ describe("section navigation helpers", () => {
     expect(getSiteHeaderOffset()).toBe(92);
   });
 
-  it("reads the shared section entry gap CSS variable", () => {
-    Object.defineProperty(globalThis, "window", {
-      configurable: true,
-      value: {
-        getComputedStyle: vi.fn(() => ({
-          getPropertyValue: vi.fn(() => "16px"),
-        })),
-      },
+  it("uses default offsets when window is unavailable", () => {
+    setWindow(undefined);
+
+    expect(getSiteHeaderOffset()).toBe(80);
+    expect(getSectionEntryGap()).toBe(12);
+  });
+
+  it("uses default offsets when window exists but document is unavailable", () => {
+    setWindow({
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn(() => "16px"),
+      })),
+    });
+    setDocument(undefined);
+
+    expect(getSiteHeaderOffset()).toBe(80);
+    expect(getSectionEntryGap()).toBe(12);
+  });
+
+  it("uses default offsets when documentElement is unavailable", () => {
+    setWindow({
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn(() => "16px"),
+      })),
+    });
+    setDocument({});
+
+    expect(getSiteHeaderOffset()).toBe(80);
+    expect(getSectionEntryGap()).toBe(12);
+  });
+
+  it("uses default offsets when getComputedStyle is unavailable", () => {
+    setWindow({});
+    setDocument({ documentElement: {} });
+
+    expect(getSiteHeaderOffset()).toBe(80);
+    expect(getSectionEntryGap()).toBe(12);
+  });
+
+  it("reads valid shared offset CSS variables", () => {
+    setDocument({ documentElement: {} });
+    setWindow({
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn((name: string) =>
+          name === "--site-header-offset" ? "96px" : "16px",
+        ),
+      })),
     });
 
+    expect(getSiteHeaderOffset()).toBe(96);
     expect(getSectionEntryGap()).toBe(16);
+  });
+
+  it("uses default offsets when CSS variables are empty or invalid", () => {
+    setDocument({ documentElement: {} });
+    setWindow({
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn((name: string) =>
+          name === "--site-header-offset" ? "" : "not-a-size",
+        ),
+      })),
+    });
+
+    expect(getSiteHeaderOffset()).toBe(80);
+    expect(getSectionEntryGap()).toBe(12);
   });
 
   it("uses data-section-entry as the preferred scroll target", () => {
@@ -183,27 +245,21 @@ describe("section navigation helpers", () => {
       getBoundingClientRect: vi.fn(() => ({ top: 900 })),
     };
 
-    Object.defineProperty(globalThis, "document", {
-      configurable: true,
-      value: {
-        documentElement: {
-          style: {},
-        },
-        getElementById: vi.fn(() => element),
+    setDocument({
+      documentElement: {
+        style: {},
       },
+      getElementById: vi.fn(() => element),
     });
-    Object.defineProperty(globalThis, "window", {
-      configurable: true,
-      value: {
-        scrollY: 100,
-        scrollTo,
-        matchMedia: vi.fn(() => ({ matches: true })),
-        getComputedStyle: vi.fn(() => ({
-          getPropertyValue: vi.fn((name: string) =>
-            name === "--site-header-offset" ? "92px" : "12px",
-          ),
-        })),
-      },
+    setWindow({
+      scrollY: 100,
+      scrollTo,
+      matchMedia: vi.fn(() => ({ matches: true })),
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn((name: string) =>
+          name === "--site-header-offset" ? "92px" : "12px",
+        ),
+      })),
     });
 
     scrollToSection("calculadora");
