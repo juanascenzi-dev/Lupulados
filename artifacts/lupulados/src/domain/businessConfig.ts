@@ -10,6 +10,15 @@ import {
   listActivePromotions,
   listActiveWhatsAppChannels,
 } from "./commercialSelectors";
+import type { DeliveryOptionId } from "./commercialTypes";
+
+export interface PublicDeliveryOption {
+  id: DeliveryOptionId;
+  label: string;
+  desc: string;
+  cost: number;
+  requiresAddress: boolean;
+}
 
 export const businessProfile = getBusinessProfile();
 export const pricing = getPricingConfig();
@@ -35,13 +44,7 @@ export const deliveryOptions = listActiveDeliveryOptions().map((option) => ({
   desc: option.price > 0 ? `+${formatPrice(option.price)}` : "Gratis",
   cost: option.price,
   requiresAddress: option.requiresAddress,
-})) as [
-  { id: "fabrica"; label: string; desc: string; cost: number; requiresAddress: boolean },
-  { id: "norte"; label: string; desc: string; cost: number; requiresAddress: boolean },
-  { id: "caba"; label: string; desc: string; cost: number; requiresAddress: boolean },
-];
-
-export type DeliveryOptionId = (typeof deliveryOptions)[number]["id"];
+})) satisfies PublicDeliveryOption[];
 
 const extrasById = Object.fromEntries(listActiveExtraOptions().map((extra) => [extra.id, extra]));
 
@@ -59,7 +62,7 @@ export const promotionConfig = {
   bannerClosedStorageKey: "promoBannerClosed",
 };
 
-export function getDeliveryOption(id: DeliveryOptionId) {
+export function getDeliveryOption(id: DeliveryOptionId): PublicDeliveryOption {
   return deliveryOptions.find((option) => option.id === id) ?? deliveryOptions[0];
 }
 

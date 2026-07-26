@@ -60,7 +60,7 @@ export function listActiveExtraOptions(snapshot: CommercialSnapshot = commercial
 }
 
 export function listActivePromotions(snapshot: CommercialSnapshot = commercialSnapshot) {
-  return snapshot.promotions.filter((promotion) => promotion.active).map(copyPromotion);
+  return snapshot.promotions.filter((promotion) => promotion.active && isPromotionInWindow(promotion)).map(copyPromotion);
 }
 
 export function getFreeGlassesThreshold(snapshot: CommercialSnapshot = commercialSnapshot) {
@@ -73,6 +73,13 @@ export function isValidWhatsAppPhone(phone: string) {
 
 function acceptsOrders(channel: WhatsAppChannel) {
   return channel.purpose === "orders" || channel.purpose === "orders_and_contact";
+}
+
+function isPromotionInWindow(promotion: Promotion) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (promotion.startDate && promotion.startDate > today) return false;
+  if (promotion.endDate && promotion.endDate < today) return false;
+  return true;
 }
 
 function sorted<T extends { sortOrder: number }>(items: readonly T[]) {

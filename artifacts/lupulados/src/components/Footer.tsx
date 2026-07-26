@@ -1,8 +1,10 @@
 import { Beer } from "lucide-react";
 import { scrollToSection } from "@/lib/utils";
-import { businessLocation, publicContactEmail, whatsappChannels } from "@/domain/businessConfig";
+import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 
 export function Footer() {
+  const { businessLocation, publicContactEmail, whatsappChannels } = useCommercialDerivedData();
+
   return (
     <footer className="bg-background pt-20 pb-10 border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

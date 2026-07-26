@@ -1,9 +1,6 @@
 import { formatPrice } from "./format";
 import { commercialSnapshot } from "./commercialData";
-import {
-  listActiveProductPresentations,
-  listActiveProducts,
-} from "./commercialSelectors";
+import { buildBeerCatalog, getCartItemLitersFromSnapshot } from "./commercialAdapters";
 import type { PresentationType } from "./commercialTypes";
 
 export type CartCategory = "barril" | "growler" | "porrón" | "pack";
@@ -48,36 +45,7 @@ const presentationIds: BeerPresentationId[] = [
   "porron500ml",
 ];
 
-export const beerCatalog: Beer[] = listActiveProducts()
-  .filter((product) => product.category === "beer")
-  .map((product) => {
-    const presentations = listActiveProductPresentations(product.id).map((presentation) => ({
-      id: presentation.presentationType,
-      label: presentation.label,
-      price: presentation.unitPrice,
-      category: presentation.category,
-      liters: presentation.volumeLiters,
-      description: presentation.description,
-    }));
-
-    const precios = Object.fromEntries(
-      presentationIds.map((id) => [id, presentations.find((presentation) => presentation.id === id)?.price ?? 0]),
-    ) as Record<BeerPresentationId, number>;
-
-    return {
-      id: product.id,
-      name: product.name,
-      description: product.description,
-      desc: product.description,
-      abv: product.abv ?? 0,
-      ibu: product.ibu ?? 0,
-      badge: product.badge,
-      image: product.image,
-      img: product.image,
-      precios,
-      presentations,
-    };
-  });
+export const beerCatalog: Beer[] = buildBeerCatalog();
 
 export const barrelPresentationIds: BeerPresentationId[] = ["barril20L", "barril30L", "barril50L"];
 export const growlerPresentationIds: BeerPresentationId[] = ["growler1L", "growler2L"];
@@ -179,7 +147,5 @@ export function getCartItemPresentationId(itemId: string): BeerPresentationId | 
 }
 
 export function getCartItemLiters(itemId: string) {
-  const presentationId = getCartItemPresentationId(itemId);
-  if (!presentationId) return 0;
-  return commercialSnapshot.productPresentations.find((presentation) => presentation.presentationType === presentationId)?.volumeLiters ?? 0;
+  return getCartItemLitersFromSnapshot(itemId, commercialSnapshot);
 }

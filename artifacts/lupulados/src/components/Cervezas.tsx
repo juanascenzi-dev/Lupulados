@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import {
   barrelPresentationIds,
-  beerCatalog as BEERS,
   createBeerCartItem,
   getBeerPresentation,
   growlerPresentationIds,
@@ -12,7 +11,7 @@ import {
   type BeerPresentationId,
 } from "@/domain/beerCatalog";
 import { formatPrice } from "@/domain/format";
-import { additionalCosts, deliveryOptions, priceDisclaimer } from "@/domain/businessConfig";
+import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { useToast } from "@/hooks/use-toast";
 import { X, Plus, Minus, ShoppingCart, Filter } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -23,6 +22,7 @@ type BeerFilter = (typeof FILTER_OPTIONS)[number];
 export function Cervezas() {
   const [filter, setFilter] = useState<BeerFilter>("Todas");
   const [selectedBeer, setSelectedBeer] = useState<Beer | null>(null);
+  const { beerCatalog: BEERS, additionalCosts, deliveryOptions, priceDisclaimer } = useCommercialDerivedData();
   
   const { addItem } = useCart();
   const { toast } = useToast();

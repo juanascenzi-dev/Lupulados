@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Calculator, Sun, Users, Clock, Beer, Check } from "lucide-react";
 import { calculateBarrelRecommendation, type BarrelRecommendation } from "@/domain/barrelCalculator";
 import { formatPrice } from "@/domain/format";
-import { priceDisclaimer } from "@/domain/businessConfig";
+import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { cn } from "@/lib/utils";
 
 const EVENT_TYPES = [
@@ -54,6 +54,7 @@ const DURATION_CHIPS: { label: string; hours: number; minutes: number }[] = [
 ];
 
 export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
+  const { priceDisclaimer } = useCommercialDerivedData();
   const [guests, setGuests] = useState(50);
   const [hours, setHours] = useState(4);
   const [minutes, setMinutes] = useState(0);

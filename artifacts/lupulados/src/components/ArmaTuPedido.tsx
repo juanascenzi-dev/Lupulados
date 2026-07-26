@@ -22,29 +22,23 @@ import {
   ChevronUp,
   ChevronDown,
   Edit,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   barrelPresentationIds,
-  beerCatalog as BEERS,
   createBeerCartItem,
   getBeerPresentation,
   getCartItemImage,
   getCartItemLiters,
   growlerPresentationIds,
-  orderTypeOptions as ORDER_TYPES,
   packagedPresentationIds,
   tastingPack,
   type Beer as CatalogBeer,
 } from "@/domain/beerCatalog";
 import { formatPrice } from "@/domain/format";
-import {
-  deliveryOptions,
-  priceDisclaimer,
-  primaryOrderWhatsAppChannel,
-  promotionConfig,
-} from "@/domain/businessConfig";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
+import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import {
   buildRecommendedBarrelItems,
   hasCurrentSelectionInCart,
@@ -194,6 +188,15 @@ function LiveOrderSummary({
     extras,
     clearCart,
   } = useCart();
+  const {
+    snapshot,
+    beerCatalog: BEERS,
+    deliveryOptions,
+    orderTypeOptions: ORDER_TYPES,
+    priceDisclaimer,
+    primaryOrderWhatsAppChannel,
+    promotionConfig,
+  } = useCommercialDerivedData();
   const deliveryCost = deliveryOptions.find((option) => option.id === extras.delivery)?.cost ?? 0;
   const totalLiters = items
     .filter((i) => i.category === "barril")
@@ -356,6 +359,15 @@ export function ArmaTuPedido({
     extras,
     setExtras,
   } = useCart();
+  const {
+    snapshot,
+    beerCatalog: BEERS,
+    deliveryOptions,
+    orderTypeOptions: ORDER_TYPES,
+    priceDisclaimer,
+    primaryOrderWhatsAppChannel,
+    promotionConfig,
+  } = useCommercialDerivedData();
   const [step, setStep] = useState<Step>(1);
   const [direction, setDirection] = useState(1);
   const [orderId] = useState(() => Math.floor(10000 + Math.random() * 90000));
@@ -399,6 +411,9 @@ export function ArmaTuPedido({
     .toISOString()
     .slice(0, 10);
 
+  const selectedDeliveryOption =
+    deliveryOptions.find((option) => option.id === extras.delivery) ?? deliveryOptions[0];
+  const deliveryRequiresAddress = selectedDeliveryOption?.requiresAddress ?? false;
   const hasCurrentSelection = hasCurrentSelectionInCart(items, selectedBeer, orderType);
   const canProceed = (() => {
     if (step === 1) return orderType !== null;
@@ -409,7 +424,7 @@ export function ArmaTuPedido({
         !!formData.nombre.trim() &&
         !!formData.fecha &&
         formData.fecha >= today &&
-        (extras.delivery === "fabrica" || !!formData.direccion.trim())
+        (!deliveryRequiresAddress || !!formData.direccion.trim())
       );
     return true;
   })();
@@ -422,6 +437,7 @@ export function ArmaTuPedido({
     date: formData.fecha,
     today,
     delivery: extras.delivery,
+    deliveryRequiresAddress,
     address: formData.direccion,
   });
 
@@ -478,7 +494,7 @@ export function ArmaTuPedido({
   };
 
   const applyPromo = () => {
-    if (promoInput.toUpperCase() === promotionConfig.code) {
+    if (promotionConfig.code && promoInput.toUpperCase() === promotionConfig.code) {
       setExtras((p) => ({ ...p, promoCode: promotionConfig.code, discount: promotionConfig.discountRate }));
       setPromoStatus("valid");
     } else {
@@ -487,16 +503,17 @@ export function ArmaTuPedido({
     }
   };
 
-  const whatsAppOrderMessage = buildWhatsAppOrderMessage({
-    customer: {
-      name: formData.nombre,
-      eventDate: formData.fecha,
-      timeSlot: formData.horario,
-      address: formData.direccion,
-      notes: formData.comentarios,
-    },
-    summary: orderSummary,
-  });
+    const whatsAppOrderMessage = buildWhatsAppOrderMessage({
+      customer: {
+        name: formData.nombre,
+        eventDate: formData.fecha,
+        timeSlot: formData.horario,
+        address: formData.direccion,
+        notes: formData.comentarios,
+      },
+      summary: orderSummary,
+      snapshot,
+    });
   let whatsAppOrderUrl: string | null = null;
   try {
     whatsAppOrderUrl = primaryOrderWhatsAppChannel
@@ -1133,12 +1150,12 @@ export function ArmaTuPedido({
                         </h3>
                         <div className="grid gap-3">
                           {deliveryOptions.map((d) => {
-                            const iconByDelivery = {
+                            const iconByDelivery: Record<string, LucideIcon> = {
                               fabrica: Store,
                               norte: Truck,
                               caba: MapPin,
                             };
-                            const Icon = iconByDelivery[d.id];
+                            const Icon = iconByDelivery[d.id] ?? (d.requiresAddress ? Truck : Store);
 
                             return (
                             <button
@@ -1296,7 +1313,7 @@ export function ArmaTuPedido({
                           </select>
                         </div>
                       </div>
-                      {extras.delivery !== "fabrica" && (
+                      {deliveryRequiresAddress && (
                         <div>
                           <label className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1.5 block">
                             Dirección *

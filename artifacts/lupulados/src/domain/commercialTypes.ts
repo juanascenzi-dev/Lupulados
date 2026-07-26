@@ -8,8 +8,8 @@ export type PresentationType =
   | "growler1L"
   | "growler2L"
   | "porron500ml";
-export type DeliveryOptionId = "fabrica" | "norte" | "caba";
-export type ExtraOptionId = "chopera" | "hielo" | "vasos";
+export type DeliveryOptionId = string;
+export type ExtraOptionId = string;
 export type PromotionType = "percentage" | "fixed";
 
 export interface BusinessProfile {

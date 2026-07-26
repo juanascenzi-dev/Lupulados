@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import type { DeliveryOptionId } from "@/domain/businessConfig";
 import { readCartItems, writeCartItems, type StoredCartItem } from "@/domain/cartStorage";
 import type { CartCategory } from "@/domain/beerCatalog";
 import { calculateOrderSummary, type OrderSummary } from "@/domain/orderSummary";
+import { useCommercialData } from "@/context/CommercialDataContext";
+import type { DeliveryOptionId } from "@/domain/commercialTypes";
 
 export type CartItem = StoredCartItem;
 
@@ -29,6 +30,7 @@ export interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { snapshot } = useCommercialData();
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     return readCartItems(window.localStorage);
@@ -80,7 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setExtras({ chopera: false, delivery: "fabrica", hielo: 0, vasos: 0, promoCode: "", discount: 0 });
   };
 
-  const orderSummary = calculateOrderSummary(items, extras);
+  const orderSummary = calculateOrderSummary(items, extras, snapshot);
   const totalItems = orderSummary.totalItems;
   const totalPrice = orderSummary.total;
 

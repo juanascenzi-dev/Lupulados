@@ -58,7 +58,7 @@ export const productPresentationSchema = z.object({
 });
 
 export const deliveryOptionSchema = z.object({
-  id: z.enum(["fabrica", "norte", "caba"]),
+  id: idSchema,
   label: z.string().trim().min(1),
   description: z.string().trim().min(1),
   price: nonNegativePriceSchema,
@@ -68,7 +68,7 @@ export const deliveryOptionSchema = z.object({
 });
 
 export const extraOptionSchema = z.object({
-  id: z.enum(["chopera", "hielo", "vasos"]),
+  id: idSchema,
   label: z.string().trim().min(1),
   price: nonNegativePriceSchema,
   unit: z.string().trim().min(1),

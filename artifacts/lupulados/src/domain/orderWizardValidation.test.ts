@@ -9,44 +9,62 @@ const baseInput = {
   customerName: "Juan",
   date: "2026-08-01",
   today: "2026-07-24",
-  delivery: "fabrica" as const,
+  delivery: "fabrica",
+  deliveryRequiresAddress: false,
   address: "",
 };
 
 describe("orderWizardValidation", () => {
   it("explains the missing selection for the first wizard steps", () => {
     expect(getOrderWizardValidationMessage({ ...baseInput, step: 1, orderType: null })).toBe(
-      "Elegí qué querés pedir para continuar.",
+      "Eleg\u00ed qu\u00e9 quer\u00e9s pedir para continuar.",
     );
     expect(getOrderWizardValidationMessage({ ...baseInput, step: 2, hasSelectedBeer: false })).toBe(
-      "Elegí un estilo de cerveza para continuar.",
+      "Eleg\u00ed un estilo de cerveza para continuar.",
     );
     expect(getOrderWizardValidationMessage({ ...baseInput, step: 3, hasCurrentSelection: false })).toBe(
-      "Agregá una cantidad al pedido para continuar.",
+      "Agreg\u00e1 una cantidad al pedido para continuar.",
     );
   });
 
   it("does not say delivery is missing when the selected delivery is valid", () => {
     expect(getOrderWizardValidationMessage({ ...baseInput, customerName: "" })).toBe(
-      "Completá tu nombre para continuar.",
+      "Complet\u00e1 tu nombre para continuar.",
     );
   });
 
   it("uses a general message when several required fields are missing", () => {
     expect(getOrderWizardValidationMessage({ ...baseInput, customerName: "", date: "" })).toBe(
-      "Completá los datos obligatorios para continuar.",
+      "Complet\u00e1 los datos obligatorios para continuar.",
     );
   });
 
-  it("requires address only for delivery options outside factory pickup", () => {
-    expect(getOrderWizardValidationMessage({ ...baseInput, delivery: "caba", address: "" })).toBe(
-      "Completá la dirección de entrega.",
-    );
-    expect(getOrderWizardValidationMessage({ ...baseInput, delivery: "caba", address: "Av. Corrientes 1234" })).toBeNull();
+  it("requires address only for delivery options configured that way", () => {
+    expect(
+      getOrderWizardValidationMessage({
+        ...baseInput,
+        delivery: "caba",
+        deliveryRequiresAddress: true,
+        address: "",
+      }),
+    ).toBe("Complet\u00e1 la direcci\u00f3n de entrega.");
+
+    expect(
+      getOrderWizardValidationMessage({
+        ...baseInput,
+        delivery: "caba",
+        deliveryRequiresAddress: true,
+        address: "Av. Corrientes 1234",
+      }),
+    ).toBeNull();
+
+    expect(getOrderWizardValidationMessage({ ...baseInput, delivery: "retiro-local", address: "" })).toBeNull();
   });
 
   it("rejects empty or past dates with the same concrete message", () => {
-    expect(getOrderWizardValidationMessage({ ...baseInput, date: "" })).toBe("Seleccioná una fecha válida.");
-    expect(getOrderWizardValidationMessage({ ...baseInput, date: "2026-07-23" })).toBe("Seleccioná una fecha válida.");
+    expect(getOrderWizardValidationMessage({ ...baseInput, date: "" })).toBe("Seleccion\u00e1 una fecha v\u00e1lida.");
+    expect(getOrderWizardValidationMessage({ ...baseInput, date: "2026-07-23" })).toBe(
+      "Seleccion\u00e1 una fecha v\u00e1lida.",
+    );
   });
 });

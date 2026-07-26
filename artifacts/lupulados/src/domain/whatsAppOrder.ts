@@ -1,5 +1,6 @@
 import { formatPrice } from "./format";
 import { getPricingConfig } from "./commercialSelectors";
+import type { CommercialSnapshot } from "./commercialTypes";
 import type { OrderSummary } from "./orderSummary";
 
 export interface WhatsAppOrderCustomer {
@@ -13,6 +14,7 @@ export interface WhatsAppOrderCustomer {
 export interface WhatsAppOrderInput {
   customer: WhatsAppOrderCustomer;
   summary: OrderSummary;
+  snapshot?: CommercialSnapshot;
 }
 
 function clean(value: string | undefined) {
@@ -40,14 +42,14 @@ function normalizeWhatsAppPhone(phone: string) {
   return digits;
 }
 
-export function buildWhatsAppOrderMessage({ customer, summary }: WhatsAppOrderInput) {
+export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: WhatsAppOrderInput) {
   const lines: string[] = ["Hola, quiero consultar por este pedido de Lupulados.", ""];
   const customerLines = [
     ["Nombre", clean(customer.name)],
     ["Fecha del evento", formatDate(customer.eventDate)],
     ["Horario", clean(customer.timeSlot)],
     ["Modalidad", summary.delivery.label],
-    summary.delivery.id !== "fabrica" ? ["Direccion", clean(customer.address)] : null,
+    summary.delivery.requiresAddress ? ["Direccion", clean(customer.address)] : null,
   ].filter((line): line is [string, string] => Boolean(line && line[1]));
 
   if (customerLines.length > 0) {
@@ -94,7 +96,7 @@ export function buildWhatsAppOrderMessage({ customer, summary }: WhatsAppOrderIn
     );
   }
   lines.push(`Total estimado: ${formatPrice(summary.total)}`);
-  lines.push(getPricingConfig().disclaimer);
+  lines.push(getPricingConfig(snapshot).disclaimer);
 
   const notes = clean(customer.notes);
   if (notes) {

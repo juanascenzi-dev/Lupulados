@@ -2,7 +2,8 @@ import { MapPin, Clock, MessageCircle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { contactSchema, type ContactInput } from "@/domain/contact";
-import { buildWhatsAppUrl, businessLocation, publicContactEmail, whatsappChannels } from "@/domain/businessConfig";
+import { buildWhatsAppUrlFromSnapshot } from "@/domain/commercialAdapters";
+import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export function Ubicacion() {
   const { toast } = useToast();
+  const { snapshot, businessLocation, publicContactEmail, whatsappChannels } = useCommercialDerivedData();
   
   const form = useForm<ContactInput>({
     resolver: zodResolver(contactSchema),
@@ -26,7 +28,7 @@ export function Ubicacion() {
       `Mensaje: ${data.message}`,
     ].join("\n");
 
-    window.open(buildWhatsAppUrl(message), "_blank", "noopener,noreferrer");
+    window.open(buildWhatsAppUrlFromSnapshot(message, undefined, snapshot), "_blank", "noopener,noreferrer");
     toast({ title: "Consulta preparada", description: "Se abrió WhatsApp para que puedas enviar el mensaje." });
   }
 
@@ -75,7 +77,7 @@ export function Ubicacion() {
                     {whatsappChannels.map((channel) => (
                       <a
                         key={channel.id}
-                        href={buildWhatsAppUrl("Hola! Quiero hacer una consulta", channel.phoneE164)}
+                        href={buildWhatsAppUrlFromSnapshot("Hola! Quiero hacer una consulta", channel.phoneE164, snapshot)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block text-primary hover:underline"

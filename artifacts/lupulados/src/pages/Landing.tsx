@@ -14,12 +14,13 @@ import { Footer } from "@/components/Footer";
 import { FloatingActions } from "@/components/FloatingActions";
 import { ArmaTuPedido } from "@/components/ArmaTuPedido";
 import { CartFloating } from "@/components/CartFloating";
-import { promotionConfig } from "@/domain/businessConfig";
+import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 
 const BANNER_HEIGHT = 44;
 
 export default function Landing() {
+  const { promotionConfig } = useCommercialDerivedData();
   const orderSectionRef = useRef<HTMLElement | null>(null);
   const [showBanner, setShowBanner] = useState(() => {
     return localStorage.getItem(promotionConfig.bannerClosedStorageKey) !== "true";

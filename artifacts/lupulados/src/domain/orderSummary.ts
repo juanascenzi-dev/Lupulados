@@ -1,5 +1,7 @@
-import { additionalCosts, getDeliveryOption, type DeliveryOptionId } from "./businessConfig";
-import { getCartItemLiters } from "./beerCatalog";
+import { getDeliveryOption } from "./businessConfig";
+import { buildBusinessConfig, getCartItemLitersFromSnapshot, getDeliveryOptionFromSnapshot } from "./commercialAdapters";
+import { commercialSnapshot } from "./commercialData";
+import type { CommercialSnapshot, DeliveryOptionId } from "./commercialTypes";
 
 export interface OrderSummaryItem {
   id: string;
@@ -33,7 +35,7 @@ export interface OrderSummary {
   itemsSubtotal: number;
   extraLines: OrderExtraLine[];
   extrasTotal: number;
-  delivery: ReturnType<typeof getDeliveryOption>;
+  delivery: NonNullable<ReturnType<typeof getDeliveryOptionFromSnapshot>>;
   deliveryCost: number;
   subtotal: number;
   discountCode: string;
@@ -45,11 +47,13 @@ export interface OrderSummary {
 export function calculateOrderSummary(
   items: OrderSummaryItem[],
   extras: OrderSummaryExtras,
+  snapshot: CommercialSnapshot = commercialSnapshot,
 ): OrderSummary {
+  const dynamicConfig = buildBusinessConfig(snapshot);
   const safeItems = items.map((item) => ({ ...item }));
   const itemsSubtotal = safeItems.reduce((acc, item) => acc + item.price * item.qty, 0);
   const totalItems = safeItems.reduce((acc, item) => acc + item.qty, 0);
-  const totalLiters = safeItems.reduce((acc, item) => acc + getCartItemLiters(item.id) * item.qty, 0);
+  const totalLiters = safeItems.reduce((acc, item) => acc + getCartItemLitersFromSnapshot(item.id, snapshot) * item.qty, 0);
   const has50L = safeItems.some((item) => item.id.includes("barril50L"));
 
   const extraLines: OrderExtraLine[] = [];
@@ -58,8 +62,8 @@ export function calculateOrderSummary(
       id: "chopera",
       label: "Alquiler de chopera",
       quantity: 1,
-      unitPrice: additionalCosts.chopera,
-      total: additionalCosts.chopera,
+      unitPrice: dynamicConfig.additionalCosts.chopera,
+      total: dynamicConfig.additionalCosts.chopera,
     });
   }
   if (extras.hielo > 0) {
@@ -67,24 +71,24 @@ export function calculateOrderSummary(
       id: "hielo",
       label: "Hielo",
       quantity: extras.hielo,
-      unitPrice: additionalCosts.hielo,
-      total: extras.hielo * additionalCosts.hielo,
+      unitPrice: dynamicConfig.additionalCosts.hielo,
+      total: extras.hielo * dynamicConfig.additionalCosts.hielo,
     });
   }
 
   const vasosCost =
-    itemsSubtotal > additionalCosts.freeGlassesThreshold ? 0 : extras.vasos * additionalCosts.vasos;
+    itemsSubtotal > dynamicConfig.additionalCosts.freeGlassesThreshold ? 0 : extras.vasos * dynamicConfig.additionalCosts.vasos;
   if (extras.vasos > 0 && vasosCost > 0) {
     extraLines.push({
       id: "vasos",
       label: "Vasos",
       quantity: extras.vasos,
-      unitPrice: additionalCosts.vasos,
+      unitPrice: dynamicConfig.additionalCosts.vasos,
       total: vasosCost,
     });
   }
 
-  const delivery = getDeliveryOption(extras.delivery);
+  const delivery = getDeliveryOptionFromSnapshot(extras.delivery, snapshot) ?? getDeliveryOption(extras.delivery);
   const deliveryCost = delivery.cost;
   const extrasTotal = extraLines.reduce((acc, line) => acc + line.total, 0);
   const subtotal = itemsSubtotal + extrasTotal + deliveryCost;

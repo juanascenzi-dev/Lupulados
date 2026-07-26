@@ -1,126 +1,95 @@
 # Lupulados Admin Foundation
 
-## 1. Fuente de datos actual
+## Arquitectura
 
-La fuente canónica estática es `artifacts/lupulados/src/domain/commercialData.ts`.
+Sprint 6 agrega Supabase como fuente persistente para datos comerciales y mantiene `artifacts/lupulados/src/domain/commercialData.ts` como fallback estático seguro.
 
-Ese archivo exporta `commercialSnapshot`, validado al cargar con Zod mediante `commercialSnapshotSchema`. La aplicación pública consume datos a través de selectores de `commercialSelectors.ts` o adaptadores de compatibilidad como `beerCatalog.ts` y `businessConfig.ts`.
+Capas principales:
 
-## 2. Entidades y relaciones
+- `src/lib/supabase/config.ts`: parsea `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` y compatibilidad temporal con `VITE_SUPABASE_ANON_KEY`.
+- `src/lib/supabase/client.ts`: inicializa un único cliente Supabase nullable, sin service role.
+- `src/domain/commercialRepository.ts`: `StaticCommercialRepository`, `SupabaseCommercialRepository`, filas Supabase y mappers puros.
+- `src/context/CommercialDataContext.tsx`: carga snapshot desde Supabase y cae a estático si no hay configuración, error, datos vacíos o datos inválidos.
+- `src/context/AdminAuthContext.tsx`: sesión Supabase Auth y autorización vía `public.is_admin()`.
+- `/admin/login`: login administrativo con `signInWithPassword`.
+- `/admin`: panel protegido con módulos comerciales.
 
-- `BusinessProfile`: nombre comercial, dirección, horario, email nullable, estado de precios y disclaimer.
-- `WhatsAppChannel`: canales públicos con número visible, número para enlaces, propósito, prioridad, actividad y orden.
-- `Product`: productos con ID estable, slug, datos visibles, imagen, estado y orden.
-- `ProductPresentation`: presentaciones asociadas a `Product` por `productId`, con tipo, volumen, precio, actividad y orden.
-- `DeliveryOption`: modalidad de entrega/retiro, precio, si requiere dirección y orden.
-- `ExtraOption`: extras cobrables del pedido.
-- `Promotion`: promociones con código, tipo, valor, actividad y fechas opcionales.
+## Entidades persistentes
 
-## 3. IDs estables
+La migración `supabase/migrations/20260725120000_commercial_admin_foundation.sql` crea:
 
-Los productos mantienen los IDs usados por el carrito: `blonde-ale`, `apa`, `ipa`, `red-ale`, `stout`, `honey-wheat`, `session-ipa`, `scotch-ale`.
+- `public.business_profiles`
+- `public.whatsapp_channels`
+- `public.products`
+- `public.product_presentations`
+- `public.delivery_options`
+- `public.extra_options`
+- `public.promotions`
+- `public.admin_users`
+- `public.admin_audit_log`
 
-Las presentaciones conservan el tipo usado en los IDs del carrito: `barril20L`, `barril30L`, `barril50L`, `growler1L`, `growler2L`, `porron500ml`. Para el futuro CRUD, cada presentación tiene además un ID completo estable con formato `productId:presentationType`, por ejemplo `ipa:barril50L`.
+## Seguridad
 
-Cambiar un nombre visible, por ejemplo `IPA` a `IPA Lupulados`, no debe cambiar el ID del producto ni invalidar carritos guardados.
+Todas las tablas públicas del sprint tienen RLS habilitado.
 
-## 4. Soft delete
+Lectura pública:
 
-El modelo no borra físicamente registros administrables:
+- perfiles activos;
+- WhatsApp activos;
+- productos `status = 'active'`;
+- presentaciones `status = 'active'`;
+- entregas activas;
+- extras activos;
+- promociones activas y vigentes.
 
-- `Product.status`: `active` o `archived`.
-- `ProductPresentation.active`: `true` o `false`.
-- Canales, entrega, extras y promociones usan `active`.
+Escritura administrativa:
 
-Los selectores públicos excluyen productos archivados y presentaciones inactivas. En el ADMIN futuro el botón puede decir "Eliminar", pero la operación esperada es archivar.
+- depende de `public.is_admin()`;
+- usa la sesión del usuario autenticado;
+- no usa service role en frontend;
+- no permite administrar `admin_users` desde el panel;
+- no borra productos ni presentaciones físicamente, sólo archiva.
 
-## 5. Datos públicos
+## Auditoría
 
-Datos confirmados cargados:
+La función `public.write_admin_audit_log()` registra INSERT/UPDATE/DELETE de:
 
-- Nombre: Lupulados.
-- Dirección: Primera Junta 2614.
-- Horario: Atención las 24 horas, todos los días.
-- WhatsApp principal: 11 3397-1210, enlace `5491133971210`.
-- WhatsApp alternativo: 11 6546-0294, enlace `5491165460294`.
-- Email: `null`.
+- `business_profiles`;
+- `whatsapp_channels`;
+- `products`;
+- `product_presentations`;
+- `delivery_options`;
+- `extra_options`;
+- `promotions`.
 
-No hay email público ficticio.
+Registra actor `auth.uid()`, tabla, registro, operación, `old_data`, `new_data` y fecha.
 
-## 6. Datos administrables
+## Fallback público
 
-Quedan modelados como administrables:
+Prioridad de datos:
 
-- Perfil comercial.
-- Canales de WhatsApp.
-- Productos.
-- Presentaciones.
-- Opciones de entrega.
-- Extras.
-- Promociones.
-- Estado de precios y disclaimer.
-- Orden de visualización.
-- Estado activo o archivado.
+1. Supabase configurado y snapshot válido: usa Supabase.
+2. Supabase sin configurar: usa snapshot estático.
+3. Supabase inaccesible: usa snapshot estático.
+4. Supabase con datos inválidos o vacíos: usa snapshot estático.
 
-## 7. Contratos de repositorio
+En desarrollo se emite un warning controlado cuando se usa fallback por error técnico. El visitante no ve errores de infraestructura.
 
-`artifacts/lupulados/src/domain/adminContracts.ts` define contratos TypeScript para:
+## Compatibilidad de carrito
 
-- Productos: listar, obtener, crear, actualizar, archivar y restaurar.
-- Presentaciones: crear, actualizar, archivar y restaurar.
-- Perfil comercial: obtener y actualizar.
-- WhatsApp: listar, crear, actualizar, archivar y definir principal.
-- Entrega, extras y promociones: listar, crear, actualizar, archivar y restaurar.
+Se conservan IDs de productos y presentaciones:
 
-En Sprint 5 no hay implementación mutable ni persistencia en localStorage.
+- productos: `blonde-ale`, `apa`, `ipa`, `red-ale`, `stout`, `honey-wheat`, `session-ipa`, `scotch-ale`;
+- presentaciones: `barril20L`, `barril30L`, `barril50L`, `growler1L`, `growler2L`, `porron500ml`.
 
-## 8. Qué falta para Supabase
+Los carritos guardados siguen leyendo `CartItem` desde localStorage sin recalcular ni renombrar items existentes.
 
-Sprint 6 debe crear o conectar el proyecto Supabase, definir tablas reales, revisar migraciones, cargar datos iniciales desde el snapshot estático e integrar el frontend público con la base.
+## Sprint 7
 
-## 9. Qué falta para el usuario ADMIN
+Pedidos persistentes quedan fuera de Sprint 6. Próximo paso recomendado:
 
-Sprint 6 debe implementar Supabase Auth, usuario ADMIN, roles, login, ruta protegida y CRUD visual para productos, presentaciones, configuración comercial, canales, entrega, extras y promociones.
-
-## 10. Seguridad esperada
-
-La administración debe quedar protegida con Auth y RLS. No se deben exponer tokens, service role keys ni credenciales en frontend. Las operaciones administrativas deben ejecutarse con permisos mínimos y validaciones compartidas.
-
-## 11. Migración futura
-
-La migración esperada es:
-
-1. Crear tablas equivalentes a las entidades del snapshot.
-2. Insertar los datos actuales preservando IDs.
-3. Implementar un repositorio Supabase que cumpla los contratos.
-4. Mantener los selectores públicos como capa estable.
-5. Reemplazar el proveedor estático sin cambiar componentes públicos.
-
-## 12. Compatibilidad de carritos
-
-Los carritos existentes usan IDs como `ipa:barril50L`. Por eso:
-
-- No se cambian IDs de productos existentes.
-- No se cambian tipos de presentación existentes.
-- Los nombres visibles no son identidad.
-- Si en el futuro se renombra un producto o presentación, debe conservarse el ID.
-- Si alguna vez se necesita cambiar un ID, debe agregarse una migración de carrito explícita antes del deploy.
-
-## Sprint 6 delimitado
-
-No forma parte de Sprint 5 y queda para Sprint 6:
-
-- creación o conexión de proyecto Supabase;
-- tablas reales;
-- migraciones revisadas;
-- Supabase Auth;
-- usuario ADMIN;
-- roles;
-- RLS;
-- login;
-- ruta protegida;
-- CRUD de productos;
-- CRUD de presentaciones;
-- configuración comercial;
-- auditoría;
-- integración del frontend público con la base.
+- tabla de pedidos;
+- tabla de líneas de pedido;
+- estados operativos;
+- auditoría de cambios de pedido;
+- vista ADMIN específica para gestión de pedidos.
