@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calculator, Sun, Users, Clock, Beer, Check } from "lucide-react";
 import { calculateBarrelRecommendation, type BarrelRecommendation } from "@/domain/barrelCalculator";
+import { formatDurationLabel } from "@/domain/eventDuration";
 import { formatPrice } from "@/domain/format";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { cn } from "@/lib/utils";
@@ -81,13 +82,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
 
   const totalHoursDecimal = hours + minutes / 60;
 
-  const durationLabel = (() => {
-    const h = hours;
-    const m = minutes;
-    const hStr = `${h} hora${h !== 1 ? "s" : ""}`;
-    if (m === 0) return `= ${hStr}`;
-    return `= ${hStr} ${m} minutos`;
-  })();
+  const durationLabel = formatDurationLabel(hours, minutes);
 
   useEffect(() => {
     const typeMultipliers: Record<EventTypeId, number> = {
@@ -118,30 +113,30 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     hours === chip.hours && minutes === chip.minutes;
 
   return (
-    <section id="calculadora" className="site-section site-section-compact bg-background relative border-t border-white/5 overflow-hidden">
+    <section id="calculadora" className="calculator-section site-section site-section-compact bg-background relative border-t border-white/5 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(217,119,6,0.05)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div data-section-entry className="calculator-panel glass-panel p-5 sm:p-6 lg:p-7 xl:p-8 rounded-3xl">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <Calculator className="w-7 h-7 text-primary" aria-hidden="true" />
-            <h2 className="text-3xl md:text-4xl font-display font-bold text-white text-center">
+        <div data-section-entry className="calculator-panel glass-panel p-4 sm:p-5 lg:p-6 rounded-3xl">
+          <div className="flex items-center justify-center gap-2.5 mb-2">
+            <Calculator className="w-6 h-6 md:w-7 md:h-7 text-primary" aria-hidden="true" />
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-white text-center">
               Calculadora de Barriles
             </h2>
           </div>
 
-          <p className="calculator-copy text-center text-muted-foreground mb-6 lg:mb-7 max-w-2xl mx-auto">
+          <p className="calculator-copy text-center text-sm md:text-base text-muted-foreground mb-4 lg:mb-5 max-w-2xl mx-auto">
             Ajustá los detalles de tu evento y estimá cuánta cerveza conviene pedir.
           </p>
 
-          <div className="calculator-grid grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7 xl:gap-8">
+          <div className="calculator-grid grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 xl:gap-6">
 
             {/* Inputs */}
-            <div className="calculator-controls lg:col-span-7 space-y-4 lg:space-y-5">
+            <div className="calculator-controls lg:col-span-7 space-y-3 lg:space-y-4">
 
               {/* Guests */}
-              <div className="calculator-card bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
-                <div className="flex justify-between items-center mb-3">
+              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
+                <div className="flex justify-between items-center gap-3 mb-2.5">
                   <label htmlFor="calculator-guests" className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
                     <Users className="w-4 h-4 text-primary" aria-hidden="true" /> Invitados
                   </label>
@@ -183,7 +178,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   onChange={(e) => setGuests(Number(e.target.value))}
                   className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                 />
-                <div className="flex justify-between mt-2 text-xs text-muted-foreground font-mono">
+                <div className="flex justify-between mt-1.5 text-xs text-muted-foreground font-mono">
                   <span>10</span>
                   <span>500+</span>
                 </div>
@@ -193,15 +188,18 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               </div>
 
               {/* Duration */}
-              <div className="calculator-card bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
-                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-3">
-                  <Clock className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Cuánto dura el evento?
-                </label>
+              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 mb-2.5">
+                  <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Cuánto dura el evento?
+                  </label>
+                  <span className="text-sm text-primary font-mono font-semibold">{durationLabel}</span>
+                </div>
 
-                <div className="grid grid-cols-2 gap-3 mb-3">
+                <div className="grid grid-cols-2 gap-3 mb-2.5">
                   {/* Hours input */}
                   <div>
-                    <label htmlFor="calculator-hours" className="text-xs text-muted-foreground block mb-2">Horas</label>
+                    <label htmlFor="calculator-hours" className="text-xs text-muted-foreground block mb-1.5">Horas</label>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -231,7 +229,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
 
                   {/* Minutes input */}
                   <div>
-                    <label htmlFor="calculator-minutes" className="text-xs text-muted-foreground block mb-2">Minutos</label>
+                    <label htmlFor="calculator-minutes" className="text-xs text-muted-foreground block mb-1.5">Minutos</label>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
@@ -261,8 +259,6 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   </div>
                 </div>
 
-                <p className="text-sm text-primary font-mono mb-3">{durationLabel}</p>
-
                 {/* Quick chips */}
                 <div className="flex flex-wrap gap-2">
                   {DURATION_CHIPS.map((chip) => (
@@ -284,11 +280,11 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               </div>
 
               {/* Event Type — 4 large cards */}
-              <div className="calculator-card bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
-                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-3">
+              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
+                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-2.5">
                   <Beer className="w-4 h-4 text-primary" aria-hidden="true" /> Estilo de fiesta
                 </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                   {EVENT_TYPES.map((t) => {
                     const selected = type === t.id;
                     return (
@@ -298,7 +294,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         onClick={() => setType(t.id)}
                         aria-pressed={selected}
                         className={cn(
-                          "calculator-event-option relative flex flex-col items-center text-center p-3 rounded-xl border transition-all duration-200 min-h-28",
+                          "calculator-event-option relative flex flex-col items-center justify-start text-center p-2.5 rounded-xl border transition-all duration-200 min-h-24 h-full",
                           selected
                             ? "bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(217,119,6,0.2)]"
                             : "bg-white/5 border-white/10 hover:border-white/30"
@@ -309,11 +305,11 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                             <Check className="w-3 h-3 text-black" strokeWidth={3} aria-hidden="true" />
                           </span>
                         )}
-                        <span className="text-2xl mb-1.5">{t.emoji}</span>
+                        <span className="text-xl mb-1">{t.emoji}</span>
                         <span className={cn("font-bold text-sm leading-tight mb-1", selected ? "text-amber-400" : "text-white")}>
                           {t.label}
                         </span>
-                        <span className="text-xs text-muted-foreground leading-tight">"{t.desc}"</span>
+                        <span className="text-xs text-muted-foreground leading-tight line-clamp-2">"{t.desc}"</span>
                       </button>
                     );
                   })}
@@ -326,18 +322,18 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                 onClick={() => setIsSummer(!isSummer)}
                 aria-pressed={isSummer}
                 className={cn(
-                  "calculator-card w-full p-4 lg:p-5 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between",
+                  "calculator-card w-full p-3.5 lg:p-4 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between gap-3",
                   isSummer ? "bg-amber-500/10 border-amber-500/30" : "bg-white/5 border-white/10 hover:border-white/30"
                 )}
               >
-                <div className="flex items-center gap-4">
-                  <Sun className={cn("w-8 h-8", isSummer ? "text-amber-500" : "text-muted-foreground")} aria-hidden="true" />
+                <div className="flex min-w-0 items-center gap-3">
+                  <Sun className={cn("w-6 h-6 shrink-0", isSummer ? "text-amber-500" : "text-muted-foreground")} aria-hidden="true" />
                   <div className="text-left">
                     <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-0.5">¿Es verano?</span>
                     <span className="text-xs text-muted-foreground">La gente toma más con calor (+20%)</span>
                   </div>
                 </div>
-                <div className={cn("w-12 h-6 rounded-full p-1 transition-colors", isSummer ? "bg-amber-500" : "bg-secondary")}>
+                <div className={cn("w-12 h-6 rounded-full p-1 transition-colors shrink-0", isSummer ? "bg-amber-500" : "bg-secondary")}>
                   <div className={cn("w-4 h-4 rounded-full bg-white transition-transform", isSummer ? "translate-x-6" : "translate-x-0")} />
                 </div>
               </button>
@@ -345,34 +341,34 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
             </div>
 
             {/* Output */}
-            <div className="lg:col-span-5 flex flex-col h-full">
-              <div className="calculator-result-card bg-black/40 rounded-3xl p-5 lg:p-6 xl:p-7 border border-primary/20 flex flex-col items-center justify-start text-center flex-1 relative overflow-hidden">
+            <div className="lg:col-span-5">
+              <div className="calculator-result-card bg-black/40 rounded-3xl p-4 lg:p-5 xl:p-6 border border-primary/20 flex flex-col items-center justify-start text-center relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl" />
 
                 <div className="relative z-10 w-full" role="status" aria-live="polite" aria-atomic="true">
-                  <span className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-2 block">Vas a necesitar</span>
-                  <div className="text-[clamp(3.5rem,7vw,5rem)] leading-none font-display font-bold text-white mb-2 tracking-tighter">
-                    {totalLiters}<span className="text-3xl text-primary ml-1">L</span>
+                  <span className="text-white/60 text-xs md:text-sm uppercase tracking-widest font-semibold mb-1.5 block">Vas a necesitar</span>
+                  <div className="text-[clamp(3rem,6vw,4.75rem)] leading-none font-display font-bold text-white mb-1 tracking-tighter">
+                    {totalLiters}<span className="text-2xl md:text-3xl text-primary ml-1">L</span>
                   </div>
 
-                  <div className="calculator-result-divider h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4 lg:my-5" />
+                  <div className="calculator-result-divider h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-3 lg:my-4" />
 
-                  <span className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-3 block">Sugerencia de barriles</span>
-                  <div className="bg-primary/10 text-primary border border-primary/20 rounded-xl px-4 py-3 mb-4 lg:mb-5 font-mono font-bold text-lg w-full">
+                  <span className="text-white/60 text-xs md:text-sm uppercase tracking-widest font-semibold mb-2 block">Sugerencia de barriles</span>
+                  <div className="bg-primary/10 text-primary border border-primary/20 rounded-xl px-4 py-2.5 mb-3 lg:mb-4 font-mono font-bold text-base md:text-lg w-full">
                     {barrelPlan.label}
                   </div>
 
-                  <div className="calculator-result-price mb-5 lg:mb-6">
+                  <div className="calculator-result-price mb-4 lg:mb-5">
                     <span className="text-white/40 text-xs block mb-1">Estimado desde</span>
                     <span className="text-white font-bold text-2xl">{formatPrice(barrelPlan.estimatedPrice)}</span>
-                    <span className="text-white/35 text-xs block mt-2">{priceDisclaimer}</span>
+                    <span className="text-white/35 text-xs block mt-1.5">{priceDisclaimer}</span>
                   </div>
 
                   <button
                     onClick={() => onUseRecommendation(barrelPlan)}
                     disabled={barrelPlan.parts.length === 0}
-                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-base md:text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Usar esta recomendación
                   </button>
