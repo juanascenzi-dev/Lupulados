@@ -118,30 +118,30 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     hours === chip.hours && minutes === chip.minutes;
 
   return (
-    <section id="calculadora" className="py-24 bg-background relative border-t border-white/5 overflow-hidden">
+    <section id="calculadora" className="site-section site-section-compact bg-background relative border-t border-white/5 overflow-hidden">
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(217,119,6,0.05)_0%,transparent_70%)] pointer-events-none" />
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="glass-panel p-8 md:p-12 rounded-3xl">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <Calculator className="w-8 h-8 text-primary" aria-hidden="true" />
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="glass-panel p-5 sm:p-6 lg:p-7 xl:p-8 rounded-3xl">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <Calculator className="w-7 h-7 text-primary" aria-hidden="true" />
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white text-center">
               Calculadora de Barriles
             </h2>
           </div>
 
-          <p className="text-center text-muted-foreground mb-12 max-w-2xl mx-auto">
+          <p className="text-center text-muted-foreground mb-6 lg:mb-7 max-w-2xl mx-auto">
             Ajustá los detalles de tu evento y estimá cuánta cerveza conviene pedir.
           </p>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7 xl:gap-8">
 
             {/* Inputs */}
-            <div className="lg:col-span-7 space-y-8">
+            <div className="lg:col-span-7 space-y-4 lg:space-y-5">
 
               {/* Guests */}
-              <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
-                <div className="flex justify-between items-center mb-4">
+              <div className="bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
+                <div className="flex justify-between items-center mb-3">
                   <label htmlFor="calculator-guests" className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
                     <Users className="w-4 h-4 text-primary" aria-hidden="true" /> Invitados
                   </label>
@@ -193,12 +193,12 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               </div>
 
               {/* Duration */}
-              <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
-                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-5">
+              <div className="bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
+                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-3">
                   <Clock className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Cuánto dura el evento?
                 </label>
 
-                <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="grid grid-cols-2 gap-3 mb-3">
                   {/* Hours input */}
                   <div>
                     <label htmlFor="calculator-hours" className="text-xs text-muted-foreground block mb-2">Horas</label>
@@ -261,7 +261,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   </div>
                 </div>
 
-                <p className="text-sm text-primary font-mono mb-4">{durationLabel}</p>
+                <p className="text-sm text-primary font-mono mb-3">{durationLabel}</p>
 
                 {/* Quick chips */}
                 <div className="flex flex-wrap gap-2">
@@ -284,8 +284,8 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               </div>
 
               {/* Event Type — 4 large cards */}
-              <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
-                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-4">
+              <div className="bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
+                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-3">
                   <Beer className="w-4 h-4 text-primary" aria-hidden="true" /> Estilo de fiesta
                 </label>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -298,7 +298,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         onClick={() => setType(t.id)}
                         aria-pressed={selected}
                         className={cn(
-                          "relative flex flex-col items-center text-center p-4 rounded-xl border transition-all duration-200",
+                          "relative flex flex-col items-center text-center p-3 rounded-xl border transition-all duration-200 min-h-28",
                           selected
                             ? "bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(217,119,6,0.2)]"
                             : "bg-white/5 border-white/10 hover:border-white/30"
@@ -309,7 +309,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                             <Check className="w-3 h-3 text-black" strokeWidth={3} aria-hidden="true" />
                           </span>
                         )}
-                        <span className="text-3xl mb-2">{t.emoji}</span>
+                        <span className="text-2xl mb-1.5">{t.emoji}</span>
                         <span className={cn("font-bold text-sm leading-tight mb-1", selected ? "text-amber-400" : "text-white")}>
                           {t.label}
                         </span>
@@ -326,12 +326,12 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                 onClick={() => setIsSummer(!isSummer)}
                 aria-pressed={isSummer}
                 className={cn(
-                  "w-full p-6 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between",
+                  "w-full p-4 lg:p-5 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between",
                   isSummer ? "bg-amber-500/10 border-amber-500/30" : "bg-white/5 border-white/10 hover:border-white/30"
                 )}
               >
                 <div className="flex items-center gap-4">
-                  <Sun className={cn("w-10 h-10", isSummer ? "text-amber-500" : "text-muted-foreground")} aria-hidden="true" />
+                  <Sun className={cn("w-8 h-8", isSummer ? "text-amber-500" : "text-muted-foreground")} aria-hidden="true" />
                   <div className="text-left">
                     <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-0.5">¿Es verano?</span>
                     <span className="text-xs text-muted-foreground">La gente toma más con calor (+20%)</span>
@@ -346,24 +346,24 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
 
             {/* Output */}
             <div className="lg:col-span-5 flex flex-col h-full">
-              <div className="bg-black/40 rounded-3xl p-8 border border-primary/20 flex flex-col items-center justify-center text-center flex-1 relative overflow-hidden">
+              <div className="bg-black/40 rounded-3xl p-5 lg:p-6 xl:p-7 border border-primary/20 flex flex-col items-center justify-start text-center flex-1 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl" />
 
                 <div className="relative z-10 w-full" role="status" aria-live="polite" aria-atomic="true">
                   <span className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-2 block">Vas a necesitar</span>
-                  <div className="text-7xl font-display font-bold text-white mb-2 tracking-tighter">
+                  <div className="text-[clamp(3.5rem,7vw,5rem)] leading-none font-display font-bold text-white mb-2 tracking-tighter">
                     {totalLiters}<span className="text-3xl text-primary ml-1">L</span>
                   </div>
 
-                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-6" />
+                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4 lg:my-5" />
 
                   <span className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-3 block">Sugerencia de barriles</span>
-                  <div className="bg-primary/10 text-primary border border-primary/20 rounded-xl px-4 py-3 mb-6 font-mono font-bold text-lg w-full">
+                  <div className="bg-primary/10 text-primary border border-primary/20 rounded-xl px-4 py-3 mb-4 lg:mb-5 font-mono font-bold text-lg w-full">
                     {barrelPlan.label}
                   </div>
 
-                  <div className="mb-8">
+                  <div className="mb-5 lg:mb-6">
                     <span className="text-white/40 text-xs block mb-1">Estimado desde</span>
                     <span className="text-white font-bold text-2xl">{formatPrice(barrelPlan.estimatedPrice)}</span>
                     <span className="text-white/35 text-xs block mt-2">{priceDisclaimer}</span>
@@ -372,7 +372,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   <button
                     onClick={() => onUseRecommendation(barrelPlan)}
                     disabled={barrelPlan.parts.length === 0}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+                    className="w-full py-3.5 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Usar esta recomendación
                   </button>

@@ -31,9 +31,9 @@ const STEPS = [
 
 export function ComoFunciona() {
   return (
-    <section id="como-funciona" className="py-24 bg-secondary/30 relative">
+    <section id="como-funciona" className="site-section site-section-standard bg-secondary/30 relative">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10 md:mb-12">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-4">
             Alquilar es muy fácil
           </h2>

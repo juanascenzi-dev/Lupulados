@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { PromoBanner } from "@/components/PromoBanner";
 import { Navbar } from "@/components/Navbar";
 import { Hero } from "@/components/Hero";
@@ -10,9 +10,8 @@ import { CartFloating } from "@/components/CartFloating";
 import { RouteFallback } from "@/components/RouteFallback";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
-import { getMotionAwareScrollBehavior } from "@/lib/reducedMotion";
+import { scrollToSection } from "@/lib/sectionNavigation";
 
-const BANNER_HEIGHT = 44;
 const Calculadora = lazy(() => import("@/components/Calculadora").then((module) => ({ default: module.Calculadora })));
 const ArmaTuPedido = lazy(() => import("@/components/ArmaTuPedido").then((module) => ({ default: module.ArmaTuPedido })));
 const ComoFunciona = lazy(() => import("@/components/ComoFunciona").then((module) => ({ default: module.ComoFunciona })));
@@ -40,6 +39,8 @@ function persistPromoBannerClosed(storageKey: string) {
 export default function Landing() {
   const { promotionConfig } = useCommercialDerivedData();
   const orderSectionRef = useRef<HTMLElement | null>(null);
+  const [promoBannerElement, setPromoBannerElement] = useState<HTMLDivElement | null>(null);
+  const [promoBannerHeight, setPromoBannerHeight] = useState(0);
   const [showBanner, setShowBanner] = useState(() => {
     return !isPromoBannerClosed(promotionConfig.bannerClosedStorageKey);
   });
@@ -51,12 +52,34 @@ export default function Landing() {
     persistPromoBannerClosed(promotionConfig.bannerClosedStorageKey);
   };
 
+  useEffect(() => {
+    if (!promoBannerElement) {
+      setPromoBannerHeight(0);
+      return;
+    }
+
+    const updateBannerHeight = () => {
+      setPromoBannerHeight(Math.ceil(promoBannerElement.getBoundingClientRect().height));
+    };
+
+    updateBannerHeight();
+    const resizeObserver =
+      typeof ResizeObserver === "function" ? new ResizeObserver(updateBannerHeight) : null;
+    resizeObserver?.observe(promoBannerElement);
+    window.addEventListener("resize", updateBannerHeight);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateBannerHeight);
+    };
+  }, [promoBannerElement]);
+
   const useRecommendation = (recommendation: BarrelRecommendation) => {
     setPendingRecommendation({
       ...recommendation,
       parts: recommendation.parts.map((part) => ({ ...part })),
     });
-    orderSectionRef.current?.scrollIntoView({ behavior: getMotionAwareScrollBehavior(), block: "start" });
+    scrollToSection("arma-tu-pedido");
   };
 
   return (
@@ -64,8 +87,8 @@ export default function Landing() {
       <a href="#contenido-principal" className="skip-link">
         Saltar al contenido
       </a>
-      <PromoBanner visible={showBanner} onClose={closeBanner} />
-      <Navbar bannerVisible={showBanner} bannerHeight={BANNER_HEIGHT} />
+      <PromoBanner visible={showBanner} onClose={closeBanner} bannerRef={setPromoBannerElement} />
+      <Navbar bannerVisible={showBanner} bannerHeight={promoBannerHeight} />
 
       <main id="contenido-principal" tabIndex={-1}>
         <Hero />

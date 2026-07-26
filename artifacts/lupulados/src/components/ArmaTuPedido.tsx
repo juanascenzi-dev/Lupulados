@@ -634,7 +634,7 @@ export function ArmaTuPedido({
     <section
       id="arma-tu-pedido"
       ref={sectionRef}
-      className="py-16 md:py-20 bg-background relative border-t border-white/5 overflow-hidden"
+      className="site-section site-section-standard bg-background relative border-t border-white/5 overflow-hidden"
     >
       {/* Beer bubble decorations */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -1637,7 +1637,7 @@ export function ArmaTuPedido({
           </div>
 
           {/* Desktop order summary sidebar */}
-          <div className="hidden lg:block sticky top-32">
+          <div className="hidden lg:block sticky top-[calc(var(--site-header-offset)+1rem)]">
             <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
               <LiveOrderSummary />
             </div>

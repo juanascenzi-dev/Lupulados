@@ -32,9 +32,9 @@ const SERVICES = [
 
 export function Services() {
   return (
-    <section id="servicios" className="py-24 bg-background relative">
+    <section id="servicios" className="site-section site-section-standard site-section-viewport bg-background relative flex items-center">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-16">
+        <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -62,9 +62,9 @@ export function Services() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="glass-panel p-8 rounded-2xl flex flex-col group hover:-translate-y-2 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_10px_30px_-10px_rgba(217,119,6,0.15)]"
+              className="glass-panel p-6 lg:p-7 rounded-2xl flex flex-col group hover:-translate-y-2 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_10px_30px_-10px_rgba(217,119,6,0.15)]"
             >
-              <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+              <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
                 {service.icon}
               </div>
               <h4 className="text-xl font-bold text-white mb-3">{service.title}</h4>

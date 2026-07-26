@@ -1,13 +1,15 @@
 import { X, Beer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
+import type { Ref } from "react";
 
 interface PromoBannerProps {
   visible: boolean;
   onClose: () => void;
+  bannerRef?: Ref<HTMLDivElement>;
 }
 
-export function PromoBanner({ visible, onClose }: PromoBannerProps) {
+export function PromoBanner({ visible, onClose, bannerRef }: PromoBannerProps) {
   const { promotionConfig } = useCommercialDerivedData();
   if (!promotionConfig.code || promotionConfig.discountRate <= 0) return null;
 
@@ -15,6 +17,7 @@ export function PromoBanner({ visible, onClose }: PromoBannerProps) {
     <AnimatePresence>
       {visible && (
         <motion.div
+          ref={bannerRef}
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "44px", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}

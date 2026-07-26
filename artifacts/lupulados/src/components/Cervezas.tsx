@@ -56,9 +56,9 @@ export function Cervezas() {
   };
 
   return (
-    <section id="cervezas" className="py-24 bg-secondary/50 relative border-y border-white/5">
+    <section id="cervezas" className="site-section site-section-extended bg-secondary/50 relative border-y border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-8 md:mb-10 gap-6">
           <div className="max-w-2xl">
             <motion.h2 
               initial={{ opacity: 0, x: -20 }}
@@ -106,7 +106,7 @@ export function Cervezas() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-16">
+        <div className="grid grid-cols-1 min-[390px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12 md:mb-14 items-stretch">
           {filteredBeers.map((beer, i) => (
             <Dialog
               key={beer.id}
@@ -121,9 +121,9 @@ export function Cervezas() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                   aria-label={`Ver detalle de ${beer.name}`}
-                  className="group relative rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-colors shadow-lg cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="group relative h-full rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-colors shadow-lg cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background flex flex-col"
                 >
-                  <div className="h-40 md:h-56 overflow-hidden relative">
+                  <div className="aspect-[4/3] min-[390px]:aspect-[5/4] md:aspect-[4/3] overflow-hidden relative shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10" />
                     <img
                       src={beer.img}
@@ -138,10 +138,10 @@ export function Cervezas() {
                       </div>
                     )}
                   </div>
-                  <div className="p-4 md:p-6 relative z-20">
-                    <h4 className="text-xl md:text-2xl font-display font-bold text-white mb-2">{beer.name}</h4>
-                    <p className="text-muted-foreground text-xs md:text-sm mb-4 line-clamp-2">{beer.desc}</p>
-                    <div className="flex items-center gap-3 text-xs font-mono bg-white/5 p-2 rounded-lg border border-white/5">
+                  <div className="p-4 md:p-5 relative z-20 flex flex-1 flex-col">
+                    <h4 className="text-xl md:text-2xl font-display font-bold text-white mb-2 min-h-[3.4rem] leading-tight flex items-start">{beer.name}</h4>
+                    <p className="text-muted-foreground text-xs md:text-sm mb-4 line-clamp-3 min-h-[3.75rem] md:min-h-[4.5rem] leading-relaxed">{beer.desc}</p>
+                    <div className="mt-auto flex min-h-12 items-center gap-3 text-xs font-mono bg-white/5 p-2 rounded-lg border border-white/5">
                       <div className="flex flex-col">
                         <span className="text-white/40 text-[9px] uppercase">IBU</span>
                         <span className="text-primary font-bold">{beer.ibu}</span>

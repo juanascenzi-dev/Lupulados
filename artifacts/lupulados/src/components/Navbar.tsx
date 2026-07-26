@@ -1,18 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Menu, X, Beer } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { cn, scrollToSection } from "@/lib/utils";
-
-const NAV_LINKS = [
-  { name: "Inicio", href: "inicio" },
-  { name: "Servicios", href: "servicios" },
-  { name: "Cervezas", href: "cervezas" },
-  { name: "Calculadora", href: "calculadora" },
-  { name: "Arma tu Pedido", href: "arma-tu-pedido" },
-  { name: "Eventos", href: "eventos" },
-  { name: "Como Funciona", href: "como-funciona" },
-  { name: "FAQ", href: "faq" },
-];
+import { cn } from "@/lib/utils";
+import {
+  getActiveSectionId,
+  getSiteHeaderOffset,
+  NAV_LINKS,
+  scrollToSection,
+  setSiteHeaderOffset,
+} from "@/lib/sectionNavigation";
 
 interface NavbarProps {
   bannerVisible: boolean;
@@ -21,17 +17,113 @@ interface NavbarProps {
 
 export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeSection, setActiveSection] = useState<string>("inicio");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const headerRef = useRef<HTMLElement | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const firstMobileLinkRef = useRef<HTMLButtonElement | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+
+  const updateHeaderOffset = useCallback(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    setSiteHeaderOffset(header.getBoundingClientRect().bottom);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
+    handleScroll();
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    updateHeaderOffset();
+
+    const header = headerRef.current;
+    const resizeObserver =
+      typeof ResizeObserver === "function"
+        ? new ResizeObserver(() => updateHeaderOffset())
+        : null;
+
+    if (header) resizeObserver?.observe(header);
+    window.addEventListener("resize", updateHeaderOffset);
+
+    return () => {
+      resizeObserver?.disconnect();
+      window.removeEventListener("resize", updateHeaderOffset);
+    };
+  }, [bannerHeight, bannerVisible, isScrolled, updateHeaderOffset]);
+
+  useEffect(() => {
+    const sectionIds = NAV_LINKS.map((link) => link.href);
+
+    const updateActiveSection = () => {
+      rafIdRef.current = null;
+
+      const sections = sectionIds
+        .map((id) => {
+          const element = document.getElementById(id);
+          if (!element) return null;
+
+          const rect = element.getBoundingClientRect();
+          const top = rect.top + window.scrollY;
+          return { id, top, bottom: top + rect.height };
+        })
+        .filter((section) => section !== null);
+
+      const nextActiveSection = getActiveSectionId({
+        sections,
+        scrollY: window.scrollY,
+        viewportHeight: window.innerHeight,
+        documentHeight: document.documentElement.scrollHeight,
+        headerOffset: getSiteHeaderOffset(),
+      });
+
+      if (nextActiveSection) {
+        setActiveSection((current) =>
+          current === nextActiveSection ? current : nextActiveSection,
+        );
+      }
+    };
+
+    const scheduleUpdate = () => {
+      if (rafIdRef.current !== null) return;
+      rafIdRef.current = window.requestAnimationFrame(updateActiveSection);
+    };
+
+    const observer =
+      typeof IntersectionObserver === "function"
+        ? new IntersectionObserver(scheduleUpdate, {
+            root: null,
+            rootMargin: `-${Math.round(getSiteHeaderOffset())}px 0px -55% 0px`,
+            threshold: [0, 0.1, 0.25, 0.5, 0.75, 1],
+          })
+        : null;
+
+    sectionIds.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer?.observe(element);
+    });
+
+    updateActiveSection();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    window.addEventListener("hashchange", scheduleUpdate);
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+      window.removeEventListener("hashchange", scheduleUpdate);
+      if (rafIdRef.current !== null) {
+        window.cancelAnimationFrame(rafIdRef.current);
+      }
+    };
+  }, [bannerHeight, bannerVisible]);
 
   const closeMobileMenu = () => {
     setMobileMenuOpen(false);
@@ -53,14 +145,18 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
   }, [mobileMenuOpen]);
 
   const handleNavClick = (href: string) => {
+    setActiveSection(href);
     setMobileMenuOpen(false);
     scrollToSection(href);
   };
 
-  const navTop = bannerVisible ? bannerHeight : 0;
+  const navTop = Math.max(0, bannerHeight);
+  const mainLinks = NAV_LINKS.filter((link) => !link.isContact);
+  const contactLink = NAV_LINKS.find((link) => link.isContact);
 
   return (
     <header
+      ref={headerRef}
       style={{ top: `${navTop}px` }}
       className={cn(
         "fixed left-0 right-0 z-40 transition-all duration-300",
@@ -85,24 +181,44 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
           </button>
 
           <div className="hidden lg:flex items-center gap-6">
-            {NAV_LINKS.map((link) => (
+            {mainLinks.map((link) => {
+              const isActive = activeSection === link.href;
+              return (
               <button
                 key={link.name}
                 type="button"
                 onClick={() => handleNavClick(link.href)}
-                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors relative group whitespace-nowrap"
+                aria-current={isActive ? "location" : undefined}
+                className={cn(
+                  "text-sm font-medium transition-colors relative group whitespace-nowrap",
+                  isActive ? "text-primary" : "text-muted-foreground hover:text-primary",
+                )}
               >
                 {link.name}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+                <span
+                  className={cn(
+                    "absolute -bottom-1 left-0 h-0.5 bg-primary transition-all duration-300",
+                    isActive ? "w-full" : "w-0 group-hover:w-full",
+                  )}
+                />
               </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => handleNavClick("ubicacion")}
-              className="px-5 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-semibold transition-all hover:border-primary/50"
-            >
-              Contacto
-            </button>
+              );
+            })}
+            {contactLink && (
+              <button
+                type="button"
+                onClick={() => handleNavClick(contactLink.href)}
+                aria-current={activeSection === contactLink.href ? "location" : undefined}
+                className={cn(
+                  "px-5 py-2.5 rounded-full border text-sm font-semibold transition-all",
+                  activeSection === contactLink.href
+                    ? "bg-primary text-black border-primary shadow-[0_0_18px_rgba(217,119,6,0.25)]"
+                    : "bg-white/5 hover:bg-white/10 border-white/10 text-white hover:border-primary/50",
+                )}
+              >
+                {contactLink.name}
+              </button>
+            )}
           </div>
 
           <button
@@ -136,26 +252,43 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
             aria-label="Navegacion mobile"
           >
             <div className="flex flex-col p-4 gap-2 max-h-[80vh] overflow-y-auto">
-              {NAV_LINKS.map((link, index) => (
+              {mainLinks.map((link, index) => {
+                const isActive = activeSection === link.href;
+                return (
                 <button
                   key={link.name}
                   ref={index === 0 ? firstMobileLinkRef : undefined}
                   type="button"
                   role="menuitem"
                   onClick={() => handleNavClick(link.href)}
-                  className="w-full text-left px-4 py-3 rounded-lg text-muted-foreground hover:text-primary hover:bg-white/5 transition-colors text-lg font-medium"
+                  aria-current={isActive ? "location" : undefined}
+                  className={cn(
+                    "w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 transition-colors text-lg font-medium border-l-2",
+                    isActive
+                      ? "text-primary bg-white/5 border-primary"
+                      : "text-muted-foreground border-transparent hover:text-primary",
+                  )}
                 >
                   {link.name}
                 </button>
-              ))}
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => handleNavClick("ubicacion")}
-                className="w-full mt-2 px-4 py-3 rounded-lg bg-primary text-primary-foreground font-bold text-center"
-              >
-                Contacto
-              </button>
+                );
+              })}
+              {contactLink && (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => handleNavClick(contactLink.href)}
+                  aria-current={activeSection === contactLink.href ? "location" : undefined}
+                  className={cn(
+                    "w-full mt-2 px-4 py-3 rounded-lg font-bold text-center border",
+                    activeSection === contactLink.href
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-white/5 text-white border-white/10",
+                  )}
+                >
+                  {contactLink.name}
+                </button>
+              )}
             </div>
           </motion.div>
         )}

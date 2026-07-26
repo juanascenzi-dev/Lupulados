@@ -60,7 +60,7 @@ export function Hero() {
   }, []);
 
   return (
-    <section id="inicio" className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
+    <section id="inicio" className="site-section relative min-h-[100svh] flex items-center justify-center overflow-hidden">
 
       {/* Slideshow Images — crossfade */}
       <div className="absolute inset-0 z-0">
