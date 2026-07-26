@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { buildWhatsAppUrl } from "@/domain/businessConfig";
+import { SectionContinueHint } from "@/components/SectionContinueHint";
 
 const EVENTS = [
   {
@@ -28,7 +29,7 @@ const EVENT_PRIORITIES = [
 export function Eventos() {
   return (
     <section id="eventos" className="site-section site-section-standard bg-background relative overflow-hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div data-section-entry className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
           <motion.h2 
@@ -79,7 +80,9 @@ export function Eventos() {
           ))}
         </div>
 
-        <div className="glass-panel rounded-3xl p-8 md:p-10 relative overflow-hidden mb-16">
+        <SectionContinueHint label="Mas ideas debajo" className="md:hidden" />
+
+        <div data-section-secondary className="glass-panel rounded-3xl p-8 md:p-10 relative overflow-hidden mb-16">
           <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 divide-y md:divide-y-0 md:divide-x divide-white/10 relative z-10">

@@ -21,7 +21,7 @@ export interface SectionPosition {
 }
 
 const DEFAULT_HEADER_OFFSET = 80;
-const SECTION_SCROLL_GAP = 8;
+const DEFAULT_SECTION_ENTRY_GAP = 12;
 
 export function getSiteHeaderOffset() {
   if (typeof window === "undefined") return DEFAULT_HEADER_OFFSET;
@@ -35,6 +35,18 @@ export function getSiteHeaderOffset() {
   return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : DEFAULT_HEADER_OFFSET;
 }
 
+export function getSectionEntryGap() {
+  if (typeof window === "undefined") return DEFAULT_SECTION_ENTRY_GAP;
+
+  const rawValue = window
+    .getComputedStyle(document.documentElement)
+    .getPropertyValue("--section-entry-gap")
+    .trim();
+  const parsedValue = Number.parseFloat(rawValue);
+
+  return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : DEFAULT_SECTION_ENTRY_GAP;
+}
+
 export function setSiteHeaderOffset(offset: number) {
   if (typeof document === "undefined") return;
 
@@ -45,15 +57,38 @@ export function setSiteHeaderOffset(offset: number) {
 }
 
 export function getSectionScrollOffset() {
-  return getSiteHeaderOffset() + SECTION_SCROLL_GAP;
+  return getSiteHeaderOffset() + getSectionEntryGap();
+}
+
+export function getSectionScrollTarget(section: HTMLElement) {
+  return section.querySelector<HTMLElement>("[data-section-entry]") ?? section;
+}
+
+export function getScrollTopForSectionTarget({
+  targetTop,
+  scrollY,
+  headerOffset,
+  entryGap,
+}: {
+  targetTop: number;
+  scrollY: number;
+  headerOffset: number;
+  entryGap: number;
+}) {
+  return Math.max(0, targetTop + scrollY - headerOffset - entryGap);
 }
 
 export function scrollToSection(id: string) {
-  const element = document.getElementById(id);
-  if (!element) return;
+  const section = document.getElementById(id);
+  if (!section) return;
 
-  const elementTop = element.getBoundingClientRect().top + window.scrollY;
-  const offsetPosition = Math.max(0, elementTop - getSectionScrollOffset());
+  const target = getSectionScrollTarget(section);
+  const offsetPosition = getScrollTopForSectionTarget({
+    targetTop: target.getBoundingClientRect().top,
+    scrollY: window.scrollY,
+    headerOffset: getSiteHeaderOffset(),
+    entryGap: getSectionEntryGap(),
+  });
 
   window.scrollTo({
     top: offsetPosition,

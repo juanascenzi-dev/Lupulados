@@ -664,7 +664,7 @@ export function ArmaTuPedido({
         ))}
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div data-section-entry className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-8 md:mb-10">
           <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-3">
             Armá tu pedido
@@ -733,7 +733,7 @@ export function ArmaTuPedido({
 
         <BeerGlassStepper step={step} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+        <div data-section-secondary className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
           {/* Wizard */}
           <div className="relative min-h-[360px]">
             <AnimatePresence mode="wait" custom={direction}>

@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { SectionContinueHint } from "@/components/SectionContinueHint";
 
 const FILTER_OPTIONS = ["Todas", "Livianas", "Lupuladas", "Oscuras"] as const;
 type BeerFilter = (typeof FILTER_OPTIONS)[number];
@@ -57,7 +58,7 @@ export function Cervezas() {
 
   return (
     <section id="cervezas" className="site-section site-section-extended bg-secondary/50 relative border-y border-white/5">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div data-section-entry className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col md:flex-row justify-between items-end mb-8 md:mb-10 gap-6">
           <div className="max-w-2xl">
             <motion.h2 
@@ -165,8 +166,11 @@ export function Cervezas() {
           ))}
         </div>
         
+        <SectionContinueHint label="Mas informacion debajo" />
+
         {/* Costos adicionales banner */}
         <motion.div 
+          data-section-secondary
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}

@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getActiveSectionId,
+  getScrollTopForSectionTarget,
+  getSectionEntryGap,
+  getSectionScrollTarget,
   getSiteHeaderOffset,
   scrollToSection,
   setSiteHeaderOffset,
@@ -117,10 +120,67 @@ describe("section navigation helpers", () => {
     expect(getSiteHeaderOffset()).toBe(92);
   });
 
-  it("scrolls with the dynamic offset and reduced-motion-aware behavior", () => {
+  it("reads the shared section entry gap CSS variable", () => {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      value: {
+        getComputedStyle: vi.fn(() => ({
+          getPropertyValue: vi.fn(() => "16px"),
+        })),
+      },
+    });
+
+    expect(getSectionEntryGap()).toBe(16);
+  });
+
+  it("uses data-section-entry as the preferred scroll target", () => {
+    const entry = {} as HTMLElement;
+    const section = {
+      querySelector: vi.fn(() => entry),
+    } as unknown as HTMLElement;
+
+    expect(getSectionScrollTarget(section)).toBe(entry);
+    expect(section.querySelector).toHaveBeenCalledWith("[data-section-entry]");
+  });
+
+  it("falls back to the section when no data-section-entry exists", () => {
+    const section = {
+      querySelector: vi.fn(() => null),
+    } as unknown as HTMLElement;
+
+    expect(getSectionScrollTarget(section)).toBe(section);
+  });
+
+  it("calculates target position with header offset and one visual gap", () => {
+    expect(
+      getScrollTopForSectionTarget({
+        targetTop: 500,
+        scrollY: 100,
+        headerOffset: 92,
+        entryGap: 12,
+      }),
+    ).toBe(496);
+  });
+
+  it("never returns a negative target position", () => {
+    expect(
+      getScrollTopForSectionTarget({
+        targetTop: 20,
+        scrollY: 0,
+        headerOffset: 92,
+        entryGap: 12,
+      }),
+    ).toBe(0);
+  });
+
+  it("scrolls to the internal entry with the dynamic offset and reduced-motion-aware behavior", () => {
     const scrollTo = vi.fn();
-    const element = {
+    const entry = {
       getBoundingClientRect: vi.fn(() => ({ top: 500 })),
+    };
+    const element = {
+      querySelector: vi.fn(() => entry),
+      getBoundingClientRect: vi.fn(() => ({ top: 900 })),
     };
 
     Object.defineProperty(globalThis, "document", {
@@ -139,13 +199,15 @@ describe("section navigation helpers", () => {
         scrollTo,
         matchMedia: vi.fn(() => ({ matches: true })),
         getComputedStyle: vi.fn(() => ({
-          getPropertyValue: vi.fn(() => "92px"),
+          getPropertyValue: vi.fn((name: string) =>
+            name === "--site-header-offset" ? "92px" : "12px",
+          ),
         })),
       },
     });
 
     scrollToSection("calculadora");
 
-    expect(scrollTo).toHaveBeenCalledWith({ top: 500, behavior: "auto" });
+    expect(scrollTo).toHaveBeenCalledWith({ top: 496, behavior: "auto" });
   });
 });

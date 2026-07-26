@@ -32,8 +32,8 @@ const SERVICES = [
 
 export function Services() {
   return (
-    <section id="servicios" className="site-section site-section-standard site-section-viewport bg-background relative flex items-center">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <section id="servicios" className="site-section site-section-standard site-section-viewport bg-background relative flex items-start">
+      <div data-section-entry className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}

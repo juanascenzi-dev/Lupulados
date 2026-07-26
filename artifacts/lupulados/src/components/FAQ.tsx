@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
 import { buildWhatsAppUrl } from "@/domain/businessConfig";
 import { cn } from "@/lib/utils";
+import { SectionContinueHint } from "@/components/SectionContinueHint";
 
 const FAQS = [
   {
@@ -32,7 +33,7 @@ export function FAQ() {
 
   return (
     <section id="faq" className="site-section site-section-standard bg-background relative">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div data-section-entry className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-10 md:mb-12">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-4">
             Preguntas Frecuentes
@@ -41,7 +42,7 @@ export function FAQ() {
         </div>
 
         <div className="space-y-4 mb-12">
-          {FAQS.map((faq, i) => (
+          {FAQS.slice(0, 3).map((faq, i) => (
             <div 
               key={i} 
               className={cn(
@@ -78,6 +79,51 @@ export function FAQ() {
               </AnimatePresence>
             </div>
           ))}
+
+          <SectionContinueHint label="Mas respuestas debajo" className="my-6" />
+
+          <div data-section-secondary className="space-y-4">
+            {FAQS.slice(3).map((faq, offset) => {
+              const i = offset + 3;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "border rounded-xl transition-colors duration-300",
+                    openIndex === i ? "bg-white/5 border-primary/30" : "bg-card border-white/5 hover:border-white/10"
+                  )}
+                >
+                  <button
+                    onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                    className="flex items-center justify-between w-full p-6 text-left"
+                  >
+                    <span className="text-lg font-bold text-white">{faq.q}</span>
+                    <ChevronDown
+                      className={cn(
+                        "w-5 h-5 text-primary transition-transform duration-300",
+                        openIndex === i ? "rotate-180" : ""
+                      )}
+                    />
+                  </button>
+
+                  <AnimatePresence>
+                    {openIndex === i && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="px-6 pb-6 pt-0 text-muted-foreground">
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="text-center">

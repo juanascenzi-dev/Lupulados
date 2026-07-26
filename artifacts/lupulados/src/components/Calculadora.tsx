@@ -122,7 +122,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(217,119,6,0.05)_0%,transparent_70%)] pointer-events-none" />
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="glass-panel p-5 sm:p-6 lg:p-7 xl:p-8 rounded-3xl">
+        <div data-section-entry className="calculator-panel glass-panel p-5 sm:p-6 lg:p-7 xl:p-8 rounded-3xl">
           <div className="flex items-center justify-center gap-3 mb-3">
             <Calculator className="w-7 h-7 text-primary" aria-hidden="true" />
             <h2 className="text-3xl md:text-4xl font-display font-bold text-white text-center">
@@ -130,17 +130,17 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
             </h2>
           </div>
 
-          <p className="text-center text-muted-foreground mb-6 lg:mb-7 max-w-2xl mx-auto">
+          <p className="calculator-copy text-center text-muted-foreground mb-6 lg:mb-7 max-w-2xl mx-auto">
             Ajustá los detalles de tu evento y estimá cuánta cerveza conviene pedir.
           </p>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7 xl:gap-8">
+          <div className="calculator-grid grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7 xl:gap-8">
 
             {/* Inputs */}
-            <div className="lg:col-span-7 space-y-4 lg:space-y-5">
+            <div className="calculator-controls lg:col-span-7 space-y-4 lg:space-y-5">
 
               {/* Guests */}
-              <div className="bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
+              <div className="calculator-card bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
                 <div className="flex justify-between items-center mb-3">
                   <label htmlFor="calculator-guests" className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
                     <Users className="w-4 h-4 text-primary" aria-hidden="true" /> Invitados
@@ -193,7 +193,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               </div>
 
               {/* Duration */}
-              <div className="bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
+              <div className="calculator-card bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
                 <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-3">
                   <Clock className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Cuánto dura el evento?
                 </label>
@@ -284,7 +284,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               </div>
 
               {/* Event Type — 4 large cards */}
-              <div className="bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
+              <div className="calculator-card bg-white/5 p-4 lg:p-5 rounded-2xl border border-white/10">
                 <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-3">
                   <Beer className="w-4 h-4 text-primary" aria-hidden="true" /> Estilo de fiesta
                 </label>
@@ -298,7 +298,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         onClick={() => setType(t.id)}
                         aria-pressed={selected}
                         className={cn(
-                          "relative flex flex-col items-center text-center p-3 rounded-xl border transition-all duration-200 min-h-28",
+                          "calculator-event-option relative flex flex-col items-center text-center p-3 rounded-xl border transition-all duration-200 min-h-28",
                           selected
                             ? "bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(217,119,6,0.2)]"
                             : "bg-white/5 border-white/10 hover:border-white/30"
@@ -326,7 +326,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                 onClick={() => setIsSummer(!isSummer)}
                 aria-pressed={isSummer}
                 className={cn(
-                  "w-full p-4 lg:p-5 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between",
+                  "calculator-card w-full p-4 lg:p-5 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between",
                   isSummer ? "bg-amber-500/10 border-amber-500/30" : "bg-white/5 border-white/10 hover:border-white/30"
                 )}
               >
@@ -346,7 +346,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
 
             {/* Output */}
             <div className="lg:col-span-5 flex flex-col h-full">
-              <div className="bg-black/40 rounded-3xl p-5 lg:p-6 xl:p-7 border border-primary/20 flex flex-col items-center justify-start text-center flex-1 relative overflow-hidden">
+              <div className="calculator-result-card bg-black/40 rounded-3xl p-5 lg:p-6 xl:p-7 border border-primary/20 flex flex-col items-center justify-start text-center flex-1 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl" />
 
@@ -356,14 +356,14 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                     {totalLiters}<span className="text-3xl text-primary ml-1">L</span>
                   </div>
 
-                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4 lg:my-5" />
+                  <div className="calculator-result-divider h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-4 lg:my-5" />
 
                   <span className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-3 block">Sugerencia de barriles</span>
                   <div className="bg-primary/10 text-primary border border-primary/20 rounded-xl px-4 py-3 mb-4 lg:mb-5 font-mono font-bold text-lg w-full">
                     {barrelPlan.label}
                   </div>
 
-                  <div className="mb-5 lg:mb-6">
+                  <div className="calculator-result-price mb-5 lg:mb-6">
                     <span className="text-white/40 text-xs block mb-1">Estimado desde</span>
                     <span className="text-white font-bold text-2xl">{formatPrice(barrelPlan.estimatedPrice)}</span>
                     <span className="text-white/35 text-xs block mt-2">{priceDisclaimer}</span>
