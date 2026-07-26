@@ -21,18 +21,34 @@ const Testimonios = lazy(() => import("@/components/Testimonios").then((module) 
 const FAQ = lazy(() => import("@/components/FAQ").then((module) => ({ default: module.FAQ })));
 const Ubicacion = lazy(() => import("@/components/Ubicacion").then((module) => ({ default: module.Ubicacion })));
 
+function isPromoBannerClosed(storageKey: string) {
+  try {
+    return localStorage.getItem(storageKey) === "true";
+  } catch {
+    return false;
+  }
+}
+
+function persistPromoBannerClosed(storageKey: string) {
+  try {
+    localStorage.setItem(storageKey, "true");
+  } catch {
+    // The banner can still close in memory when browser storage is unavailable.
+  }
+}
+
 export default function Landing() {
   const { promotionConfig } = useCommercialDerivedData();
   const orderSectionRef = useRef<HTMLElement | null>(null);
   const [showBanner, setShowBanner] = useState(() => {
-    return localStorage.getItem(promotionConfig.bannerClosedStorageKey) !== "true";
+    return !isPromoBannerClosed(promotionConfig.bannerClosedStorageKey);
   });
   const [pendingRecommendation, setPendingRecommendation] =
     useState<BarrelRecommendation | null>(null);
 
   const closeBanner = () => {
     setShowBanner(false);
-    localStorage.setItem(promotionConfig.bannerClosedStorageKey, "true");
+    persistPromoBannerClosed(promotionConfig.bannerClosedStorageKey);
   };
 
   const useRecommendation = (recommendation: BarrelRecommendation) => {

@@ -130,10 +130,10 @@ export const commercialSnapshotSchema = z.object({
   });
 
   const activePrimaryChannels = snapshot.whatsappChannels.filter((channel) => channel.active && channel.isPrimary);
-  if (activePrimaryChannels.length !== 1) {
+  if (activePrimaryChannels.length > 1) {
     ctx.addIssue({
       code: "custom",
-      message: "Exactly one active WhatsApp channel must be primary",
+      message: "At most one active WhatsApp channel can be primary",
       path: ["whatsappChannels"],
     });
   }

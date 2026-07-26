@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { readCartItems, writeCartItems, type StoredCartItem } from "@/domain/cartStorage";
+import {
+  normalizeCartQuantity,
+  readCartItems,
+  reconcileCartItemsWithSnapshot,
+  writeCartItems,
+  type StoredCartItem,
+} from "@/domain/cartStorage";
 import type { CartCategory } from "@/domain/beerCatalog";
 import { calculateOrderSummary, type OrderSummary } from "@/domain/orderSummary";
 import { useCommercialData } from "@/context/CommercialDataContext";
@@ -51,12 +57,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [items]);
 
+  useEffect(() => {
+    setItems((prev) => {
+      const next = reconcileCartItemsWithSnapshot(prev, snapshot);
+      return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
+    });
+  }, [snapshot]);
+
   const addItem = (newItem: Omit<CartItem, "qty"> & { category: CartCategory }) => {
     setItems((prev) => {
       const existing = prev.find((i) => i.id === newItem.id);
       if (existing) {
         return prev.map((i) =>
-          i.id === newItem.id ? { ...i, qty: i.qty + 1 } : i
+          i.id === newItem.id ? { ...i, qty: normalizeCartQuantity(i.qty + 1) } : i
         );
       }
       return [...prev, { ...newItem, qty: 1 }];
@@ -68,12 +81,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateQty = (id: string, qty: number) => {
-    if (qty <= 0) {
+    const nextQty = normalizeCartQuantity(qty);
+    if (nextQty <= 0) {
       removeItem(id);
       return;
     }
     setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, qty } : i))
+      prev.map((i) => (i.id === id ? { ...i, qty: nextQty } : i))
     );
   };
 

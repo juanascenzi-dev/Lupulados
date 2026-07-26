@@ -152,12 +152,25 @@ describe("commercialData", () => {
     expect(() => validateCommercialSnapshot(invalid)).toThrow();
   });
 
+  it("accepts an active order WhatsApp channel without a primary flag so selectors can fall back", () => {
+    const valid = cloneSnapshot({
+      whatsappChannels: commercialSnapshot.whatsappChannels.map((channel) => ({
+        ...channel,
+        purpose: "orders_and_contact",
+        isPrimary: false,
+      })),
+    });
+
+    expect(validateCommercialSnapshot(valid)).toEqual(valid);
+    expect(getPrimaryOrderWhatsAppChannel(valid.whatsappChannels)?.id).toBe("whatsapp-principal");
+  });
+
   it("rejects two active primary WhatsApp channels", () => {
     const invalid = cloneSnapshot({
       whatsappChannels: commercialSnapshot.whatsappChannels.map((channel) => ({ ...channel, isPrimary: true })),
     });
 
-    expect(() => validateCommercialSnapshot(invalid)).toThrow("Exactly one active WhatsApp channel must be primary");
+    expect(() => validateCommercialSnapshot(invalid)).toThrow("At most one active WhatsApp channel can be primary");
   });
 
   it("does not mutate snapshot data through selectors", () => {

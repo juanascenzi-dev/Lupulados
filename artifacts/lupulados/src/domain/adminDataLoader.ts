@@ -31,3 +31,20 @@ export async function refreshAfterAdminMutation(
   await refreshPublicSnapshot();
   return adminData;
 }
+
+export async function runSingleAdminMutation<T>(
+  lock: { current: boolean },
+  setBusy: (busy: boolean) => void,
+  action: () => Promise<T>,
+) {
+  if (lock.current) return { ok: false as const };
+
+  lock.current = true;
+  setBusy(true);
+  try {
+    return { ok: true as const, value: await action() };
+  } finally {
+    lock.current = false;
+    setBusy(false);
+  }
+}

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { useLocation } from "wouter";
 import { Archive, CheckCircle, Edit, LogOut, Plus, RefreshCw, Save, X } from "lucide-react";
@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useCommercialData } from "@/context/CommercialDataContext";
 import { SupabaseCommercialRepository, type AdminAuditLogEntry } from "@/domain/commercialRepository";
-import { loadAdminCommercialData, refreshAfterAdminMutation, type AdminCommercialData } from "@/domain/adminDataLoader";
+import { loadAdminCommercialData, refreshAfterAdminMutation, runSingleAdminMutation, type AdminCommercialData } from "@/domain/adminDataLoader";
 import {
   deliveryToFormValues,
   extraToFormValues,
@@ -72,6 +72,7 @@ export default function AdminDashboard() {
   const commercial = useCommercialData();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [adminLoading, setAdminLoading] = useState(false);
   const [auditLoading, setAuditLoading] = useState(false);
   const [search, setSearch] = useState("");
@@ -131,18 +132,19 @@ export default function AdminDashboard() {
 
   const run = async (action: () => Promise<unknown>, success: string) => {
     if (!repository) return false;
-    setBusy(true);
-    try {
+    const result = await runSingleAdminMutation(busyRef, setBusy, async () => {
       await action();
       await refreshEverything();
       toast({ title: success });
-      return true;
-    } catch (error) {
+    }).catch((error) => {
       toast({ title: "No se pudo guardar", description: getFirstZodError(error, "Error inesperado.") });
+      return { ok: false as const };
+    });
+
+    if (!result.ok) {
       return false;
-    } finally {
-      setBusy(false);
     }
+    return true;
   };
 
   const loadAudit = async () => {

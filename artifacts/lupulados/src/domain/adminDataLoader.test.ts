@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { commercialSnapshot } from "./commercialData";
-import { loadAdminCommercialData, refreshAfterAdminMutation } from "./adminDataLoader";
+import { loadAdminCommercialData, refreshAfterAdminMutation, runSingleAdminMutation } from "./adminDataLoader";
 import type { CommercialRepository } from "./commercialRepository";
 
 function repositoryWithArchived(): CommercialRepository {
@@ -57,5 +57,27 @@ describe("admin data loader", () => {
     expect(repository.listWhatsAppChannels).toHaveBeenCalledTimes(1);
     expect(refreshPublic).toHaveBeenCalledTimes(1);
     expect(data.products).toHaveLength(2);
+  });
+
+  it("blocks a second administrative mutation while one is already running", async () => {
+    const lock = { current: false };
+    const setBusy = vi.fn();
+    let release!: () => void;
+    const firstAction = vi.fn(() => new Promise<void>((resolve) => {
+      release = resolve;
+    }));
+    const secondAction = vi.fn(async () => undefined);
+
+    const first = runSingleAdminMutation(lock, setBusy, firstAction);
+    const second = await runSingleAdminMutation(lock, setBusy, secondAction);
+    release();
+    const firstResult = await first;
+
+    expect(firstResult.ok).toBe(true);
+    expect(second.ok).toBe(false);
+    expect(firstAction).toHaveBeenCalledTimes(1);
+    expect(secondAction).not.toHaveBeenCalled();
+    expect(setBusy).toHaveBeenNthCalledWith(1, true);
+    expect(setBusy).toHaveBeenLastCalledWith(false);
   });
 });

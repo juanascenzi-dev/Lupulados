@@ -30,7 +30,6 @@ import {
   createBeerCartItem,
   getBeerPresentation,
   getCartItemImage,
-  getCartItemLiters,
   growlerPresentationIds,
   packagedPresentationIds,
   tastingPack,
@@ -186,23 +185,15 @@ function LiveOrderSummary({
     totalPrice,
     totalItems,
     extras,
+    orderSummary,
     clearCart,
   } = useCart();
   const {
-    snapshot,
-    beerCatalog: BEERS,
     deliveryOptions,
-    orderTypeOptions: ORDER_TYPES,
     priceDisclaimer,
-    primaryOrderWhatsAppChannel,
-    promotionConfig,
   } = useCommercialDerivedData();
   const deliveryCost = deliveryOptions.find((option) => option.id === extras.delivery)?.cost ?? 0;
-  const totalLiters = items
-    .filter((i) => i.category === "barril")
-    .reduce((acc, i) => {
-      return acc + getCartItemLiters(i.id) * i.qty;
-    }, 0);
+  const totalLiters = orderSummary.totalLiters;
 
   return (
     <div className={cn("flex flex-col h-full", asDrawer ? "max-h-[75vh]" : "")}>

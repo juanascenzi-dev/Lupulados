@@ -225,6 +225,18 @@ describe("commercial public compatibility", () => {
     expect(channel?.id).toBe("whatsapp-alternativo");
   });
 
+  it("keeps public snapshot valid when Supabase has no primary order flag but has an active order channel", () => {
+    const snapshot = snapshotFromRows(rows({
+      whatsappChannels: whatsappRows.map((row) => ({
+        ...row,
+        purpose: "orders_and_contact",
+        is_primary: false,
+      })),
+    }));
+
+    expect(getPrimaryOrderWhatsAppChannel(snapshot.whatsappChannels)?.id).toBe("whatsapp-principal");
+  });
+
   it("excludes expired promotions", () => {
     expect(listActivePromotions({
       ...commercialSnapshot,
