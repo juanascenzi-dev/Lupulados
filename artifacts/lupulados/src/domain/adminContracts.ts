@@ -9,9 +9,13 @@ import type {
 } from "./commercialTypes";
 
 export type CreateProductInput = Omit<Product, "id" | "status"> & { id: string };
-export type UpdateProductInput = Partial<Omit<Product, "id">>;
+export type UpdateProductInput = Partial<Omit<Product, "id" | "abv" | "ibu" | "badge">> & {
+  abv?: number | null;
+  ibu?: number | null;
+  badge?: string | null;
+};
 export type CreatePresentationInput = Omit<ProductPresentation, "id" | "active"> & { id: string };
-export type UpdatePresentationInput = Partial<Omit<ProductPresentation, "id" | "productId">>;
+export type UpdatePresentationInput = Partial<Omit<ProductPresentation, "id" | "description">> & { description?: string | null };
 export type UpdateBusinessProfileInput = Partial<Omit<BusinessProfile, "id">>;
 export type CreateWhatsAppChannelInput = Omit<WhatsAppChannel, "id" | "active"> & { id: string };
 export type UpdateWhatsAppChannelInput = Partial<Omit<WhatsAppChannel, "id">>;

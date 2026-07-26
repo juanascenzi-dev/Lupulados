@@ -543,6 +543,7 @@ function presentationToRow(input: ProductPresentation) {
 
 function presentationPatchToRow(input: UpdatePresentationInput) {
   return compact({
+    product_id: input.productId,
     presentation_type: input.presentationType,
     label: input.label,
     volume_liters: input.volumeLiters,

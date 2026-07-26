@@ -87,8 +87,8 @@ export interface Promotion {
   type: PromotionType;
   value: number;
   active: boolean;
-  startDate?: string;
-  endDate?: string;
+  startDate?: string | null;
+  endDate?: string | null;
 }
 
 export interface CommercialSnapshot {

@@ -6,6 +6,7 @@ const positiveVolumeSchema = z.number().finite().positive();
 const sortOrderSchema = z.number().int().nonnegative();
 const phoneE164Schema = z.string().regex(/^54911\d{8}$/, "WhatsApp phone must use 54911XXXXXXXX format");
 const dateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const nullableDateSchema = dateSchema.nullable().optional();
 
 export const businessProfileSchema = z.object({
   id: idSchema,
@@ -82,8 +83,8 @@ export const promotionSchema = z.object({
   type: z.enum(["percentage", "fixed"]),
   value: nonNegativePriceSchema,
   active: z.boolean(),
-  startDate: dateSchema.optional(),
-  endDate: dateSchema.optional(),
+  startDate: nullableDateSchema,
+  endDate: nullableDateSchema,
 }).superRefine((promotion, ctx) => {
   if (promotion.type === "percentage" && promotion.value > 1) {
     ctx.addIssue({ code: "custom", message: "Percentage promotions must use a value between 0 and 1", path: ["value"] });

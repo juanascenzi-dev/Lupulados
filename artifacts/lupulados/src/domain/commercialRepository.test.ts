@@ -140,8 +140,8 @@ describe("Supabase commercial mappers", () => {
 });
 
 describe("commercial repository mutations", () => {
-  function repoForUpdate() {
-    const single = vi.fn().mockResolvedValue({ data: productRows[0], error: null });
+  function repoForUpdate<T>(row: T) {
+    const single = vi.fn().mockResolvedValue({ data: row, error: null });
     const select = vi.fn(() => ({ single }));
     const eq = vi.fn(() => ({ select }));
     const update = vi.fn(() => ({ eq }));
@@ -161,13 +161,43 @@ describe("commercial repository mutations", () => {
   });
 
   it("does not send ID changes when editing products", async () => {
-    const { repo, update } = repoForUpdate();
+    const { repo, update } = repoForUpdate(productRows[0]);
     await repo.updateProduct("blonde-ale", { id: "other", name: "Blonde" } as never);
     expect(update).toHaveBeenCalledWith({ name: "Blonde" });
   });
 
+  it("updates product optional commercial fields as null when cleared", async () => {
+    const { repo, update } = repoForUpdate(productRows[0]);
+    await repo.updateProduct("blonde-ale", { abv: null, ibu: null, badge: null });
+    expect(update).toHaveBeenCalledWith({ abv: null, ibu: null, badge: null });
+  });
+
+  it("updates presentation product, price, and nullable description", async () => {
+    const { repo, update } = repoForUpdate(presentationRows[0]);
+    await repo.updatePresentation("apa:barril20L", { productId: "ipa", unitPrice: 0, description: null });
+    expect(update).toHaveBeenCalledWith({ product_id: "ipa", unit_price: 0, description: null });
+  });
+
+  it("updates delivery options", async () => {
+    const { repo, update } = repoForUpdate(deliveryRows[0]);
+    await repo.updateDeliveryOption("delivery", { label: "Retiro", description: "Retiro", price: 0, requiresAddress: false, sortOrder: 1 });
+    expect(update).toHaveBeenCalledWith({ label: "Retiro", description: "Retiro", price: 0, requires_address: false, sort_order: 1 });
+  });
+
+  it("updates extra options", async () => {
+    const { repo, update } = repoForUpdate(extraRows[0]);
+    await repo.updateExtraOption("ice", { label: "Hielo", price: 1000, unit: "bolsa", sortOrder: 2 });
+    expect(update).toHaveBeenCalledWith({ label: "Hielo", price: 1000, unit: "bolsa", sort_order: 2 });
+  });
+
+  it("updates promotions with uppercase codes and nullable dates", async () => {
+    const { repo, update } = repoForUpdate(promotionRows[0]);
+    await repo.updatePromotion("promo", { code: " verano ", type: "fixed", value: 1000, startDate: null, endDate: null });
+    expect(update).toHaveBeenCalledWith({ code: "VERANO", promotion_type: "fixed", value: 1000, starts_at: null, ends_at: null });
+  });
+
   it("archives and restores products using status", async () => {
-    const { repo, update } = repoForUpdate();
+    const { repo, update } = repoForUpdate(productRows[0]);
     await repo.archiveProduct("blonde-ale");
     await repo.restoreProduct("blonde-ale");
     expect(update).toHaveBeenNthCalledWith(1, { status: "archived" });
