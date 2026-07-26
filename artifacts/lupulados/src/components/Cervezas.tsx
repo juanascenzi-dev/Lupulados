@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import {
   barrelPresentationIds,
@@ -13,8 +13,15 @@ import {
 import { formatPrice } from "@/domain/format";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { useToast } from "@/hooks/use-toast";
-import { X, Plus, Minus, ShoppingCart, Filter } from "lucide-react";
+import { Plus, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const FILTER_OPTIONS = ["Todas", "Livianas", "Lupuladas", "Oscuras"] as const;
 type BeerFilter = (typeof FILTER_OPTIONS)[number];
@@ -35,9 +42,8 @@ export function Cervezas() {
     return true;
   });
 
-  const handleAddToCart = (presentationId: BeerPresentationId) => {
-    if (!selectedBeer) return;
-    const item = createBeerCartItem(selectedBeer, presentationId);
+  const handleAddToCart = (beer: Beer, presentationId: BeerPresentationId) => {
+    const item = createBeerCartItem(beer, presentationId);
     
     addItem(item);
 
@@ -102,46 +108,60 @@ export function Cervezas() {
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-16">
           {filteredBeers.map((beer, i) => (
-            <motion.div
+            <Dialog
               key={beer.id}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              onClick={() => setSelectedBeer(beer)}
-              className="group relative rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-colors shadow-lg cursor-pointer"
+              open={selectedBeer?.id === beer.id}
+              onOpenChange={(open) => setSelectedBeer(open ? beer : null)}
             >
-              <div className="h-40 md:h-56 overflow-hidden relative">
-                <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10" />
-                <img 
-                  src={beer.img} 
-                  alt={`Cerveza artesanal ${beer.name}`} 
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+              <DialogTrigger asChild>
+                <motion.button
+                  type="button"
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  aria-label={`Ver detalle de ${beer.name}`}
+                  className="group relative rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-colors shadow-lg cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  <div className="h-40 md:h-56 overflow-hidden relative">
+                    <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10" />
+                    <img
+                      src={beer.img}
+                      alt={`Cerveza artesanal ${beer.name}`}
+                      loading="lazy"
+                      decoding="async"
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                    />
+                    {beer.badge && (
+                      <div className="absolute top-3 right-3 z-20 bg-primary/90 backdrop-blur-sm text-black text-[10px] md:text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                        {beer.badge}
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4 md:p-6 relative z-20">
+                    <h4 className="text-xl md:text-2xl font-display font-bold text-white mb-2">{beer.name}</h4>
+                    <p className="text-muted-foreground text-xs md:text-sm mb-4 line-clamp-2">{beer.desc}</p>
+                    <div className="flex items-center gap-3 text-xs font-mono bg-white/5 p-2 rounded-lg border border-white/5">
+                      <div className="flex flex-col">
+                        <span className="text-white/40 text-[9px] uppercase">IBU</span>
+                        <span className="text-primary font-bold">{beer.ibu}</span>
+                      </div>
+                      <div className="w-px h-6 bg-white/10" />
+                      <div className="flex flex-col">
+                        <span className="text-white/40 text-[9px] uppercase">ALC</span>
+                        <span className="text-white font-bold">{beer.abv}%</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.button>
+              </DialogTrigger>
+              <DialogContent className="w-[calc(100%-2rem)] max-w-lg bg-card border-white/10 p-0 gap-0 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
+                <BeerDetailsDialogContent
+                  beer={beer}
+                  onAddToCart={(presentationId) => handleAddToCart(beer, presentationId)}
                 />
-                {beer.badge && (
-                  <div className="absolute top-3 right-3 z-20 bg-primary/90 backdrop-blur-sm text-black text-[10px] md:text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-                    {beer.badge}
-                  </div>
-                )}
-              </div>
-              <div className="p-4 md:p-6 relative z-20">
-                <h4 className="text-xl md:text-2xl font-display font-bold text-white mb-2">{beer.name}</h4>
-                <p className="text-muted-foreground text-xs md:text-sm mb-4 line-clamp-2">{beer.desc}</p>
-                <div className="flex items-center gap-3 text-xs font-mono bg-white/5 p-2 rounded-lg border border-white/5">
-                  <div className="flex flex-col">
-                    <span className="text-white/40 text-[9px] uppercase">IBU</span>
-                    <span className="text-primary font-bold">{beer.ibu}</span>
-                  </div>
-                  <div className="w-px h-6 bg-white/10" />
-                  <div className="flex flex-col">
-                    <span className="text-white/40 text-[9px] uppercase">ALC</span>
-                    <span className="text-white font-bold">{beer.abv}%</span>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+              </DialogContent>
+            </Dialog>
           ))}
         </div>
         
@@ -176,99 +196,86 @@ export function Cervezas() {
         </motion.div>
 
       </div>
-
-      {/* Beer Modal */}
-      <AnimatePresence>
-        {selectedBeer && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedBeer(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} 
-              animate={{ opacity: 1, scale: 1, y: 0 }} 
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg bg-card border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-10 flex flex-col max-h-[90vh]"
-            >
-              <div className="h-48 relative shrink-0">
-                <img src={selectedBeer.img} alt={selectedBeer.name} decoding="async" className="w-full h-full object-cover" />
-                <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
-                <button 
-                  onClick={() => setSelectedBeer(null)}
-                  className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black transition-colors"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-                <div className="absolute bottom-4 left-6">
-                  <h3 className="text-3xl font-display font-bold text-white">{selectedBeer.name}</h3>
-                </div>
-              </div>
-              
-              <div className="p-6 overflow-y-auto custom-scrollbar">
-                <p className="text-muted-foreground mb-6">{selectedBeer.desc}</p>
-                
-                <div className="space-y-6">
-                  {/* Barriles */}
-                  <div>
-                    <h5 className="text-white font-semibold mb-3 border-b border-white/10 pb-2">Barriles</h5>
-                    <div className="space-y-2">
-                      {barrelPresentationIds.map((presentationId) => {
-                        const item = getBeerPresentation(selectedBeer, presentationId);
-                        if (!item) return null;
-
-                        return (
-                        <div key={item.id} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
-                          <span className="text-white">{item.label}</span>
-                          <div className="flex items-center gap-4">
-                            <span className="text-primary font-bold">{formatPrice(item.price)}</span>
-                            <button 
-                              onClick={() => handleAddToCart(item.id)}
-                              className="w-8 h-8 rounded-lg bg-primary text-black flex items-center justify-center hover:bg-amber-400 transition-colors"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Growlers & Porrones */}
-                  <div>
-                    <h5 className="text-white font-semibold mb-3 border-b border-white/10 pb-2">Envasado</h5>
-                    <div className="space-y-2">
-                      {[...growlerPresentationIds, ...packagedPresentationIds].map((presentationId) => {
-                        const item = getBeerPresentation(selectedBeer, presentationId);
-                        if (!item) return null;
-
-                        return (
-                        <div key={item.id} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
-                          <span className="text-white">{item.label}</span>
-                          <div className="flex items-center gap-4">
-                            <span className="text-primary font-bold">{formatPrice(item.price)}</span>
-                            <button 
-                              onClick={() => handleAddToCart(item.id)}
-                              className="w-8 h-8 rounded-lg bg-primary text-black flex items-center justify-center hover:bg-amber-400 transition-colors"
-                            >
-                              <Plus className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </section>
+  );
+}
+
+export function BeerDetailsDialogContent({
+  beer,
+  onAddToCart,
+}: {
+  beer: Beer;
+  onAddToCart: (presentationId: BeerPresentationId) => void;
+}) {
+  return (
+    <>
+      <div className="h-48 relative shrink-0">
+        <img src={beer.img} alt={beer.name} decoding="async" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
+        <div className="absolute bottom-4 left-6 right-12">
+          <DialogTitle className="text-3xl font-display font-bold text-white">{beer.name}</DialogTitle>
+        </div>
+      </div>
+
+      <div className="p-6 overflow-y-auto custom-scrollbar">
+        <DialogDescription className="text-muted-foreground mb-6">{beer.desc}</DialogDescription>
+
+        <div className="space-y-6">
+          <div>
+            <h5 className="text-white font-semibold mb-3 border-b border-white/10 pb-2">Barriles</h5>
+            <div className="space-y-2">
+              {barrelPresentationIds.map((presentationId) => {
+                const item = getBeerPresentation(beer, presentationId);
+                if (!item) return null;
+
+                return (
+                  <div key={item.id} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                    <span className="text-white">{item.label}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-primary font-bold">{formatPrice(item.price)}</span>
+                      <button
+                        type="button"
+                        aria-label={`Agregar ${beer.name} ${item.label} al pedido`}
+                        onClick={() => onAddToCart(item.id)}
+                        className="w-8 h-8 rounded-lg bg-primary text-black flex items-center justify-center hover:bg-amber-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                      >
+                        <Plus className="w-4 h-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <h5 className="text-white font-semibold mb-3 border-b border-white/10 pb-2">Envasado</h5>
+            <div className="space-y-2">
+              {[...growlerPresentationIds, ...packagedPresentationIds].map((presentationId) => {
+                const item = getBeerPresentation(beer, presentationId);
+                if (!item) return null;
+
+                return (
+                  <div key={item.id} className="flex items-center justify-between bg-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors">
+                    <span className="text-white">{item.label}</span>
+                    <div className="flex items-center gap-4">
+                      <span className="text-primary font-bold">{formatPrice(item.price)}</span>
+                      <button
+                        type="button"
+                        aria-label={`Agregar ${beer.name} ${item.label} al pedido`}
+                        onClick={() => onAddToCart(item.id)}
+                        className="w-8 h-8 rounded-lg bg-primary text-black flex items-center justify-center hover:bg-amber-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                      >
+                        <Plus className="w-4 h-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

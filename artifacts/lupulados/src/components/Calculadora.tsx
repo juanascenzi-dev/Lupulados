@@ -350,7 +350,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
                 <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl" />
 
-                <div className="relative z-10 w-full">
+                <div className="relative z-10 w-full" role="status" aria-live="polite" aria-atomic="true">
                   <span className="text-white/60 text-sm uppercase tracking-widest font-semibold mb-2 block">Vas a necesitar</span>
                   <div className="text-7xl font-display font-bold text-white mb-2 tracking-tighter">
                     {totalLiters}<span className="text-3xl text-primary ml-1">L</span>

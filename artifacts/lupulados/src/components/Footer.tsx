@@ -20,7 +20,6 @@ export function Footer() {
             <p className="text-muted-foreground text-sm leading-relaxed mb-6">
               Cerveza artesanal de calidad superior. Llevamos la mejor experiencia directo a tu evento con alquiler de barriles y choperas.
             </p>
-            <p className="text-white/35 text-xs">Redes sociales a confirmar.</p>
           </div>
 
           <div>

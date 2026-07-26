@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type RefObject } from "react";
+import { useState, useRef, useEffect, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import {
@@ -46,6 +46,7 @@ import {
 } from "@/domain/orderFlow";
 import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
+import { getGuardedActivationState } from "@/domain/activationGuard";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -55,6 +56,7 @@ interface ArmaTuPedidoProps {
 }
 
 const STEP_LABELS = ["Tipo", "Cerveza", "Cantidad", "Extras", "Ticket"];
+const WHATSAPP_ACTIVATION_GUARD_MS = 1500;
 
 const BUBBLES = Array.from({ length: 12 }, (_, i) => ({
   id: i,
@@ -392,6 +394,9 @@ export function ArmaTuPedido({
   const [recommendationError, setRecommendationError] = useState("");
   const appliedRecommendationKeyRef = useRef("");
   const drawerToggleRef = useRef<HTMLButtonElement | null>(null);
+  const whatsAppLastActivationRef = useRef(0);
+  const whatsAppUnlockTimerRef = useRef<number | null>(null);
+  const [whatsAppOpening, setWhatsAppOpening] = useState(false);
 
   useEffect(() => {
     if (!pendingRecommendation) return;
@@ -423,6 +428,14 @@ export function ArmaTuPedido({
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [drawerOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (whatsAppUnlockTimerRef.current !== null) {
+        window.clearTimeout(whatsAppUnlockTimerRef.current);
+      }
+    };
+  }, []);
 
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
     .toISOString()
@@ -518,6 +531,35 @@ export function ArmaTuPedido({
       setExtras((p) => ({ ...p, promoCode: "", discount: 0 }));
       setPromoStatus("invalid");
     }
+  };
+
+  const handleWhatsAppOrderClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    const result = getGuardedActivationState(
+      whatsAppLastActivationRef.current,
+      Date.now(),
+      WHATSAPP_ACTIVATION_GUARD_MS,
+    );
+
+    if (!result.allowed) {
+      event.preventDefault();
+      return;
+    }
+
+    whatsAppLastActivationRef.current = result.lastActivatedAt;
+    setWhatsAppOpening(true);
+    if (whatsAppUnlockTimerRef.current !== null) {
+      window.clearTimeout(whatsAppUnlockTimerRef.current);
+    }
+    whatsAppUnlockTimerRef.current = window.setTimeout(() => {
+      setWhatsAppOpening(false);
+      whatsAppUnlockTimerRef.current = null;
+    }, WHATSAPP_ACTIVATION_GUARD_MS);
+  };
+
+  const handleWhatsAppOrderKeyDown = (event: ReactKeyboardEvent<HTMLAnchorElement>) => {
+    if (event.key !== " ") return;
+    event.preventDefault();
+    event.currentTarget.click();
   };
 
     const whatsAppOrderMessage = buildWhatsAppOrderMessage({
@@ -1560,9 +1602,15 @@ export function ArmaTuPedido({
                         href={whatsAppOrderUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-4 rounded-2xl bg-[#25D366] text-white font-bold text-lg shadow-lg hover:bg-[#1db954] transition-all flex items-center justify-center gap-3 text-center"
+                        aria-disabled={whatsAppOpening}
+                        onClick={handleWhatsAppOrderClick}
+                        onKeyDown={handleWhatsAppOrderKeyDown}
+                        className={cn(
+                          "w-full py-4 rounded-2xl bg-[#25D366] text-white font-bold text-lg shadow-lg hover:bg-[#1db954] transition-all flex items-center justify-center gap-3 text-center",
+                          whatsAppOpening ? "opacity-70 cursor-wait" : "",
+                        )}
                       >
-                        Consultar pedido por WhatsApp
+                        {whatsAppOpening ? "Abriendo WhatsApp..." : "Consultar pedido por WhatsApp"}
                       </a>
                     ) : (
                       <button
