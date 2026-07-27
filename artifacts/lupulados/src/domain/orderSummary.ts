@@ -9,6 +9,12 @@ export interface OrderSummaryItem {
   price: number;
   qty: number;
   category: string;
+  productId?: string;
+  productName?: string;
+  beerId?: string;
+  beerName?: string;
+  presentationId?: string;
+  presentationLabel?: string;
 }
 
 export interface OrderSummaryExtras {

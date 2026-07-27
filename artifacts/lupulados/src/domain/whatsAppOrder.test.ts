@@ -37,10 +37,13 @@ describe("whatsAppOrder", () => {
     expect(message).toContain("Hola, quiero consultar por este pedido de Lupulados.");
     expect(message).toContain("Nombre: Juan Ascenzi");
     expect(message).toContain("Fecha del evento: 24/07/2026");
-    expect(message).toContain("IPA — Barril 50L");
-    expect(message).toContain("1 unidad x $105.000 = $105.000");
+    expect(message).toContain("1. IPA");
+    expect(message).toContain("Presentacion: Barril 50L");
+    expect(message).toContain("Cantidad: 1 unidad");
+    expect(message).toContain("Precio unitario: $105.000");
+    expect(message).toContain("Subtotal: $105.000");
     expect(message).toContain("Total estimado: $105.000");
-    expect(message).toContain("Los precios son estimativos y están sujetos a confirmación.");
+    expect(message).toContain("Los precios son estimativos");
     expect(message).toContain("precio final");
     expect(message).not.toContain("confirmado");
     expect(message).not.toContain("reservado");
@@ -49,8 +52,10 @@ describe("whatsAppOrder", () => {
   it("keeps grouped product quantities in a single line with correct unit and subtotal prices", () => {
     const message = messageFor([item(1, "barril20L", 2)]);
 
-    expect(message).toContain("American Pale Ale (APA) — Barril 20L");
-    expect(message).toContain("2 unidades x $42.000 = $84.000");
+    expect(message).toContain("1. American Pale Ale (APA)");
+    expect(message).toContain("Presentacion: Barril 20L");
+    expect(message).toContain("Cantidad: 2 unidades");
+    expect(message).toContain("Subtotal: $84.000");
     expect(message.match(/American Pale Ale/g)).toHaveLength(1);
   });
 
@@ -61,10 +66,10 @@ describe("whatsAppOrder", () => {
       item(4, "growler2L", 3),
     ]);
 
-    expect(message).toContain("IPA — Barril 50L");
-    expect(message).toContain("American Pale Ale (APA) — Barril 20L");
-    expect(message).toContain("Stout — Growler 2L");
-    expect(message.match(/^• /gm)).toHaveLength(3);
+    expect(message).toContain("1. IPA");
+    expect(message).toContain("2. American Pale Ale (APA)");
+    expect(message).toContain("3. Stout");
+    expect(message.match(/^\d+\. /gm)).toHaveLength(3);
   });
 
   it("calculates total units, liters, subtotal and total without recalculating discounts twice", () => {
@@ -115,7 +120,7 @@ describe("whatsAppOrder", () => {
     expect(message).toContain("Total estimado: $67.000");
   });
 
-  it("omits empty optional fields and never prints undefined or NaN", () => {
+  it("omits empty optional fields and never prints undefined, objects or NaN", () => {
     const summary = calculateOrderSummary([item(2, "barril50L", 1)], baseExtras);
     const message = buildWhatsAppOrderMessage({
       customer: { name: "  ", eventDate: "", timeSlot: "", address: "", notes: "" },
@@ -126,6 +131,7 @@ describe("whatsAppOrder", () => {
     expect(message).not.toContain("Direccion:");
     expect(message).not.toContain("Observaciones:");
     expect(message).not.toContain("undefined");
+    expect(message).not.toContain("[object Object]");
     expect(message).not.toContain("NaN");
   });
 

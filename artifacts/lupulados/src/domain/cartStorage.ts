@@ -11,6 +11,12 @@ export interface StoredCartItem {
   price: number;
   qty: number;
   category: CartCategory;
+  productId?: string;
+  productName?: string;
+  beerId?: string;
+  beerName?: string;
+  presentationId?: string;
+  presentationLabel?: string;
 }
 
 const validCategories: CartCategory[] = ["barril", "growler", "porrón", "pack"];
@@ -32,12 +38,57 @@ function isStoredCartItem(value: unknown): value is StoredCartItem {
   );
 }
 
+const CURRENT_CART_STORAGE_VERSION = 2;
+
+interface VersionedStoredCart {
+  version: 2;
+  items: StoredCartItem[];
+}
+
+function isVersionedStoredCart(value: unknown): value is VersionedStoredCart {
+  if (!value || typeof value !== "object") return false;
+  const cart = value as Partial<VersionedStoredCart>;
+  return cart.version === CURRENT_CART_STORAGE_VERSION && Array.isArray(cart.items);
+}
+
+function normalizeStoredCartItem(value: StoredCartItem): StoredCartItem | null {
+  const qty = normalizeCartQuantity(value.qty);
+  if (qty <= 0) return null;
+
+  return {
+    id: value.id,
+    name: value.name,
+    price: value.price,
+    qty,
+    category: value.category,
+    productId: typeof value.productId === "string" ? value.productId : undefined,
+    productName: typeof value.productName === "string" ? value.productName : undefined,
+    beerId: typeof value.beerId === "string" ? value.beerId : undefined,
+    beerName: typeof value.beerName === "string" ? value.beerName : undefined,
+    presentationId: typeof value.presentationId === "string" ? value.presentationId : undefined,
+    presentationLabel: typeof value.presentationLabel === "string" ? value.presentationLabel : undefined,
+  };
+}
+
+function parseStoredCartPayload(parsed: unknown): StoredCartItem[] {
+  const rawItems = Array.isArray(parsed)
+    ? parsed
+    : isVersionedStoredCart(parsed)
+      ? parsed.items
+      : [];
+
+  return rawItems
+    .filter(isStoredCartItem)
+    .map(normalizeStoredCartItem)
+    .filter((item): item is StoredCartItem => Boolean(item));
+}
+
 export function parseCartItems(rawValue: string | null): StoredCartItem[] {
   if (!rawValue) return [];
 
   try {
     const parsed = JSON.parse(rawValue);
-    return Array.isArray(parsed) ? parsed.filter(isStoredCartItem) : [];
+    return parseStoredCartPayload(parsed);
   } catch {
     return [];
   }
@@ -58,7 +109,7 @@ export function readCartItems(storage: Pick<Storage, "getItem" | "removeItem">):
 
 export function writeCartItems(storage: Pick<Storage, "setItem">, items: StoredCartItem[]) {
   try {
-    storage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    storage.setItem(CART_STORAGE_KEY, JSON.stringify({ version: CURRENT_CART_STORAGE_VERSION, items }));
   } catch {
     // Storage can fail in private mode or when quota is exceeded; the cart still works in memory.
   }
@@ -67,6 +118,53 @@ export function writeCartItems(storage: Pick<Storage, "setItem">, items: StoredC
 export function normalizeCartQuantity(qty: number) {
   if (!Number.isFinite(qty)) return 0;
   return Math.min(Math.max(Math.trunc(qty), 0), MAX_CART_ITEM_QTY);
+}
+
+export function getCartLineKey(item: Pick<StoredCartItem, "id" | "category">) {
+  return `${item.category}:${item.id}`;
+}
+
+export function areSameCartLine(
+  left: Pick<StoredCartItem, "id" | "category">,
+  right: Pick<StoredCartItem, "id" | "category">,
+) {
+  return getCartLineKey(left) === getCartLineKey(right);
+}
+
+export function getCartItemSubtotal(item: Pick<StoredCartItem, "price" | "qty">) {
+  return item.price * item.qty;
+}
+
+export function addCartItemToCart(
+  items: readonly StoredCartItem[],
+  item: Omit<StoredCartItem, "qty">,
+  qty = 1,
+) {
+  const nextQty = normalizeCartQuantity(qty);
+  if (nextQty <= 0) return [...items];
+
+  const existing = items.find((current) => areSameCartLine(current, item));
+  if (existing) {
+    return items.map((current) =>
+      areSameCartLine(current, item)
+        ? { ...current, qty: normalizeCartQuantity(current.qty + nextQty) }
+        : current,
+    );
+  }
+
+  return [...items, { ...item, qty: nextQty }];
+}
+
+export function updateCartItemQuantity(items: readonly StoredCartItem[], id: string, qty: number) {
+  const nextQty = normalizeCartQuantity(qty);
+  if (nextQty <= 0) {
+    return items.filter((item) => item.id !== id);
+  }
+  return items.map((item) => (item.id === id ? { ...item, qty: nextQty } : item));
+}
+
+export function getCartTotal(items: readonly StoredCartItem[]) {
+  return items.reduce((total, item) => total + getCartItemSubtotal(item), 0);
 }
 
 export function reconcileCartItemsWithSnapshot(
@@ -119,5 +217,11 @@ function reconcilePresentationItem(
     price: presentation.unitPrice,
     qty,
     category: presentation.category as CartCategory,
+    productId: product.id,
+    productName: product.name,
+    beerId: product.category === "beer" ? product.id : undefined,
+    beerName: product.category === "beer" ? product.name : undefined,
+    presentationId: presentation.presentationType,
+    presentationLabel: presentation.label,
   } satisfies StoredCartItem;
 }

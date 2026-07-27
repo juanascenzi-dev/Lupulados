@@ -34,6 +34,12 @@ export interface CartItemDraft {
   name: string;
   price: number;
   category: CartCategory;
+  productId?: string;
+  productName?: string;
+  beerId?: string;
+  beerName?: string;
+  presentationId?: string;
+  presentationLabel?: string;
 }
 
 const presentationIds: BeerPresentationId[] = [
@@ -56,6 +62,10 @@ export const tastingPack = {
   name: "Pack Degustación — 6 estilos",
   price: 10500,
   category: "pack" as CartCategory,
+  productId: "pack-degustacion",
+  productName: "Pack DegustaciÃ³n",
+  presentationId: "pack-degustacion",
+  presentationLabel: "6 estilos",
 };
 
 function getMinimumPresentationPrice(ids: BeerPresentationId[]) {
@@ -130,6 +140,12 @@ export function createBeerCartItem(beer: Beer, presentationId: BeerPresentationI
     name: `${beer.name} — ${presentation.label}`,
     price: presentation.price,
     category: presentation.category,
+    productId: beer.id,
+    productName: beer.name,
+    beerId: beer.id,
+    beerName: beer.name,
+    presentationId: presentation.id,
+    presentationLabel: presentation.label,
   };
 }
 

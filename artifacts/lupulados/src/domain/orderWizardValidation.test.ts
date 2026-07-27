@@ -6,6 +6,7 @@ const baseInput = {
   orderType: "barril" as const,
   hasSelectedBeer: true,
   hasCurrentSelection: true,
+  hasCartItems: true,
   customerName: "Juan",
   date: "2026-08-01",
   today: "2026-07-24",
@@ -30,6 +31,12 @@ describe("orderWizardValidation", () => {
   it("does not say delivery is missing when the selected delivery is valid", () => {
     expect(getOrderWizardValidationMessage({ ...baseInput, customerName: "" })).toBe(
       "Complet\u00e1 tu nombre para continuar.",
+    );
+  });
+
+  it("blocks customer data step when the cart is empty", () => {
+    expect(getOrderWizardValidationMessage({ ...baseInput, hasCartItems: false })).toBe(
+      "Agreg\u00e1 al menos un producto al pedido para continuar.",
     );
   });
 

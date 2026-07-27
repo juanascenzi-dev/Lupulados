@@ -53,7 +53,7 @@ describe("orderFlow", () => {
       { presentationId: "barril30L", size: 30, count: 2, price: 54000 },
     ]);
 
-    expect(buildRecommendedBarrelItems(ipa, plan)).toEqual([
+    expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
       {
         id: "ipa:barril30L",
         name: "IPA — Barril 30L",
@@ -72,7 +72,7 @@ describe("orderFlow", () => {
       { presentationId: "barril20L", size: 20, count: 1, price: 38000 },
     ]);
 
-    expect(buildRecommendedBarrelItems(ipa, plan)).toEqual([
+    expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
       {
         id: "ipa:barril50L",
         name: "IPA — Barril 50L",
@@ -104,7 +104,7 @@ describe("orderFlow", () => {
     const plan = calculateBarrelRecommendation(60);
 
     expect(plan.estimatedPrice).toBe(108000);
-    expect(buildRecommendedBarrelItems(ipa, plan)).toEqual([
+    expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
       expect.objectContaining({ id: "ipa:barril30L", price: 66000, qty: 2 }),
     ]);
   });
@@ -134,14 +134,14 @@ describe("orderFlow", () => {
     const pending = preparePendingBarrelRecommendation(calculateBarrelRecommendation(90));
 
     expect(pending.parts).toHaveLength(2);
-    expect(existingItems).toEqual([{ ...createBeerCartItem(beerCatalog[0], "porron500ml"), qty: 6 }]);
+    expect(existingItems).toMatchObject([{ ...createBeerCartItem(beerCatalog[0], "porron500ml"), qty: 6 }]);
   });
 
   it("generates the exact items for explicit recommendation application", () => {
     const blonde = beerCatalog[0];
     const plan = calculateBarrelRecommendation(90);
 
-    expect(buildRecommendedBarrelItems(blonde, plan)).toEqual([
+    expect(buildRecommendedBarrelItems(blonde, plan)).toMatchObject([
       expect.objectContaining({ id: "blonde-ale:barril50L", price: 85000, qty: 1 }),
       expect.objectContaining({ id: "blonde-ale:barril20L", price: 38000, qty: 2 }),
     ]);

@@ -41,7 +41,6 @@ import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import {
   buildRecommendedBarrelItems,
   hasCurrentSelectionInCart,
-  hasTastingPack,
   type OrderType,
 } from "@/domain/orderFlow";
 import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation";
@@ -173,6 +172,20 @@ function BeerGlassStepper({ step }: { step: Step }) {
   );
 }
 
+function getCartLineTitle(item: { category: string; productName?: string; beerName?: string; name: string }) {
+  if (item.category === "pack") return item.productName ?? item.name;
+  return item.category.charAt(0).toUpperCase() + item.category.slice(1);
+}
+
+function getCartLineBeer(item: { category: string; beerName?: string; productName?: string; name: string }) {
+  if (item.category === "pack") return null;
+  return item.beerName ?? item.productName ?? item.name.split("—")[0]?.trim() ?? item.name;
+}
+
+function getCartLinePresentation(item: { presentationLabel?: string; name: string }) {
+  return item.presentationLabel ?? item.name.split("—")[1]?.trim() ?? null;
+}
+
 function LiveOrderSummary({
   onClose,
   asDrawer = false,
@@ -243,6 +256,9 @@ function LiveOrderSummary({
           <AnimatePresence>
             {items.map((item) => {
               const beerImg = getCartItemImage(item.name);
+              const lineTitle = getCartLineTitle(item);
+              const lineBeer = getCartLineBeer(item);
+              const linePresentation = getCartLinePresentation(item);
               return (
                 <motion.div
                   key={item.id}
@@ -263,8 +279,21 @@ function LiveOrderSummary({
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-xs font-bold truncate">
-                      {item.name}
+                    <p className="text-white text-sm font-bold truncate">
+                      {lineTitle}
+                    </p>
+                    {lineBeer && (
+                      <p className="text-white/75 text-xs truncate">
+                        {lineBeer}
+                      </p>
+                    )}
+                    {linePresentation && (
+                      <p className="text-white/45 text-xs truncate">
+                        {linePresentation}
+                      </p>
+                    )}
+                    <p className="text-primary text-[11px] font-mono mt-1">
+                      Unitario: {formatPrice(item.price)}
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <button
@@ -275,9 +304,16 @@ function LiveOrderSummary({
                       >
                         <Minus className="w-3 h-3" aria-hidden="true" />
                       </button>
-                      <span className="text-primary text-xs font-bold w-4 text-center">
-                        {item.qty}
-                      </span>
+                      <input
+                        aria-label={`Cantidad de ${item.name}`}
+                        type="number"
+                        min={1}
+                        max={999}
+                        step={1}
+                        value={item.qty}
+                        onChange={(event) => updateQty(item.id, Number(event.target.value))}
+                        className="text-primary text-xs font-bold w-10 text-center bg-transparent focus:outline-none focus:ring-1 focus:ring-primary rounded"
+                      />
                       <button
                         type="button"
                         aria-label={`Sumar una unidad de ${item.name}`}
@@ -289,6 +325,9 @@ function LiveOrderSummary({
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-white/45 text-[10px] uppercase tracking-wider">
+                      Subtotal
+                    </span>
                     <span className="text-white text-xs font-bold">
                       {formatPrice(item.price * item.qty)}
                     </span>
@@ -341,7 +380,7 @@ function LiveOrderSummary({
             onClick={clearCart}
             className="w-full mt-2 py-2 rounded-xl bg-white/5 text-white/40 text-xs hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
           >
-            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Vaciar carrito
+            <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Vaciar pedido
           </button>
         </div>
       )}
@@ -377,6 +416,8 @@ export function ArmaTuPedido({
   const [orderId] = useState(() => Math.floor(10000 + Math.random() * 90000));
   const [orderType, setOrderType] = useState<OrderType>(null);
   const [selectedBeer, setSelectedBeer] = useState<CatalogBeer | null>(null);
+  const [draftQuantities, setDraftQuantities] = useState<Record<string, number>>({});
+  const [lastAddedMessage, setLastAddedMessage] = useState("");
   const [promoInput, setPromoInput] = useState("");
   const [promoStatus, setPromoStatus] = useState<"none" | "valid" | "invalid">(
     "none",
@@ -448,9 +489,10 @@ export function ArmaTuPedido({
   const canProceed = (() => {
     if (step === 1) return orderType !== null;
     if (step === 2) return selectedBeer !== null;
-    if (step === 3) return hasCurrentSelection;
+    if (step === 3) return totalItems > 0;
     if (step === 4)
       return (
+        totalItems > 0 &&
         !!formData.nombre.trim() &&
         !!formData.fecha &&
         formData.fecha >= today &&
@@ -462,7 +504,8 @@ export function ArmaTuPedido({
     step,
     orderType,
     hasSelectedBeer: selectedBeer !== null,
-    hasCurrentSelection,
+    hasCurrentSelection: step === 3 ? totalItems > 0 : hasCurrentSelection,
+    hasCartItems: totalItems > 0,
     customerName: formData.nombre,
     date: formData.fecha,
     today,
@@ -475,9 +518,8 @@ export function ArmaTuPedido({
     if (!canProceed) return;
     setDirection(1);
     if (step === 1 && orderType === "paquete") {
-      if (!hasTastingPack(items)) {
-        addItem(tastingPack);
-      }
+      addItem(tastingPack);
+      setLastAddedMessage("Pack Degustación agregado al pedido.");
       setStep(4);
       return;
     }
@@ -515,6 +557,7 @@ export function ArmaTuPedido({
         }
       });
       setRecommendationStatus("added");
+      setLastAddedMessage("Recomendación agregada al pedido.");
       setRecommendationError("");
     } catch (error) {
       appliedRecommendationKeyRef.current = "";
@@ -531,6 +574,18 @@ export function ArmaTuPedido({
       setExtras((p) => ({ ...p, promoCode: "", discount: 0 }));
       setPromoStatus("invalid");
     }
+  };
+
+  const getDraftQuantity = (id: string) => draftQuantities[id] ?? 1;
+
+  const setDraftQuantity = (id: string, qty: number) => {
+    setDraftQuantities((prev) => ({ ...prev, [id]: Math.max(1, Math.min(999, Math.trunc(qty) || 1)) }));
+  };
+
+  const addDraftToOrder = (cartDraft: Omit<(typeof items)[number], "qty">, qty: number) => {
+    addItem(cartDraft, qty);
+    setLastAddedMessage(`${cartDraft.name} agregado al pedido.`);
+    setDraftQuantity(cartDraft.id, 1);
   };
 
   const handleWhatsAppOrderClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -618,7 +673,7 @@ export function ArmaTuPedido({
               : "bg-white/10 text-white/30 cursor-not-allowed",
           )}
         >
-          {step === 4 ? "Ver resumen" : "Siguiente"}{" "}
+          {step === 1 && orderType === "paquete" ? "Agregar al pedido" : step === 4 ? "Ver resumen" : step === 3 ? "Continuar" : "Siguiente"}{" "}
           <ChevronRight className="w-5 h-5" />
         </button>
       )}
@@ -756,7 +811,10 @@ export function ArmaTuPedido({
                       return (
                         <button
                           key={opt.id}
-                          onClick={() => setOrderType(opt.id as OrderType)}
+                          onClick={() => {
+                            setOrderType(opt.id as OrderType);
+                            setLastAddedMessage("");
+                          }}
                           className={cn(
                             "group relative flex flex-col text-left rounded-2xl overflow-hidden border-2 transition-all duration-200",
                             selected
@@ -970,6 +1028,11 @@ export function ArmaTuPedido({
                     <h3 className="text-xl md:text-2xl font-bold text-white">
                       ¿Cuánto necesitás?
                     </h3>
+                    {lastAddedMessage && (
+                      <p className="mt-3 text-sm font-bold text-green-300" role="status">
+                        {lastAddedMessage}
+                      </p>
+                    )}
                   </div>
 
                   <div className="grid gap-4">
@@ -984,7 +1047,7 @@ export function ArmaTuPedido({
                         return (
                           <div
                             key={size.id}
-                            className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4"
+                            className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
                           >
                             <div className="flex-1">
                               <h4 className="text-lg font-bold text-white">
@@ -997,38 +1060,71 @@ export function ArmaTuPedido({
                                 {formatPrice(size.price)}
                               </p>
                             </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
                             {cartItem ? (
-                              <div className="flex items-center bg-white/10 rounded-xl p-1 shrink-0">
+                              <div className="flex items-center bg-white/10 rounded-xl p-1">
                                 <button
+                                  type="button"
+                                  aria-label={`Restar una unidad de ${cartDraft.name}`}
                                   onClick={() =>
                                     updateQty(itemId, cartItem.qty - 1)
                                   }
                                   className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
                                 >
-                                  <Minus className="w-4 h-4 text-white" />
+                                  <Minus className="w-4 h-4 text-white" aria-hidden="true" />
                                 </button>
-                                <span className="w-9 text-center font-bold text-white">
+                                <span className="w-9 text-center font-bold text-white" aria-label={`Cantidad actual ${cartItem.qty}`}>
                                   {cartItem.qty}
                                 </span>
                                 <button
+                                  type="button"
+                                  aria-label={`Sumar una unidad de ${cartDraft.name}`}
                                   onClick={() =>
                                     updateQty(itemId, cartItem.qty + 1)
                                   }
                                   className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
                                 >
-                                  <Plus className="w-4 h-4 text-white" />
+                                  <Plus className="w-4 h-4 text-white" aria-hidden="true" />
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() =>
-                                  addItem(cartDraft)
-                                }
-                                className="shrink-0 px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
-                              >
-                                Agregar
-                              </button>
+                              <div className="flex items-center bg-white/10 rounded-xl p-1">
+                                <button
+                                  type="button"
+                                  aria-label={`Restar cantidad a agregar de ${cartDraft.name}`}
+                                  onClick={() => setDraftQuantity(itemId, getDraftQuantity(itemId) - 1)}
+                                  className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                                >
+                                  <Minus className="w-4 h-4 text-white" aria-hidden="true" />
+                                </button>
+                                <input
+                                  aria-label={`Cantidad de ${cartDraft.name}`}
+                                  type="number"
+                                  min={1}
+                                  max={999}
+                                  step={1}
+                                  value={getDraftQuantity(itemId)}
+                                  onChange={(event) => setDraftQuantity(itemId, Number(event.target.value))}
+                                  className="w-12 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
+                                />
+                                <button
+                                  type="button"
+                                  aria-label={`Sumar cantidad a agregar de ${cartDraft.name}`}
+                                  onClick={() => setDraftQuantity(itemId, getDraftQuantity(itemId) + 1)}
+                                  className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                                >
+                                  <Plus className="w-4 h-4 text-white" aria-hidden="true" />
+                                </button>
+                              </div>
                             )}
+                              <button
+                                type="button"
+                                onClick={() => addDraftToOrder(cartDraft, cartItem ? 1 : getDraftQuantity(itemId))}
+                                className="px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
+                              >
+                                Agregar al pedido
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -1044,7 +1140,7 @@ export function ArmaTuPedido({
                         return (
                           <div
                             key={size.id}
-                            className="bg-white/5 border border-white/10 rounded-2xl p-4 flex items-center justify-between gap-4"
+                            className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
                           >
                             <div>
                               <h4 className="text-lg font-bold text-white">
@@ -1054,40 +1150,71 @@ export function ArmaTuPedido({
                                 {formatPrice(size.price)}
                               </p>
                             </div>
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
                             {cartItem ? (
-                              <div className="flex items-center bg-white/10 rounded-xl p-1 shrink-0">
+                              <div className="flex items-center bg-white/10 rounded-xl p-1">
                                 <button
+                                  type="button"
+                                  aria-label={`Restar una unidad de ${cartDraft.name}`}
                                   onClick={() =>
                                     updateQty(itemId, cartItem.qty - 1)
                                   }
                                   className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
                                 >
-                                  <Minus className="w-4 h-4 text-white" />
+                                  <Minus className="w-4 h-4 text-white" aria-hidden="true" />
                                 </button>
-                                <span className="w-9 text-center font-bold text-white">
+                                <span className="w-9 text-center font-bold text-white" aria-label={`Cantidad actual ${cartItem.qty}`}>
                                   {cartItem.qty}
                                 </span>
                                 <button
+                                  type="button"
+                                  aria-label={`Sumar una unidad de ${cartDraft.name}`}
                                   onClick={() =>
                                     updateQty(itemId, cartItem.qty + 1)
                                   }
                                   className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
                                 >
-                                  <Plus className="w-4 h-4 text-white" />
+                                  <Plus className="w-4 h-4 text-white" aria-hidden="true" />
                                 </button>
                               </div>
                             ) : (
-                              <button
-                                onClick={() =>
-                                  addItem({
-                                    ...cartDraft,
-                                  })
-                                }
-                                className="shrink-0 px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
-                              >
-                                Agregar
-                              </button>
+                              <div className="flex items-center bg-white/10 rounded-xl p-1">
+                                <button
+                                  type="button"
+                                  aria-label={`Restar cantidad a agregar de ${cartDraft.name}`}
+                                  onClick={() => setDraftQuantity(itemId, getDraftQuantity(itemId) - 1)}
+                                  className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                                >
+                                  <Minus className="w-4 h-4 text-white" aria-hidden="true" />
+                                </button>
+                                <input
+                                  aria-label={`Cantidad de ${cartDraft.name}`}
+                                  type="number"
+                                  min={1}
+                                  max={999}
+                                  step={1}
+                                  value={getDraftQuantity(itemId)}
+                                  onChange={(event) => setDraftQuantity(itemId, Number(event.target.value))}
+                                  className="w-12 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
+                                />
+                                <button
+                                  type="button"
+                                  aria-label={`Sumar cantidad a agregar de ${cartDraft.name}`}
+                                  onClick={() => setDraftQuantity(itemId, getDraftQuantity(itemId) + 1)}
+                                  className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                                >
+                                  <Plus className="w-4 h-4 text-white" aria-hidden="true" />
+                                </button>
+                              </div>
                             )}
+                              <button
+                                type="button"
+                                onClick={() => addDraftToOrder(cartDraft, cartItem ? 1 : getDraftQuantity(itemId))}
+                                className="px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
+                              >
+                                Agregar al pedido
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -1102,7 +1229,7 @@ export function ArmaTuPedido({
                             {formatPrice(selectedBeer?.precios.porron500ml || 0)} c/u
                           </p>
                         </div>
-                        <div className="flex items-center gap-6">
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
                           {(() => {
                             if (!selectedBeer) return null;
                             const presentationId = packagedPresentationIds[0];
@@ -1111,33 +1238,54 @@ export function ArmaTuPedido({
 
                             return (
                             <>
+                          <div className="flex items-center gap-4">
                           <button
+                            type="button"
+                            aria-label={`Restar una unidad de ${cartDraft.name}`}
                             onClick={() =>
-                              updateQty(
-                                cartDraft.id,
-                                (cartItem?.qty || 0) - 1,
-                              )
+                              cartItem
+                                ? updateQty(cartDraft.id, cartItem.qty - 1)
+                                : setDraftQuantity(cartDraft.id, getDraftQuantity(cartDraft.id) - 1)
                             }
                             className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-black transition-all"
                           >
-                            <Minus className="w-6 h-6" />
+                            <Minus className="w-6 h-6" aria-hidden="true" />
                           </button>
-                          <span className="text-4xl font-display font-bold text-white w-16 text-center">
-                            {cartItem?.qty || 0}
-                          </span>
-                          <button
-                            onClick={() =>
-                              addItem(cartDraft)
+                          <input
+                            aria-label={`Cantidad de ${cartDraft.name}`}
+                            type="number"
+                            min={1}
+                            max={999}
+                            step={1}
+                            value={cartItem?.qty ?? getDraftQuantity(cartDraft.id)}
+                            onChange={(event) =>
+                              cartItem
+                                ? updateQty(cartDraft.id, Number(event.target.value))
+                                : setDraftQuantity(cartDraft.id, Number(event.target.value))
                             }
+                            className="text-3xl font-display font-bold text-white w-20 text-center bg-white/5 rounded-xl py-2 focus:outline-none focus:ring-1 focus:ring-primary"
+                          />
+                          <button
+                            type="button"
+                            aria-label={`Sumar una unidad de ${cartDraft.name}`}
+                            onClick={() => (cartItem ? updateQty(cartDraft.id, cartItem.qty + 1) : setDraftQuantity(cartDraft.id, getDraftQuantity(cartDraft.id) + 1))}
                             className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-black transition-all"
                           >
-                            <Plus className="w-6 h-6" />
+                            <Plus className="w-6 h-6" aria-hidden="true" />
+                          </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => addDraftToOrder(cartDraft, cartItem ? 1 : getDraftQuantity(cartDraft.id))}
+                            className="px-5 py-3 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
+                          >
+                            Agregar al pedido
                           </button>
                             </>
                             );
                           })()}
                         </div>
-                        {!hasCurrentSelectionInCart(items, selectedBeer, orderType) && (
+                        {totalItems === 0 && (
                           <p className="text-muted-foreground text-sm italic">
                             Elegí la cantidad para continuar
                           </p>
@@ -1183,6 +1331,24 @@ export function ArmaTuPedido({
                           {recommendationError}
                         </p>
                       )}
+                    </div>
+                  )}
+
+                  {totalItems > 0 && (
+                    <div className="mt-5 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDirection(-1);
+                          setStep(1);
+                          setOrderType(null);
+                          setSelectedBeer(null);
+                          setLastAddedMessage("");
+                        }}
+                        className="px-5 py-3 rounded-xl bg-white/5 text-white font-bold hover:bg-white/10 transition-colors border border-white/10"
+                      >
+                        Agregar otro producto
+                      </button>
                     </div>
                   )}
 

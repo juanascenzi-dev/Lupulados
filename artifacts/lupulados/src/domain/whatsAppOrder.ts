@@ -42,6 +42,14 @@ function normalizeWhatsAppPhone(phone: string) {
   return digits;
 }
 
+function splitItemName(name: string) {
+  const [product, presentation] = name.split("—").map((part) => part.trim());
+  return {
+    product: product || name,
+    presentation: presentation || null,
+  };
+}
+
 export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: WhatsAppOrderInput) {
   const lines: string[] = ["Hola, quiero consultar por este pedido de Lupulados.", ""];
   const customerLines = [
@@ -61,11 +69,22 @@ export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: Whats
   }
 
   lines.push("PEDIDO");
-  summary.items.forEach((item) => {
-    lines.push(`• ${item.name}`);
-    lines.push(
-      `  ${formatQuantity(item.qty, "unidad", "unidades")} x ${formatPrice(item.price)} = ${formatPrice(item.price * item.qty)}`,
-    );
+  summary.items.forEach((item, index) => {
+    const splitName = splitItemName(item.name);
+    const productName = item.productName ?? splitName.product;
+    const beerName = item.category === "pack" ? null : item.beerName ?? item.productName ?? splitName.product;
+    const presentationLabel = item.presentationLabel ?? splitName.presentation;
+
+    lines.push(`${index + 1}. ${productName}`);
+    if (beerName && beerName !== productName) {
+      lines.push(`  Cerveza: ${beerName}`);
+    }
+    if (presentationLabel) {
+      lines.push(`  Presentacion: ${presentationLabel}`);
+    }
+    lines.push(`  Cantidad: ${formatQuantity(item.qty, "unidad", "unidades")}`);
+    lines.push(`  Precio unitario: ${formatPrice(item.price)}`);
+    lines.push(`  Subtotal: ${formatPrice(item.price * item.qty)}`);
     lines.push("");
   });
 
@@ -73,7 +92,7 @@ export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: Whats
     lines.push("EXTRAS");
     summary.extraLines.forEach((extra) => {
       lines.push(
-        `• ${extra.label}: ${formatQuantity(extra.quantity, "unidad", "unidades")} x ${formatPrice(extra.unitPrice)} = ${formatPrice(extra.total)}`,
+        `- ${extra.label}: ${formatQuantity(extra.quantity, "unidad", "unidades")} x ${formatPrice(extra.unitPrice)} = ${formatPrice(extra.total)}`,
       );
     });
     lines.push("");

@@ -6,6 +6,7 @@ export interface OrderWizardValidationInput {
   orderType: OrderType;
   hasSelectedBeer: boolean;
   hasCurrentSelection: boolean;
+  hasCartItems: boolean;
   customerName: string;
   date: string;
   today: string;
@@ -19,6 +20,7 @@ export function getOrderWizardValidationMessage({
   orderType,
   hasSelectedBeer,
   hasCurrentSelection,
+  hasCartItems,
   customerName,
   date,
   today,
@@ -31,6 +33,8 @@ export function getOrderWizardValidationMessage({
   if (step === 3 && !hasCurrentSelection) return "Agreg\u00e1 una cantidad al pedido para continuar.";
 
   if (step === 4) {
+    if (!hasCartItems) return "Agreg\u00e1 al menos un producto al pedido para continuar.";
+
     const missingFields = [
       !customerName.trim(),
       !date,

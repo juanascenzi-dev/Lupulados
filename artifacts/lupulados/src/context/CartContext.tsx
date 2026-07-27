@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import {
+  addCartItemToCart,
   normalizeCartQuantity,
   readCartItems,
   reconcileCartItemsWithSnapshot,
+  updateCartItemQuantity,
   writeCartItems,
   type StoredCartItem,
 } from "@/domain/cartStorage";
@@ -15,7 +17,7 @@ export type CartItem = StoredCartItem;
 
 export interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "qty"> & { category: CartCategory }) => void;
+  addItem: (item: Omit<CartItem, "qty"> & { category: CartCategory }, qty?: number) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
@@ -64,16 +66,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, [snapshot]);
 
-  const addItem = (newItem: Omit<CartItem, "qty"> & { category: CartCategory }) => {
-    setItems((prev) => {
-      const existing = prev.find((i) => i.id === newItem.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === newItem.id ? { ...i, qty: normalizeCartQuantity(i.qty + 1) } : i
-        );
-      }
-      return [...prev, { ...newItem, qty: 1 }];
-    });
+  const addItem = (newItem: Omit<CartItem, "qty"> & { category: CartCategory }, qty = 1) => {
+    setItems((prev) => addCartItemToCart(prev, newItem, qty));
   };
 
   const removeItem = (id: string) => {
@@ -86,9 +80,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       removeItem(id);
       return;
     }
-    setItems((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, qty: nextQty } : i))
-    );
+    setItems((prev) => updateCartItemQuantity(prev, id, nextQty));
   };
 
   const clearCart = () => {
