@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { commercialSnapshot } from "@/domain/commercialData";
@@ -85,6 +85,7 @@ describe("static SEO and PWA assets", () => {
 
   it("declares a valid manifest from existing assets only", () => {
     const manifest = JSON.parse(readProjectFile("../public/manifest.webmanifest"));
+    const iconPaths = manifest.icons.map((icon: { src: string }) => icon.src);
 
     expect(manifest).toMatchObject({
       name: "Lupulados",
@@ -92,15 +93,32 @@ describe("static SEO and PWA assets", () => {
       start_url: "/",
       scope: "/",
       display: "standalone",
+      theme_color: "#100f0e",
+      background_color: "#100f0e",
     });
-    expect(manifest.icons).toEqual([
-      {
-        src: "/favicon.svg",
-        sizes: "any",
-        type: "image/svg+xml",
-        purpose: "any",
-      },
+    expect(iconPaths).toEqual([
+      "/pwa-icon-192.png",
+      "/pwa-icon-512.png",
+      "/pwa-maskable-192.png",
+      "/pwa-maskable-512.png",
     ]);
+    expect(manifest.icons).toContainEqual({
+      src: "/pwa-maskable-192.png",
+      sizes: "192x192",
+      type: "image/png",
+      purpose: "maskable",
+    });
+    expect(manifest.icons).toContainEqual({
+      src: "/pwa-maskable-512.png",
+      sizes: "512x512",
+      type: "image/png",
+      purpose: "maskable",
+    });
+    for (const iconPath of iconPaths) {
+      expect(existsSync(fileURLToPath(new URL(`../../public${iconPath}`, import.meta.url)))).toBe(
+        true,
+      );
+    }
   });
 
   it("keeps the skip link wired to the main content target", () => {

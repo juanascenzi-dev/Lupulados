@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { buildWhatsAppUrlFromSnapshot } from "@/domain/commercialAdapters";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { getMotionAwareScrollBehavior } from "@/lib/reducedMotion";
+import { PwaInstall } from "@/components/PwaInstall";
 
 export function FloatingActions() {
   const [showTop, setShowTop] = useState(false);
@@ -22,7 +23,9 @@ export function FloatingActions() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-4">
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+      <PwaInstall />
+
       <AnimatePresence>
         {showTop && (
           <motion.button
