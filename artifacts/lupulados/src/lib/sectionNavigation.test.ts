@@ -5,6 +5,8 @@ import {
   getSectionEntryGap,
   getSectionScrollTarget,
   getSiteHeaderOffset,
+  LANDING_SECTION_ORDER,
+  NAV_LINKS,
   scrollToSection,
   setSiteHeaderOffset,
   type SectionPosition,
@@ -32,6 +34,18 @@ const sections: SectionPosition[] = [
   { id: "ubicacion", top: 5000, bottom: 5600 },
 ];
 
+const orderedSections: SectionPosition[] = [
+  { id: "inicio", top: 0, bottom: 720 },
+  { id: "servicios", top: 720, bottom: 1320 },
+  { id: "cervezas", top: 1320, bottom: 2800 },
+  { id: "calculadora", top: 2800, bottom: 3500 },
+  { id: "arma-tu-pedido", top: 3500, bottom: 4700 },
+  { id: "eventos", top: 4700, bottom: 5600 },
+  { id: "como-funciona", top: 5600, bottom: 6300 },
+  { id: "faq", top: 6300, bottom: 7000 },
+  { id: "ubicacion", top: 7000, bottom: 7600 },
+];
+
 const setDocument = (value: unknown) => {
   Object.defineProperty(globalThis, "document", {
     configurable: true,
@@ -47,6 +61,25 @@ const setWindow = (value: unknown) => {
 };
 
 describe("section navigation helpers", () => {
+  it("keeps the exact landing navigation order with unique ids", () => {
+    const ids = NAV_LINKS.map((link) => link.href);
+
+    expect(ids).toEqual([
+      "inicio",
+      "servicios",
+      "cervezas",
+      "calculadora",
+      "arma-tu-pedido",
+      "eventos",
+      "como-funciona",
+      "faq",
+      "ubicacion",
+    ]);
+    expect(LANDING_SECTION_ORDER).toEqual(ids);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids.indexOf("eventos")).toBeLessThan(ids.indexOf("como-funciona"));
+  });
+
   it("selects inicio near the top", () => {
     expect(
       getActiveSectionId({
@@ -89,10 +122,77 @@ describe("section navigation helpers", () => {
         sections,
         scrollY: 4800,
         viewportHeight: 800,
-        documentHeight: 5600,
+        documentHeight: 7600,
         headerOffset: 92,
       }),
     ).toBe("ubicacion");
+  });
+
+  it("activates eventos before como-funciona in the required page order", () => {
+    expect(
+      getActiveSectionId({
+        sections: orderedSections,
+        scrollY: 4850,
+        viewportHeight: 768,
+        documentHeight: 7600,
+        headerOffset: 88,
+      }),
+    ).toBe("eventos");
+  });
+
+  it("does not advance from cervezas while its secondary content still owns the viewport", () => {
+    expect(
+      getActiveSectionId({
+        sections: orderedSections,
+        scrollY: 2180,
+        viewportHeight: 768,
+        documentHeight: 7600,
+        headerOffset: 88,
+      }),
+    ).toBe("cervezas");
+  });
+
+  it("moves backward when scrolling up into the previous section", () => {
+    expect(
+      getActiveSectionId({
+        sections: orderedSections,
+        scrollY: 4000,
+        viewportHeight: 768,
+        documentHeight: 7600,
+        headerOffset: 88,
+      }),
+    ).toBe("arma-tu-pedido");
+  });
+
+  it("uses the full dynamic section height before activating the next id", () => {
+    const dynamicSections: SectionPosition[] = [
+      { id: "faq", top: 1000, bottom: 1900 },
+      { id: "ubicacion", top: 1900, bottom: 2600 },
+    ];
+
+    expect(
+      getActiveSectionId({
+        sections: dynamicSections,
+        scrollY: 1320,
+        viewportHeight: 700,
+        documentHeight: 2600,
+        headerOffset: 84,
+        entryGap: 18,
+      }),
+    ).toBe("faq");
+  });
+
+  it("respects header offset and section entry gap near an anchor boundary", () => {
+    expect(
+      getActiveSectionId({
+        sections: orderedSections,
+        scrollY: 4585,
+        viewportHeight: 768,
+        documentHeight: 7600,
+        headerOffset: 88,
+        entryGap: 16,
+      }),
+    ).toBe("eventos");
   });
 
   it("returns null when no sections are available", () => {

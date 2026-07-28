@@ -94,7 +94,7 @@ export default function Landing() {
         <Hero />
         <Services />
         <Cervezas />
-        <Suspense fallback={<RouteFallback label="Cargando calculadora..." minHeightClassName="min-h-[420px]" />}>
+        <Suspense fallback={<RouteFallback id="calculadora" label="Cargando calculadora..." minHeightClassName="min-h-[420px]" />}>
           <Calculadora onUseRecommendation={useRecommendation} />
         </Suspense>
         <Suspense
@@ -112,19 +112,19 @@ export default function Landing() {
             sectionRef={orderSectionRef}
           />
         </Suspense>
-        <Suspense fallback={<RouteFallback label="Cargando contenido..." minHeightClassName="min-h-[360px]" />}>
-          <ComoFunciona />
-        </Suspense>
         <Suspense fallback={<RouteFallback id="eventos" label="Cargando eventos..." minHeightClassName="min-h-[560px]" />}>
           <Eventos />
+        </Suspense>
+        <Suspense fallback={<RouteFallback id="como-funciona" label="Cargando contenido..." minHeightClassName="min-h-[360px]" />}>
+          <ComoFunciona />
         </Suspense>
         <Suspense fallback={<RouteFallback label="Cargando testimonios..." minHeightClassName="min-h-[320px]" />}>
           <Testimonios />
         </Suspense>
-        <Suspense fallback={<RouteFallback label="Cargando preguntas frecuentes..." minHeightClassName="min-h-[360px]" />}>
+        <Suspense fallback={<RouteFallback id="faq" label="Cargando preguntas frecuentes..." minHeightClassName="min-h-[360px]" />}>
           <FAQ />
         </Suspense>
-        <Suspense fallback={<RouteFallback label="Cargando ubicacion..." minHeightClassName="min-h-[520px]" />}>
+        <Suspense fallback={<RouteFallback id="ubicacion" label="Cargando ubicacion..." minHeightClassName="min-h-[520px]" />}>
           <Ubicacion />
         </Suspense>
       </main>

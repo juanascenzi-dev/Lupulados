@@ -32,4 +32,21 @@ describe("Navbar accessibility", () => {
     ]);
     expect(new Set(ids).size).toBe(ids.length);
   });
+
+  it("uses the same link order for desktop and mobile menus", () => {
+    const mainLinks = NAV_LINKS.filter((link) => !link.isContact);
+    const contactLink = NAV_LINKS.find((link) => link.isContact);
+
+    expect(mainLinks.map((link) => link.href)).toEqual([
+      "inicio",
+      "servicios",
+      "cervezas",
+      "calculadora",
+      "arma-tu-pedido",
+      "eventos",
+      "como-funciona",
+      "faq",
+    ]);
+    expect(contactLink?.href).toBe("ubicacion");
+  });
 });

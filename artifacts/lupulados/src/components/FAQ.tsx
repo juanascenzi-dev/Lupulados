@@ -32,29 +32,29 @@ export function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <section id="faq" className="site-section site-section-standard bg-background relative">
+    <section id="faq" className="site-section site-section-compact bg-background relative">
       <div data-section-entry className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-10 md:mb-12">
-          <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-4">
+        <div className="text-center mb-6 md:mb-8">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-3">
             Preguntas Frecuentes
           </h2>
           <p className="text-muted-foreground">Todo lo que necesitás saber antes de pedir tu barril.</p>
         </div>
 
-        <div className="space-y-4 mb-12">
+        <div className="space-y-3 mb-7 md:mb-8">
           {FAQS.slice(0, 3).map((faq, i) => (
             <div 
               key={i} 
               className={cn(
-                "border rounded-xl transition-colors duration-300",
+                "border rounded-lg transition-colors duration-300",
                 openIndex === i ? "bg-white/5 border-primary/30" : "bg-card border-white/5 hover:border-white/10"
               )}
             >
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                className="flex items-center justify-between w-full p-6 text-left"
+                className="flex min-h-14 items-center justify-between w-full p-4 md:px-5 md:py-4 text-left gap-4"
               >
-                <span className="text-lg font-bold text-white">{faq.q}</span>
+                <span className="text-base md:text-lg font-bold text-white">{faq.q}</span>
                 <ChevronDown 
                   className={cn(
                     "w-5 h-5 text-primary transition-transform duration-300",
@@ -71,7 +71,7 @@ export function FAQ() {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-6 pb-6 pt-0 text-muted-foreground">
+                    <div className="px-4 pb-4 pt-0 md:px-5 md:pb-5 text-sm md:text-base text-muted-foreground leading-snug">
                       {faq.a}
                     </div>
                   </motion.div>
@@ -80,24 +80,24 @@ export function FAQ() {
             </div>
           ))}
 
-          <SectionContinueHint label="Mas respuestas debajo" className="my-6" />
+          <SectionContinueHint label="Mas respuestas debajo" className="my-4" />
 
-          <div data-section-secondary className="space-y-4">
+          <div data-section-secondary className="space-y-3">
             {FAQS.slice(3).map((faq, offset) => {
               const i = offset + 3;
               return (
                 <div
                   key={i}
                   className={cn(
-                    "border rounded-xl transition-colors duration-300",
+                    "border rounded-lg transition-colors duration-300",
                     openIndex === i ? "bg-white/5 border-primary/30" : "bg-card border-white/5 hover:border-white/10"
                   )}
                 >
                   <button
                     onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                    className="flex items-center justify-between w-full p-6 text-left"
+                    className="flex min-h-14 items-center justify-between w-full p-4 md:px-5 md:py-4 text-left gap-4"
                   >
-                    <span className="text-lg font-bold text-white">{faq.q}</span>
+                    <span className="text-base md:text-lg font-bold text-white">{faq.q}</span>
                     <ChevronDown
                       className={cn(
                         "w-5 h-5 text-primary transition-transform duration-300",
@@ -114,7 +114,7 @@ export function FAQ() {
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-6 pb-6 pt-0 text-muted-foreground">
+                        <div className="px-4 pb-4 pt-0 md:px-5 md:pb-5 text-sm md:text-base text-muted-foreground leading-snug">
                           {faq.a}
                         </div>
                       </motion.div>
@@ -127,7 +127,7 @@ export function FAQ() {
         </div>
 
         <div className="text-center">
-          <p className="text-muted-foreground mb-4">¿Tenés otra duda?</p>
+          <p className="text-muted-foreground mb-3">¿Tenés otra duda?</p>
           <a
             href={buildWhatsAppUrl("Hola! Quiero hacer una consulta")}
             target="_blank"

@@ -14,6 +14,8 @@ export const NAV_LINKS = [
 
 export type NavSectionId = (typeof NAV_LINKS)[number]["href"];
 
+export const LANDING_SECTION_ORDER = NAV_LINKS.map((link) => link.href);
+
 export interface SectionPosition {
   id: string;
   top: number;
@@ -102,12 +104,14 @@ export function getActiveSectionId({
   viewportHeight,
   documentHeight,
   headerOffset,
+  entryGap = getSectionEntryGap(),
 }: {
   sections: SectionPosition[];
   scrollY: number;
   viewportHeight: number;
   documentHeight: number;
   headerOffset: number;
+  entryGap?: number;
 }) {
   if (sections.length === 0) return null;
 
@@ -116,16 +120,25 @@ export function getActiveSectionId({
   const maxScroll = Math.max(0, documentHeight - viewportHeight);
   if (scrollY >= maxScroll - 2) return sections[sections.length - 1].id;
 
-  const activeLine = scrollY + headerOffset + viewportHeight * 0.28;
+  const sortedSections = [...sections].sort((a, b) => a.top - b.top);
+  const readableViewport = Math.max(0, viewportHeight - headerOffset);
+  const activeLine = scrollY + headerOffset + Math.min(readableViewport * 0.45, 420);
+  const entryLine = scrollY + headerOffset + entryGap;
   const containingSection = sections.find(
     (section) => section.top <= activeLine && section.bottom > activeLine,
   );
 
   if (containingSection) return containingSection.id;
 
-  const previousSection = [...sections]
+  const sectionAtEntryLine = sortedSections.find(
+    (section) => section.top <= entryLine && section.bottom > entryLine,
+  );
+
+  if (sectionAtEntryLine) return sectionAtEntryLine.id;
+
+  const previousSection = sortedSections
     .reverse()
     .find((section) => section.top <= activeLine);
 
-  return previousSection?.id ?? sections[0].id;
+  return previousSection?.id ?? sortedSections[0].id;
 }

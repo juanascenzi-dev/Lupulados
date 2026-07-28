@@ -59,13 +59,13 @@ export function Cervezas() {
   return (
     <section id="cervezas" className="site-section site-section-extended bg-secondary/50 relative border-y border-white/5">
       <div data-section-entry className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-8 md:mb-10 gap-6">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-6 md:mb-7 gap-4 md:gap-6">
           <div className="max-w-2xl">
             <motion.h2 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="text-primary font-semibold tracking-wider uppercase text-sm mb-3"
+              className="text-primary font-semibold tracking-wider uppercase text-sm mb-2"
             >
               Nuestra Pizarra
             </motion.h2>
@@ -74,40 +74,40 @@ export function Cervezas() {
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-6"
+              className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-3"
             >
               Estilos con personalidad
             </motion.h3>
-            <p className="text-xs text-white/40 mb-5">
+            <p className="text-xs text-white/40">
               {priceDisclaimer}
             </p>
-            
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-wrap gap-2"
-            >
-              {FILTER_OPTIONS.map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFilter(f)}
-                  className={cn(
-                    "px-4 py-2 rounded-full text-sm font-medium transition-all",
-                    filter === f 
-                      ? "bg-primary text-black" 
-                      : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10"
-                  )}
-                >
-                  {f}
-                </button>
-              ))}
-            </motion.div>
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap gap-2 md:justify-end"
+          >
+            {FILTER_OPTIONS.map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={cn(
+                  "min-h-10 px-4 py-2 rounded-full text-sm font-medium transition-all",
+                  filter === f
+                    ? "bg-primary text-black"
+                    : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white border border-white/10"
+                )}
+              >
+                {f}
+              </button>
+            ))}
+          </motion.div>
         </div>
 
-        <div className="grid grid-cols-1 min-[390px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6 mb-12 md:mb-14 items-stretch">
+        <div className="grid grid-cols-1 min-[390px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-5 mb-7 md:mb-8 items-stretch">
           {filteredBeers.map((beer, i) => (
             <Dialog
               key={beer.id}
@@ -122,9 +122,9 @@ export function Cervezas() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                   aria-label={`Ver detalle de ${beer.name}`}
-                  className="group relative h-full rounded-2xl overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-colors shadow-lg cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background flex flex-col"
+                  className="group relative h-full rounded-xl overflow-hidden bg-card border border-white/5 hover:border-primary/50 transition-colors shadow-lg cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background flex flex-col"
                 >
-                  <div className="aspect-[4/3] min-[390px]:aspect-[5/4] md:aspect-[4/3] overflow-hidden relative shrink-0">
+                  <div className="aspect-[4/3] min-[390px]:aspect-[5/4] md:aspect-[4/3] lg:aspect-[16/11] overflow-hidden relative shrink-0">
                     <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent z-10" />
                     <img
                       src={beer.img}
@@ -139,10 +139,10 @@ export function Cervezas() {
                       </div>
                     )}
                   </div>
-                  <div className="p-4 md:p-5 relative z-20 flex flex-1 flex-col">
-                    <h4 className="text-xl md:text-2xl font-display font-bold text-white mb-2 min-h-[3.4rem] leading-tight flex items-start">{beer.name}</h4>
-                    <p className="text-muted-foreground text-xs md:text-sm mb-4 line-clamp-3 min-h-[3.75rem] md:min-h-[4.5rem] leading-relaxed">{beer.desc}</p>
-                    <div className="mt-auto flex min-h-12 items-center gap-3 text-xs font-mono bg-white/5 p-2 rounded-lg border border-white/5">
+                  <div className="p-3.5 md:p-4 relative z-20 flex flex-1 flex-col">
+                    <h4 className="text-lg md:text-xl xl:text-2xl font-display font-bold text-white mb-1.5 min-h-[2.8rem] leading-tight flex items-start">{beer.name}</h4>
+                    <p className="text-muted-foreground text-xs md:text-sm mb-3 line-clamp-3 min-h-[3.4rem] md:min-h-[3.9rem] leading-snug">{beer.desc}</p>
+                    <div className="mt-auto flex min-h-10 items-center gap-3 text-xs font-mono bg-white/5 px-2.5 py-1.5 rounded-lg border border-white/5">
                       <div className="flex flex-col">
                         <span className="text-white/40 text-[9px] uppercase">IBU</span>
                         <span className="text-primary font-bold">{beer.ibu}</span>
@@ -166,7 +166,7 @@ export function Cervezas() {
           ))}
         </div>
         
-        <SectionContinueHint label="Mas informacion debajo" />
+        <SectionContinueHint label="Mas informacion debajo" className="my-5" />
 
         {/* Costos adicionales banner */}
         <motion.div 
@@ -174,12 +174,12 @@ export function Cervezas() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="bg-card border border-primary/20 rounded-2xl p-6 md:p-8"
+          className="bg-card border border-primary/20 rounded-xl p-4 md:p-5"
         >
-          <h4 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+          <h4 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
             <ShoppingCart className="w-5 h-5 text-primary" /> Información Adicional
           </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="flex flex-col">
               <span className="text-white/60 text-sm mb-1">Alquiler Chopera</span>
               <span className="text-white font-bold">{formatPrice(additionalCosts.chopera)} <span className="text-primary text-xs font-normal ml-1">(Gratis c/ 50L)</span></span>

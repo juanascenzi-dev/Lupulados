@@ -4,7 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
   getActiveSectionId,
+  getSectionEntryGap,
   getSiteHeaderOffset,
+  LANDING_SECTION_ORDER,
   NAV_LINKS,
   scrollToSection,
   setSiteHeaderOffset,
@@ -59,7 +61,10 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
   }, [bannerHeight, bannerVisible, isScrolled, updateHeaderOffset]);
 
   useEffect(() => {
-    const sectionIds = NAV_LINKS.map((link) => link.href);
+    const sectionIds = LANDING_SECTION_ORDER;
+    const observedSections = new Set<Element>();
+    let sectionObserver: IntersectionObserver | null = null;
+    let sectionResizeObserver: ResizeObserver | null = null;
 
     const updateActiveSection = () => {
       rafIdRef.current = null;
@@ -81,6 +86,7 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
         viewportHeight: window.innerHeight,
         documentHeight: document.documentElement.scrollHeight,
         headerOffset: getSiteHeaderOffset(),
+        entryGap: getSectionEntryGap(),
       });
 
       if (nextActiveSection) {
@@ -95,7 +101,7 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
       rafIdRef.current = window.requestAnimationFrame(updateActiveSection);
     };
 
-    const observer =
+    sectionObserver =
       typeof IntersectionObserver === "function"
         ? new IntersectionObserver(scheduleUpdate, {
             root: null,
@@ -104,10 +110,28 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
           })
         : null;
 
-    sectionIds.forEach((id) => {
-      const element = document.getElementById(id);
-      if (element) observer?.observe(element);
-    });
+    sectionResizeObserver =
+      typeof ResizeObserver === "function" ? new ResizeObserver(scheduleUpdate) : null;
+
+    const observeCurrentSections = () => {
+      sectionIds.forEach((id) => {
+        const element = document.getElementById(id);
+        if (!element || observedSections.has(element)) return;
+
+        observedSections.add(element);
+        sectionObserver?.observe(element);
+        sectionResizeObserver?.observe(element);
+      });
+      scheduleUpdate();
+    };
+
+    const mutationObserver =
+      typeof MutationObserver === "function"
+        ? new MutationObserver(observeCurrentSections)
+        : null;
+
+    observeCurrentSections();
+    mutationObserver?.observe(document.body, { childList: true, subtree: true });
 
     updateActiveSection();
     window.addEventListener("scroll", scheduleUpdate, { passive: true });
@@ -115,7 +139,9 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
     window.addEventListener("hashchange", scheduleUpdate);
 
     return () => {
-      observer?.disconnect();
+      sectionObserver?.disconnect();
+      sectionResizeObserver?.disconnect();
+      mutationObserver?.disconnect();
       window.removeEventListener("scroll", scheduleUpdate);
       window.removeEventListener("resize", scheduleUpdate);
       window.removeEventListener("hashchange", scheduleUpdate);
