@@ -70,7 +70,13 @@ describe("static SEO and PWA assets", () => {
     expect(html).toContain(`<link rel="canonical" href="${SITE_URL}" />`);
     expect(html).toContain(`<meta property="og:image" content="${OG_IMAGE_URL}" />`);
     expect(html).toContain('<link rel="manifest" href="/manifest.webmanifest" />');
-    expect(html).not.toContain('application/ld+json');
+    expect(html).toContain('<link rel="icon" type="image/svg+xml" href="/favicon-lupulados.svg" />');
+    expect(html).toContain('<link rel="icon" type="image/png" sizes="32x32" href="/favicon-lupulados-32x32.png" />');
+    expect(html).toContain('<link rel="icon" type="image/png" sizes="16x16" href="/favicon-lupulados-16x16.png" />');
+    expect(html).toContain('<link rel="shortcut icon" type="image/x-icon" href="/favicon-lupulados.ico" />');
+    expect(html).toContain('<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />');
+    expect(html).not.toContain("?v=");
+    expect(html).not.toContain("application/ld+json");
   });
 
   it("keeps only the public home in sitemap and excludes admin in robots", () => {
@@ -83,7 +89,34 @@ describe("static SEO and PWA assets", () => {
     expect(sitemap).not.toContain("/admin");
   });
 
-  it("declares a valid manifest from existing assets only", () => {
+  it("declares favicon cache-busting assets without removing traditional fallbacks", () => {
+    const html = readProjectFile("../index.html");
+    const declaredFavicons = [
+      "/favicon-lupulados.svg",
+      "/favicon-lupulados-32x32.png",
+      "/favicon-lupulados-16x16.png",
+      "/favicon-lupulados.ico",
+    ];
+    const traditionalFavicons = [
+      "/favicon.svg",
+      "/favicon.ico",
+      "/favicon-16x16.png",
+      "/favicon-32x32.png",
+    ];
+
+    for (const iconPath of [...declaredFavicons, ...traditionalFavicons]) {
+      expect(existsSync(fileURLToPath(new URL(`../../public${iconPath}`, import.meta.url)))).toBe(
+        true,
+      );
+    }
+
+    for (const iconPath of declaredFavicons) {
+      expect(html.match(new RegExp(`href="${iconPath}"`, "g")) ?? []).toHaveLength(1);
+    }
+    expect(html).toContain('<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />');
+  });
+
+  it("declares a valid manifest from existing PWA assets only", () => {
     const manifest = JSON.parse(readProjectFile("../public/manifest.webmanifest"));
     const iconPaths = manifest.icons.map((icon: { src: string }) => icon.src);
 
@@ -102,6 +135,8 @@ describe("static SEO and PWA assets", () => {
       "/pwa-maskable-192.png",
       "/pwa-maskable-512.png",
     ]);
+    expect(iconPaths.some((iconPath: string) => iconPath.includes("favicon"))).toBe(false);
+    expect(iconPaths.some((iconPath: string) => iconPath.includes("lupulados"))).toBe(false);
     expect(manifest.icons).toContainEqual({
       src: "/pwa-maskable-192.png",
       sizes: "192x192",
