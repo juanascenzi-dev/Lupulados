@@ -8,7 +8,6 @@ import {
   writeCartItems,
   type StoredCartItem,
 } from "@/domain/cartStorage";
-import type { CartCategory } from "@/domain/beerCatalog";
 import { calculateOrderSummary, type OrderSummary } from "@/domain/orderSummary";
 import { useCommercialData } from "@/context/CommercialDataContext";
 import type { DeliveryOptionId } from "@/domain/commercialTypes";
@@ -17,7 +16,7 @@ export type CartItem = StoredCartItem;
 
 export interface CartContextType {
   items: CartItem[];
-  addItem: (item: Omit<CartItem, "qty"> & { category: CartCategory }, qty?: number) => void;
+  addItem: (item: Omit<CartItem, "qty">, qty?: number) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
@@ -66,7 +65,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, [snapshot]);
 
-  const addItem = (newItem: Omit<CartItem, "qty"> & { category: CartCategory }, qty = 1) => {
+  const addItem = (newItem: Omit<CartItem, "qty">, qty = 1) => {
     setItems((prev) => addCartItemToCart(prev, newItem, qty));
   };
 

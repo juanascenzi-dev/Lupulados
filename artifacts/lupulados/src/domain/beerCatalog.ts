@@ -1,6 +1,7 @@
 import { formatPrice } from "./format";
 import { commercialSnapshot } from "./commercialData";
 import { buildBeerCatalog, getCartItemLitersFromSnapshot } from "./commercialAdapters";
+import { createCartLineKey } from "./productCatalog";
 import type { PresentationType } from "./commercialTypes";
 
 export type CartCategory = "barril" | "growler" | "porrón" | "pack";
@@ -40,6 +41,11 @@ export interface CartItemDraft {
   beerName?: string;
   presentationId?: string;
   presentationLabel?: string;
+  presentationType?: string;
+  presentationCategory?: CartCategory;
+  productCategory?: "beer" | "pack";
+  variantId?: string;
+  variantLabel?: string;
 }
 
 const presentationIds: BeerPresentationId[] = [
@@ -136,16 +142,27 @@ export function createBeerCartItem(beer: Beer, presentationId: BeerPresentationI
   }
 
   return {
-    id: `${beer.id}:${presentation.id}`,
+    id: createCartLineKey({
+      category: presentation.category,
+      productCategory: "beer",
+      productId: beer.id,
+      presentationId: `${beer.id}:${presentation.id}`,
+      variantId: beer.name,
+    }),
     name: `${beer.name} — ${presentation.label}`,
     price: presentation.price,
     category: presentation.category,
+    productCategory: "beer",
     productId: beer.id,
     productName: beer.name,
     beerId: beer.id,
     beerName: beer.name,
-    presentationId: presentation.id,
+    presentationId: `${beer.id}:${presentation.id}`,
     presentationLabel: presentation.label,
+    presentationType: presentation.id,
+    presentationCategory: presentation.category,
+    variantId: beer.name,
+    variantLabel: beer.name,
   };
 }
 
@@ -154,6 +171,11 @@ export function getCartItemImage(itemName: string) {
 }
 
 export function getCartItemPresentationId(itemId: string): BeerPresentationId | null {
+  const keyPresentation = /(?:^|\|)presentation=[^:|]+:([^|]+)/.exec(itemId)?.[1];
+  if (presentationIds.includes(keyPresentation as BeerPresentationId)) {
+    return keyPresentation as BeerPresentationId;
+  }
+
   const directId = itemId.split(":")[1];
   if (presentationIds.includes(directId as BeerPresentationId)) {
     return directId as BeerPresentationId;

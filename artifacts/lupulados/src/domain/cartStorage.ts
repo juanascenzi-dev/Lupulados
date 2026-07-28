@@ -1,25 +1,34 @@
 import type { CartCategory } from "./beerCatalog";
 import { tastingPack } from "./beerCatalog";
-import type { CommercialSnapshot } from "./commercialTypes";
+import type { CommercialSnapshot, ProductCategory } from "./commercialTypes";
+import { createCartLineKey, isProductCategory } from "./productCatalog";
 
 export const CART_STORAGE_KEY = "lupulados-cart";
 export const MAX_CART_ITEM_QTY = 999;
+export const CURRENT_CART_STORAGE_VERSION = 3;
 
 export interface StoredCartItem {
   id: string;
   name: string;
   price: number;
   qty: number;
-  category: CartCategory;
+  category: CartCategory | ProductCategory | string;
+  productCategory?: ProductCategory;
   productId?: string;
   productName?: string;
+  /** Legacy beer fields are read for compatibility with persisted carts. */
   beerId?: string;
+  /** Legacy beer fields are read for compatibility with persisted carts. */
   beerName?: string;
   presentationId?: string;
   presentationLabel?: string;
+  presentationType?: string;
+  presentationCategory?: string;
+  variantId?: string;
+  variantLabel?: string;
 }
 
-const validCategories: CartCategory[] = ["barril", "growler", "porrón", "pack"];
+const legacyBeerCategories = new Set(["barril", "growler", "porron", "porrÃ³n"]);
 
 function isStoredCartItem(value: unknown): value is StoredCartItem {
   if (!value || typeof value !== "object") return false;
@@ -33,22 +42,20 @@ function isStoredCartItem(value: unknown): value is StoredCartItem {
     typeof item.qty === "number" &&
     Number.isInteger(item.qty) &&
     item.qty > 0 &&
-    item.qty <= MAX_CART_ITEM_QTY &&
-    validCategories.includes(item.category as CartCategory)
+    typeof item.category === "string" &&
+    item.category.trim().length > 0
   );
 }
 
-const CURRENT_CART_STORAGE_VERSION = 2;
-
 interface VersionedStoredCart {
-  version: 2;
+  version: 2 | 3;
   items: StoredCartItem[];
 }
 
 function isVersionedStoredCart(value: unknown): value is VersionedStoredCart {
   if (!value || typeof value !== "object") return false;
   const cart = value as Partial<VersionedStoredCart>;
-  return cart.version === CURRENT_CART_STORAGE_VERSION && Array.isArray(cart.items);
+  return (cart.version === 2 || cart.version === CURRENT_CART_STORAGE_VERSION) && Array.isArray(cart.items);
 }
 
 function normalizeStoredCartItem(value: StoredCartItem): StoredCartItem | null {
@@ -61,13 +68,29 @@ function normalizeStoredCartItem(value: StoredCartItem): StoredCartItem | null {
     price: value.price,
     qty,
     category: value.category,
-    productId: typeof value.productId === "string" ? value.productId : undefined,
-    productName: typeof value.productName === "string" ? value.productName : undefined,
+    productCategory: getStoredProductCategory(value),
+    productId: typeof value.productId === "string" ? value.productId : typeof value.beerId === "string" ? value.beerId : undefined,
+    productName:
+      typeof value.productName === "string" ? value.productName : typeof value.beerName === "string" ? value.beerName : undefined,
     beerId: typeof value.beerId === "string" ? value.beerId : undefined,
     beerName: typeof value.beerName === "string" ? value.beerName : undefined,
     presentationId: typeof value.presentationId === "string" ? value.presentationId : undefined,
     presentationLabel: typeof value.presentationLabel === "string" ? value.presentationLabel : undefined,
+    presentationType: typeof value.presentationType === "string" ? value.presentationType : undefined,
+    presentationCategory: typeof value.presentationCategory === "string" ? value.presentationCategory : undefined,
+    variantId: typeof value.variantId === "string" ? value.variantId : undefined,
+    variantLabel: typeof value.variantLabel === "string" ? value.variantLabel : undefined,
   };
+}
+
+function getStoredProductCategory(value: Partial<StoredCartItem>): ProductCategory | undefined {
+  if (isProductCategory(value.productCategory)) return value.productCategory;
+  if (isProductCategory(value.category)) return value.category;
+  if (value.category === "pack") return "pack";
+  if (typeof value.beerId === "string" || typeof value.beerName === "string" || legacyBeerCategories.has(String(value.category))) {
+    return "beer";
+  }
+  return undefined;
 }
 
 function parseStoredCartPayload(parsed: unknown): StoredCartItem[] {
@@ -121,6 +144,20 @@ export function normalizeCartQuantity(qty: number) {
 }
 
 export function getCartLineKey(item: Pick<StoredCartItem, "id" | "category">) {
+  const line = item as Partial<StoredCartItem>;
+  const productId = line.productId ?? line.beerId ?? getLegacyProductId(line.id);
+  const presentationId = getStablePresentationId(line);
+
+  if (productId && presentationId) {
+    return createCartLineKey({
+      category: line.category ?? "product",
+      productCategory: line.productCategory,
+      productId,
+      presentationId,
+      variantId: line.variantId,
+    });
+  }
+
   return `${item.category}:${item.id}`;
 }
 
@@ -178,7 +215,7 @@ export function reconcileCartItemsWithSnapshot(
   );
   const activePresentations = new Map(
     snapshot.productPresentations
-      .filter((presentation) => presentation.active && activeProducts.has(presentation.productId))
+      .filter((presentation) => presentation.active && activeProducts.has(presentation.productId) && presentation.unitPrice >= 0)
       .map((presentation) => [presentation.id, presentation]),
   );
   const reconciled = new Map<string, StoredCartItem>();
@@ -188,40 +225,77 @@ export function reconcileCartItemsWithSnapshot(
     if (qty <= 0) return;
 
     const next =
-      item.id === tastingPack.id
-        ? { ...tastingPack, qty }
-        : reconcilePresentationItem(item.id, qty, activeProducts, activePresentations);
+      isTastingPackLine(item)
+        ? { ...tastingPack, productCategory: "pack" as const, qty }
+        : reconcilePresentationItem(item, qty, activeProducts, activePresentations);
     if (!next) return;
 
-    const existing = reconciled.get(next.id);
-    reconciled.set(next.id, existing ? { ...next, qty: normalizeCartQuantity(existing.qty + next.qty) } : next);
+    const key = getCartLineKey(next);
+    const existing = reconciled.get(key);
+    reconciled.set(key, existing ? { ...next, qty: normalizeCartQuantity(existing.qty + next.qty) } : next);
   });
 
   return Array.from(reconciled.values());
 }
 
+function isTastingPackLine(item: StoredCartItem) {
+  return item.id === tastingPack.id || item.productId === tastingPack.productId;
+}
+
 function reconcilePresentationItem(
-  id: string,
+  item: StoredCartItem,
   qty: number,
   activeProducts: Map<string, CommercialSnapshot["products"][number]>,
   activePresentations: Map<string, CommercialSnapshot["productPresentations"][number]>,
 ) {
-  const presentation = activePresentations.get(id);
+  const presentation = activePresentations.get(getStablePresentationId(item));
   if (!presentation) return null;
   const product = activeProducts.get(presentation.productId);
   if (!product) return null;
 
+  const variantLabel = item.variantLabel ?? product.style;
+  const variantId = item.variantId ?? variantLabel;
+
   return {
-    id: presentation.id,
-    name: `${product.name} — ${presentation.label}`,
+    id: createCartLineKey({
+      category: presentation.category,
+      productCategory: product.category,
+      productId: product.id,
+      presentationId: presentation.id,
+      variantId,
+    }),
+    name: [product.name, presentation.label].filter(Boolean).join(" — "),
     price: presentation.unitPrice,
     qty,
     category: presentation.category as CartCategory,
+    productCategory: product.category,
     productId: product.id,
     productName: product.name,
     beerId: product.category === "beer" ? product.id : undefined,
     beerName: product.category === "beer" ? product.name : undefined,
-    presentationId: presentation.presentationType,
+    presentationId: presentation.id,
     presentationLabel: presentation.label,
+    presentationType: presentation.presentationType,
+    presentationCategory: presentation.category,
+    variantId,
+    variantLabel,
   } satisfies StoredCartItem;
+}
+
+function getLegacyProductId(id: string | undefined) {
+  return typeof id === "string" && id.includes(":") ? id.split(":")[0] : undefined;
+}
+
+function getStablePresentationId(item: Partial<StoredCartItem>) {
+  if (typeof item.presentationId === "string" && item.presentationId.includes(":")) {
+    return item.presentationId;
+  }
+
+  const productId = item.productId ?? item.beerId ?? getLegacyProductId(item.id);
+  const presentationType =
+    item.presentationType ??
+    (typeof item.presentationId === "string" ? item.presentationId : undefined) ??
+    (typeof item.id === "string" && item.id.includes(":") ? item.id.split(":")[1] : undefined);
+
+  return productId && presentationType ? `${productId}:${presentationType}` : item.id ?? "";
 }

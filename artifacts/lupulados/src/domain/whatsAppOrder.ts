@@ -71,13 +71,18 @@ export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: Whats
   lines.push("PEDIDO");
   summary.items.forEach((item, index) => {
     const splitName = splitItemName(item.name);
-    const productName = item.productName ?? splitName.product;
-    const beerName = item.category === "pack" ? null : item.beerName ?? item.productName ?? splitName.product;
+    const productName = item.productName ?? item.beerName ?? splitName.product;
+    const variantLabel =
+      item.productCategory === "beer" || item.productCategory === "pack"
+        ? null
+        : item.variantLabel && item.variantLabel !== productName
+          ? item.variantLabel
+          : null;
     const presentationLabel = item.presentationLabel ?? splitName.presentation;
 
     lines.push(`${index + 1}. ${productName}`);
-    if (beerName && beerName !== productName) {
-      lines.push(`  Cerveza: ${beerName}`);
+    if (variantLabel) {
+      lines.push(`  Variante: ${variantLabel}`);
     }
     if (presentationLabel) {
       lines.push(`  Presentacion: ${presentationLabel}`);

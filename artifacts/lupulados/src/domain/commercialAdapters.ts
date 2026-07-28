@@ -175,7 +175,12 @@ export function buildWhatsAppUrlFromSnapshot(message: string, phone: string | un
 }
 
 export function getCartItemLitersFromSnapshot(itemId: string, snapshot: CommercialSnapshot = commercialSnapshot) {
-  const presentationId = itemId.split(":")[1] as BeerPresentationId | undefined;
+  const directPresentation = snapshot.productPresentations.find((presentation) => presentation.id === itemId);
+  if (directPresentation) return directPresentation.volumeLiters;
+
+  const presentationId =
+    /(?:^|\|)presentation=[^:|]+:([^|]+)/.exec(itemId)?.[1] ??
+    (itemId.includes(":") ? itemId.split(":")[1] : itemId);
   if (!presentationId) return 0;
   return snapshot.productPresentations.find((presentation) => presentation.presentationType === presentationId)?.volumeLiters ?? 0;
 }

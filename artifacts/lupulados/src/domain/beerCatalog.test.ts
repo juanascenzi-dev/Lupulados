@@ -42,10 +42,13 @@ describe("beerCatalog", () => {
     const item = createBeerCartItem(beerCatalog[0], "barril30L");
 
     expect(item).toMatchObject({
-      id: "blonde-ale:barril30L",
+      id: "category=beer|product=blonde-ale|presentation=blonde-ale:barril30L|variant=Blonde Ale",
       name: "Blonde Ale — Barril 30L",
       price: 54000,
       category: "barril",
+      productCategory: "beer",
+      presentationId: "blonde-ale:barril30L",
+      presentationType: "barril30L",
     });
   });
 

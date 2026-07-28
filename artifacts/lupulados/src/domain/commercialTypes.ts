@@ -1,13 +1,23 @@
 export type PricingStatus = "estimated" | "confirmed";
 export type ProductStatus = "active" | "archived";
-export type ProductCategory = "beer" | "pack";
+export type ProductCategory =
+  | "beer"
+  | "wine"
+  | "fernet"
+  | "gin"
+  | "whisky"
+  | "mixer"
+  | "soft-drink"
+  | "accessory"
+  | "pack";
 export type PresentationType =
   | "barril20L"
   | "barril30L"
   | "barril50L"
   | "growler1L"
   | "growler2L"
-  | "porron500ml";
+  | "porron500ml"
+  | (string & {});
 export type DeliveryOptionId = string;
 export type ExtraOptionId = string;
 export type PromotionType = "percentage" | "fixed";
@@ -39,7 +49,7 @@ export interface Product {
   slug: string;
   name: string;
   description: string;
-  style: string;
+  style?: string;
   category: ProductCategory;
   abv?: number;
   ibu?: number;

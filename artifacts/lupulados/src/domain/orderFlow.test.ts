@@ -55,7 +55,7 @@ describe("orderFlow", () => {
 
     expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
       {
-        id: "ipa:barril30L",
+        id: "category=beer|product=ipa|presentation=ipa:barril30L|variant=IPA",
         name: "IPA — Barril 30L",
         price: 66000,
         qty: 2,
@@ -74,14 +74,14 @@ describe("orderFlow", () => {
 
     expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
       {
-        id: "ipa:barril50L",
+        id: "category=beer|product=ipa|presentation=ipa:barril50L|variant=IPA",
         name: "IPA — Barril 50L",
         price: 105000,
         qty: 1,
         category: "barril",
       },
       {
-        id: "ipa:barril20L",
+        id: "category=beer|product=ipa|presentation=ipa:barril20L|variant=IPA",
         name: "IPA — Barril 20L",
         price: 46000,
         qty: 2,
@@ -105,7 +105,7 @@ describe("orderFlow", () => {
 
     expect(plan.estimatedPrice).toBe(108000);
     expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
-      expect.objectContaining({ id: "ipa:barril30L", price: 66000, qty: 2 }),
+      expect.objectContaining({ id: "category=beer|product=ipa|presentation=ipa:barril30L|variant=IPA", price: 66000, qty: 2 }),
     ]);
   });
 
@@ -142,8 +142,8 @@ describe("orderFlow", () => {
     const plan = calculateBarrelRecommendation(90);
 
     expect(buildRecommendedBarrelItems(blonde, plan)).toMatchObject([
-      expect.objectContaining({ id: "blonde-ale:barril50L", price: 85000, qty: 1 }),
-      expect.objectContaining({ id: "blonde-ale:barril20L", price: 38000, qty: 2 }),
+      expect.objectContaining({ id: "category=beer|product=blonde-ale|presentation=blonde-ale:barril50L|variant=Blonde Ale", price: 85000, qty: 1 }),
+      expect.objectContaining({ id: "category=beer|product=blonde-ale|presentation=blonde-ale:barril20L|variant=Blonde Ale", price: 38000, qty: 2 }),
     ]);
   });
 

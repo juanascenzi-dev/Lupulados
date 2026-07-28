@@ -9,12 +9,17 @@ export interface OrderSummaryItem {
   price: number;
   qty: number;
   category: string;
+  productCategory?: string;
   productId?: string;
   productName?: string;
   beerId?: string;
   beerName?: string;
   presentationId?: string;
   presentationLabel?: string;
+  presentationType?: string;
+  presentationCategory?: string;
+  variantId?: string;
+  variantLabel?: string;
 }
 
 export interface OrderSummaryExtras {
@@ -59,8 +64,11 @@ export function calculateOrderSummary(
   const safeItems = items.map((item) => ({ ...item }));
   const itemsSubtotal = safeItems.reduce((acc, item) => acc + item.price * item.qty, 0);
   const totalItems = safeItems.reduce((acc, item) => acc + item.qty, 0);
-  const totalLiters = safeItems.reduce((acc, item) => acc + getCartItemLitersFromSnapshot(item.id, snapshot) * item.qty, 0);
-  const has50L = safeItems.some((item) => item.id.includes("barril50L"));
+  const totalLiters = safeItems.reduce(
+    (acc, item) => acc + getCartItemLitersFromSnapshot(item.presentationId ?? item.id, snapshot) * item.qty,
+    0,
+  );
+  const has50L = safeItems.some((item) => (item.presentationType ?? item.presentationId ?? item.id).includes("barril50L"));
 
   const extraLines: OrderExtraLine[] = [];
   if (extras.chopera && !has50L) {

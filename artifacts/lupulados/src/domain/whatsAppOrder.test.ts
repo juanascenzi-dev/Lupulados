@@ -72,6 +72,63 @@ describe("whatsAppOrder", () => {
     expect(message.match(/^\d+\. /gm)).toHaveLength(3);
   });
 
+  it("enumerates a mixed generic test order with variants, quantities, subtotals and total", () => {
+    const message = messageFor([
+      {
+        id: "category=wine|product=malbec-test|presentation=malbec-test:750ml|variant=reserva",
+        name: "Malbec Test - Reserva - Botella 750ml",
+        price: 12000,
+        qty: 2,
+        category: "pack",
+        productCategory: "wine",
+        productId: "malbec-test",
+        productName: "Malbec Test",
+        presentationId: "malbec-test:750ml",
+        presentationLabel: "Botella 750ml",
+        variantId: "reserva",
+        variantLabel: "Reserva",
+      },
+      {
+        id: "category=mixer|product=tonic-test|presentation=tonic-test:lata",
+        name: "Tonica Test - Lata",
+        price: 1800,
+        qty: 3,
+        category: "pack",
+        productCategory: "mixer",
+        productId: "tonic-test",
+        productName: "Tonica Test",
+        presentationId: "tonic-test:lata",
+        presentationLabel: "Lata",
+      },
+      {
+        id: "category=accessory|product=cups-test|presentation=cups-test:unidad",
+        name: "Vasos Test - Unidad",
+        price: 500,
+        qty: 10,
+        category: "pack",
+        productCategory: "accessory",
+        productId: "cups-test",
+        productName: "Vasos Test",
+        presentationId: "cups-test:unidad",
+        presentationLabel: "Unidad",
+      },
+    ]);
+
+    expect(message).toContain("1. Malbec Test");
+    expect(message).toContain("  Variante: Reserva");
+    expect(message).toContain("  Presentacion: Botella 750ml");
+    expect(message).toContain("  Cantidad: 2 unidades");
+    expect(message).toContain("  Subtotal: $24.000");
+    expect(message).toContain("2. Tonica Test");
+    expect(message).toContain("  Subtotal: $5.400");
+    expect(message).toContain("3. Vasos Test");
+    expect(message).toContain("Total estimado: $34.400");
+    expect(message).not.toContain("undefined");
+    expect(message).not.toContain("null");
+    expect(message).not.toContain("NaN");
+    expect(message).not.toContain("[object Object]");
+  });
+
   it("calculates total units, liters, subtotal and total without recalculating discounts twice", () => {
     const message = messageFor([item(2, "barril50L", 1), item(1, "barril20L", 2)], {
       promoCode: "PRIMERABIRRA",

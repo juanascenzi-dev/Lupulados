@@ -32,8 +32,11 @@ export function hasCurrentSelectionInCart(
 
   const expectedIds = idsByOrderType[orderType];
   return items.some((item) => {
-    if (!item.id.startsWith(`${selectedBeer.id}:`) && !item.name.startsWith(selectedBeer.name)) return false;
-    const presentationId = getCartItemPresentationId(item.id);
+    const itemProductId = item.productId ?? item.beerId;
+    if (itemProductId !== selectedBeer.id && !item.id.startsWith(`${selectedBeer.id}:`) && !item.name.startsWith(selectedBeer.name)) {
+      return false;
+    }
+    const presentationId = (item.presentationType as ReturnType<typeof getCartItemPresentationId>) ?? getCartItemPresentationId(item.id);
     return Boolean(presentationId && expectedIds.includes(presentationId));
   });
 }
