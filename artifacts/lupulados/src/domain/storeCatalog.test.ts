@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { commercialSnapshot } from "./commercialData";
 import { addCartItemToCart, parseCartItems, writeCartItems, type StoredCartItem } from "./cartStorage";
 import { getDefaultWhatsAppChannelId, listOrderWhatsAppChannels, validateCheckout } from "./checkout";
@@ -7,11 +9,28 @@ import { calculateOrderSummary } from "./orderSummary";
 import { createCommercialCartItem } from "./productCatalog";
 import {
   buildStoreCatalog,
+  buildStoreCatalogWithDemo,
+  buildStoreSnapshot,
   filterStoreCatalog,
+  getHumanPresentationLabel,
+  getStoreImageSource,
   getStoreResultLabel,
+  listStorePresentationOptions,
   listStoreSubcategories,
   normalizeSearchText,
 } from "./storeCatalog";
+import { listVisibleCatalogCategories } from "./productCatalog";
+import type { CommercialSnapshot } from "./commercialTypes";
+
+function realBeerSnapshot(): CommercialSnapshot {
+  const products = commercialSnapshot.products.filter((product) => product.category === "beer");
+  const productIds = new Set(products.map((product) => product.id));
+  return {
+    ...structuredClone(commercialSnapshot),
+    products,
+    productPresentations: commercialSnapshot.productPresentations.filter((presentation) => productIds.has(presentation.productId)),
+  };
+}
 
 function line(productId: string, presentationId?: string) {
   const product = commercialSnapshot.products.find((item) => item.id === productId);
@@ -22,6 +41,48 @@ function line(productId: string, presentationId?: string) {
 }
 
 describe("storeCatalog", () => {
+  it("combines a Supabase beer snapshot with local demo store products without mutating the original", () => {
+    const snapshot = realBeerSnapshot();
+    const before = JSON.stringify(snapshot);
+    const catalog = buildStoreCatalogWithDemo(snapshot);
+    const ids = catalog.map((item) => item.product.id);
+
+    expect(catalog).toHaveLength(33);
+    expect(filterStoreCatalog(catalog, { mainCategory: "beer" })).toHaveLength(8);
+    expect(filterStoreCatalog(catalog, { mainCategory: "alcohol" })).toHaveLength(11);
+    expect(filterStoreCatalog(catalog, { mainCategory: "non-alcohol" })).toHaveLength(7);
+    expect(filterStoreCatalog(catalog, { mainCategory: "combo" })).toHaveLength(4);
+    expect(filterStoreCatalog(catalog, { mainCategory: "accessory" })).toHaveLength(3);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(JSON.stringify(snapshot)).toBe(before);
+  });
+
+  it("keeps real products and presentations ahead of demo records with the same IDs", () => {
+    const snapshot = realBeerSnapshot();
+    const demoCola = commercialSnapshot.products.find((product) => product.id === "demo-cola");
+    const demoColaPresentation = commercialSnapshot.productPresentations.find((presentation) => presentation.id === "demo-cola:2-25l");
+    if (!demoCola || !demoColaPresentation) throw new Error("Missing demo cola fixture");
+    const realCola = { ...demoCola, name: "Gaseosa cola real", demo: false, sortOrder: 12 };
+    const realPresentation = { ...demoColaPresentation, label: "Botella real 2,25 L", unitPrice: 1 };
+
+    const storeSnapshot = buildStoreSnapshot({
+      ...snapshot,
+      products: [...snapshot.products, realCola],
+      productPresentations: [...snapshot.productPresentations, realPresentation],
+    });
+    const catalog = buildStoreCatalog(storeSnapshot);
+    const cola = catalog.find((item) => item.product.id === "demo-cola");
+
+    expect(cola?.product.name).toBe("Gaseosa cola real");
+    expect(cola?.isDemo).toBe(false);
+    expect(cola?.presentations).toEqual([expect.objectContaining({ id: "demo-cola:2-25l", unitPrice: 1 })]);
+    expect(new Set(storeSnapshot.productPresentations.map((presentation) => presentation.id)).size).toBe(storeSnapshot.productPresentations.length);
+  });
+
+  it("does not expand quick-order categories when only the real beer snapshot is active", () => {
+    expect(listVisibleCatalogCategories(realBeerSnapshot()).map((category) => category.id)).toEqual(["beer"]);
+  });
+
   it("builds a mixed demo catalog with visible main categories and demo identification", () => {
     const catalog = buildStoreCatalog(commercialSnapshot);
 
@@ -41,6 +102,9 @@ describe("storeCatalog", () => {
     expect(filterStoreCatalog(catalog, { subcategory: "Whiskies y bourbons" }).map((item) => item.product.id)).toContain("demo-whisky-blend");
     expect(filterStoreCatalog(catalog, { productCategory: "gin" }).map((item) => item.product.id)).toContain("demo-gin-dry");
     expect(filterStoreCatalog(catalog, { presentationType: "750ml" }).length).toBeGreaterThan(5);
+    expect(filterStoreCatalog(catalog, { presentationType: "porron500ml" }).every((item) =>
+      item.presentations.some((presentation) => presentation.presentationType === "porron500ml"),
+    )).toBe(true);
     expect(filterStoreCatalog(catalog, { query: "tonica" }).map((item) => item.product.id)).toContain("demo-tonic");
     expect(filterStoreCatalog(catalog, { query: "GASEOSA" }).map((item) => item.product.id)).toContain("demo-cola");
     expect(normalizeSearchText("Cerveza Tónica")).toBe("cerveza tonica");
@@ -55,6 +119,52 @@ describe("storeCatalog", () => {
     expect(listStoreSubcategories(catalog, "alcohol")).toContain("Fernet y amargos");
     expect(getStoreResultLabel(0)).toBe("0 resultados");
     expect(getStoreResultLabel(1)).toBe("1 resultado");
+  });
+
+  it("builds stable presentation options with human labels and filters by the technical value", () => {
+    const catalog = buildStoreCatalogWithDemo(realBeerSnapshot());
+    const options = listStorePresentationOptions(catalog);
+    const labelsByValue = new Map(options.map((option) => [option.value, option.label]));
+
+    expect(labelsByValue.get("barril20L")).toBe("Barril 20 L");
+    expect(labelsByValue.get("porron500ml")).toBe("Porrón 500 ml");
+    expect(labelsByValue.get("750ml")).toBe("Botella 750 ml");
+    expect(labelsByValue.get("pack6")).toBe("Pack x6");
+    expect(options.some((option) => option.label === option.value)).toBe(false);
+    expect(filterStoreCatalog(catalog, { presentationType: "barril20L" })).toHaveLength(8);
+    expect(getHumanPresentationLabel({ presentationType: "evento", label: "Evento", sortOrder: 1 })).toBe("Por evento");
+  });
+
+  it("uses product images only when they are valid and treats demo placeholders as missing", () => {
+    expect(getStoreImageSource({ ...commercialSnapshot.products[0], image: "https://cdn.example.test/beer.jpg" })).toBe("https://cdn.example.test/beer.jpg");
+    expect(getStoreImageSource({ ...commercialSnapshot.products[0], image: "" })).toBeNull();
+    expect(getStoreImageSource({ ...commercialSnapshot.products[0], image: "   " })).toBeNull();
+    expect(getStoreImageSource({ ...commercialSnapshot.products[0], image: "https://example.com/lupulados-demo-placeholder" })).toBeNull();
+  });
+
+  it("keeps StorePage on accessible Select controls, image fallback and add feedback", () => {
+    const source = readFileSync(resolve(process.cwd(), "src/pages/StorePage.tsx"), "utf8");
+
+    expect(source).toContain("@/components/ui/select");
+    expect(source).not.toContain("<select");
+    expect(source).toContain("onError={() => setFailedSource(imageSource)}");
+    expect(source).toContain("role=\"status\"");
+    expect(source).toContain("aria-live=\"polite\"");
+    expect(source).toContain("Agregaste");
+    expect(source).toContain("getHumanPresentationLabel");
+  });
+
+  it("keeps the new checkout and order wizard off native selects where the store flow reaches them", () => {
+    const checkout = readFileSync(resolve(process.cwd(), "src/components/commercial/SharedCheckoutPanel.tsx"), "utf8");
+    const orderWizard = readFileSync(resolve(process.cwd(), "src/components/ArmaTuPedido.tsx"), "utf8");
+
+    expect(checkout).toContain("@/components/ui/select");
+    expect(checkout).not.toContain("<select");
+    expect(orderWizard).toContain("@/components/ui/select");
+    expect(orderWizard).not.toContain("<select");
+    expect(orderWizard).toContain("orderType === \"paquete\" &&");
+    expect(orderWizard).toContain("setStep(3)");
+    expect(orderWizard).not.toContain("setStep(4);\n      return;\n    }");
   });
 });
 describe("shared cart and checkout domain", () => {

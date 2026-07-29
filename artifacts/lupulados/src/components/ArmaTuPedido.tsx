@@ -47,6 +47,7 @@ import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation"
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 import { getGuardedActivationState } from "@/domain/activationGuard";
 import { WhatsAppChannelSelector } from "@/components/commercial/WhatsAppChannelSelector";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getDefaultWhatsAppChannelId, listOrderWhatsAppChannels } from "@/domain/checkout";
 import {
   createCommercialCartItem,
@@ -80,6 +81,31 @@ const QUICK_ORDER_CATEGORIES: ProductCategory[] = [
   "pack",
   "accessory",
 ];
+
+function OrderTypeVisual({ option, selected }: { option: { img: string; title: string; emoji: string }; selected: boolean }) {
+  const [failed, setFailed] = useState(false);
+
+  return (
+    <div className="relative h-28 md:h-32 overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.22),transparent_36%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]">
+      {!failed && option.img ? (
+        <img
+          src={option.img}
+          alt={`Imagen de ${option.title}`}
+          className={cn(
+            "w-full h-full object-cover transition-all duration-500",
+            selected ? "brightness-75" : "brightness-50 group-hover:brightness-[0.65]",
+          )}
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center text-4xl" aria-hidden="true">
+          {option.emoji}
+        </div>
+      )}
+      <div className={cn("absolute inset-0", selected ? "bg-amber-500/10" : "bg-black/20")} />
+    </div>
+  );
+}
 
 const BUBBLES = Array.from({ length: 12 }, (_, i) => ({
   id: i,
@@ -796,13 +822,14 @@ export function ArmaTuPedido({
   const genericCartDraft = selectedProduct && selectedPresentation
     ? createCommercialCartItem(selectedProduct.product, selectedPresentation)
     : null;
+  const tastingPackDraft = { ...tastingPack, productCategory: "pack" as const };
   const hasGenericSelection = Boolean(selectedProduct && selectedPresentation && genericQuantity > 0);
   const canProceed = (() => {
     if (!hasCatalogProducts) return false;
     if (isBeerCategory) {
       if (step === 1) return orderType !== null;
       if (step === 2) return selectedBeer !== null;
-      if (step === 3) return totalItems > 0;
+      if (step === 3) return orderType === "paquete" ? hasCurrentSelection : totalItems > 0;
     } else {
       if (step === 1) return selectedProduct !== null;
       if (step === 2) return selectedPresentation !== null;
@@ -836,9 +863,7 @@ export function ArmaTuPedido({
     if (!canProceed) return;
     setDirection(1);
     if (isBeerCategory && step === 1 && orderType === "paquete") {
-      addItem(tastingPack);
-      setLastAddedMessage("Pack Degustación agregado al pedido.");
-      setStep(4);
+      setStep(3);
       return;
     }
     setStep((s) => Math.min(s + 1, 5) as Step);
@@ -846,7 +871,7 @@ export function ArmaTuPedido({
 
   const goPrev = () => {
     setDirection(-1);
-    if (isBeerCategory && step === 4 && orderType === "paquete") {
+    if (isBeerCategory && step === 3 && orderType === "paquete") {
       setStep(1);
       return;
     }
@@ -1002,7 +1027,7 @@ export function ArmaTuPedido({
               : "bg-white/10 text-white/30 cursor-not-allowed",
           )}
         >
-          {isBeerCategory && step === 1 && orderType === "paquete" ? "Agregar al pedido" : step === 4 ? "Ver resumen" : step === 3 ? "Continuar" : "Siguiente"}{" "}
+          {step === 4 ? "Ver resumen" : step === 3 ? "Continuar" : "Siguiente"}{" "}
           <ChevronRight className="w-5 h-5" />
         </button>
       )}
@@ -1173,27 +1198,8 @@ export function ArmaTuPedido({
                               : "border-white/10 hover:border-amber-500/50 hover:scale-[1.02]",
                           )}
                         >
-                          <div className="relative h-28 md:h-32 overflow-hidden">
-                            <img
-                              src={opt.img}
-                              alt={opt.title}
-                              className={cn(
-                                "w-full h-full object-cover transition-all duration-500",
-                                selected
-                                  ? "brightness-75"
-                                  : "brightness-50 group-hover:brightness-[0.65]",
-                              )}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display =
-                                  "none";
-                              }}
-                            />
-                            <div
-                              className={cn(
-                                "absolute inset-0",
-                                selected ? "bg-amber-500/10" : "bg-black/20",
-                              )}
-                            />
+                          <div className="relative">
+                            <OrderTypeVisual option={opt} selected={selected} />
                             {selected && (
                               <motion.div
                                 initial={{ scale: 0, opacity: 0 }}
@@ -1436,7 +1442,7 @@ export function ArmaTuPedido({
                     <>
                   <div className="text-center mb-6">
                     <div className="inline-block px-4 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2">
-                      {selectedBeer?.name}
+                      {orderType === "paquete" ? "Pack Degustación" : selectedBeer?.name}
                     </div>
                     <h3 className="text-xl md:text-2xl font-bold text-white">
                       ¿Cuánto necesitás?
@@ -1449,6 +1455,62 @@ export function ArmaTuPedido({
                   </div>
 
                   <div className="grid gap-4">
+                    {orderType === "paquete" && (
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col gap-5">
+                        <div className="min-w-0">
+                          <h4 className="text-xl font-bold text-white">Pack Degustación</h4>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            Pack cerrado de 6 estilos surtidos. No requiere elegir un estilo individual.
+                          </p>
+                          <p className="mt-2 text-xs text-white/45">
+                            Incluye 6 botellas de estilos distintos.
+                          </p>
+                          <p className="text-primary font-mono font-bold mt-2">
+                            {formatPrice(tastingPack.price)} por pack
+                          </p>
+                          <p className="text-xs text-white/45 mt-1">
+                            Subtotal: {formatPrice(tastingPack.price * getDraftQuantity(tastingPack.id))}
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                          <div className="flex items-center bg-white/10 rounded-xl p-1">
+                            <button
+                              type="button"
+                              aria-label="Restar cantidad de Pack Degustación"
+                              onClick={() => setDraftQuantity(tastingPack.id, getDraftQuantity(tastingPack.id) - 1)}
+                              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                            >
+                              <Minus className="w-4 h-4 text-white" aria-hidden="true" />
+                            </button>
+                            <input
+                              aria-label="Cantidad de Pack Degustación"
+                              type="number"
+                              min={1}
+                              max={999}
+                              step={1}
+                              value={getDraftQuantity(tastingPack.id)}
+                              onChange={(event) => setDraftQuantity(tastingPack.id, Number(event.target.value))}
+                              className="w-14 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              aria-label="Sumar cantidad de Pack Degustación"
+                              onClick={() => setDraftQuantity(tastingPack.id, getDraftQuantity(tastingPack.id) + 1)}
+                              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                            >
+                              <Plus className="w-4 h-4 text-white" aria-hidden="true" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => addDraftToOrder(tastingPackDraft, getDraftQuantity(tastingPack.id))}
+                            className="px-5 py-3 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
+                          >
+                            Agregar al pedido
+                          </button>
+                        </div>
+                      </div>
+                    )}
                     {orderType === "barril" &&
                       barrelPresentationIds.map((presentationId) => {
                         if (!selectedBeer) return null;
@@ -2042,27 +2104,24 @@ export function ArmaTuPedido({
                           <label htmlFor="order-time-slot" className="text-xs font-bold text-white/70 uppercase tracking-widest mb-1.5 block">
                             Horario
                           </label>
-                          <select
-                            id="order-time-slot"
+                          <Select
                             value={formData.horario}
-                            onChange={(e) =>
+                            onValueChange={(value) =>
                               setFormData({
                                 ...formData,
-                                horario: e.target.value,
+                                horario: value,
                               })
                             }
-                            className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 px-4 text-white focus:border-primary focus:outline-none"
                           >
-                            <option value="Mañana 9-12hs">
-                              Mañana (9-12hs)
-                            </option>
-                            <option value="Tarde 12-16hs">
-                              Tarde (12-16hs)
-                            </option>
-                            <option value="Noche 16-20hs">
-                              Noche (16-20hs)
-                            </option>
-                          </select>
+                            <SelectTrigger id="order-time-slot" className="h-11 rounded-xl border-white/10 bg-white/5 px-4 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                              <SelectItem value="Mañana 9-12hs" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Mañana (9-12hs)</SelectItem>
+                              <SelectItem value="Tarde 12-16hs" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Tarde (12-16hs)</SelectItem>
+                              <SelectItem value="Noche 16-20hs" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Noche (16-20hs)</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       {deliveryRequiresAddress && (

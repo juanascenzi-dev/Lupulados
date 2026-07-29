@@ -63,7 +63,7 @@ export const productSchema = z.object({
   abv: z.number().finite().positive().optional(),
   ibu: z.number().finite().nonnegative().optional(),
   badge: z.string().trim().min(1).optional(),
-  image: z.string().url(),
+  image: z.string().url().or(z.literal("")),
   status: z.enum(["active", "archived"]),
   sortOrder: sortOrderSchema,
 });

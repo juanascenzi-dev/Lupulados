@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Beer, BottleWine, Droplets, Gift, IceCreamBowl, Package, Search, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { SharedCheckoutPanel } from "@/components/commercial/SharedCheckoutPanel";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCart } from "@/context/CartContext";
 import { useCommercialData } from "@/context/CommercialDataContext";
 import { cn } from "@/lib/utils";
@@ -10,10 +11,12 @@ import { formatPrice } from "@/domain/format";
 import { createCommercialCartItem, normalizeCatalogQuantity } from "@/domain/productCatalog";
 import {
   STORE_MAIN_CATEGORY_LABELS,
-  buildStoreCatalog,
+  buildStoreCatalogWithDemo,
   filterStoreCatalog,
   getStoreResultLabel,
-  listStorePresentationTypes,
+  getHumanPresentationLabel,
+  getStoreImageSource,
+  listStorePresentationOptions,
   listStoreSubcategories,
   type StoreCatalogItem,
   type StoreMainCategory,
@@ -23,6 +26,9 @@ import type { ProductPresentation } from "@/domain/commercialTypes";
 const mainCategories: StoreMainCategory[] = ["all", "beer", "alcohol", "non-alcohol", "combo", "accessory"];
 
 function ProductVisual({ item }: { item: StoreCatalogItem }) {
+  const imageSource = getStoreImageSource(item.product);
+  const [failedSource, setFailedSource] = useState<string | null>(null);
+  const showImage = Boolean(imageSource && failedSource !== imageSource);
   const Icon =
     item.mainCategory === "beer"
       ? Beer
@@ -38,7 +44,17 @@ function ProductVisual({ item }: { item: StoreCatalogItem }) {
 
   return (
     <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.22),transparent_36%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]">
-      <Icon className="h-16 w-16 text-primary/85" aria-hidden="true" />
+      {showImage ? (
+        <img
+          src={imageSource ?? ""}
+          alt={`Imagen de ${item.product.name}`}
+          className="h-full w-full object-cover"
+          loading="lazy"
+          onError={() => setFailedSource(imageSource)}
+        />
+      ) : (
+        <Icon className="h-16 w-16 text-primary/85" aria-hidden="true" />
+      )}
       <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
       <span className="absolute bottom-3 left-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white/75">
         {item.subcategory}
@@ -51,10 +67,31 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
   const { addItem } = useCart();
   const [presentationId, setPresentationId] = useState(item.presentations[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
+  const [feedback, setFeedback] = useState<{ key: number; text: string } | null>(null);
   const presentation = item.presentations.find((candidate) => candidate.id === presentationId) ?? item.presentations[0];
   const line = presentation ? createCommercialCartItem(item.product, presentation) : null;
 
   const updateQuantity = (next: number) => setQuantity(normalizeCatalogQuantity(next));
+
+  useEffect(() => {
+    setFeedback(null);
+  }, [presentationId]);
+
+  useEffect(() => {
+    if (!feedback) return;
+    const timer = window.setTimeout(() => setFeedback(null), 3500);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
+  const handleAdd = () => {
+    if (!line || !presentation) return;
+    addItem(line, quantity);
+    const prefix = quantity > 1 ? `${quantity} ` : "";
+    setFeedback({
+      key: Date.now(),
+      text: `Agregaste ${prefix}${item.product.name} ${getHumanPresentationLabel(presentation)} al carrito.`,
+    });
+  };
 
   return (
     <article className="flex min-h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.045] shadow-lg shadow-black/20">
@@ -82,18 +119,22 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
 
         <div className="mt-auto space-y-3">
           <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/55">Presentacion</span>
-            <select
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/55">Presentación</span>
+            <Select
               value={presentation?.id ?? ""}
-              onChange={(event) => setPresentationId(event.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-black/40 px-3 py-2.5 text-sm text-white focus:border-primary focus:outline-none"
+              onValueChange={setPresentationId}
             >
-              {item.presentations.map((candidate: ProductPresentation) => (
-                <option key={candidate.id} value={candidate.id}>
-                  {candidate.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/40 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                <SelectValue aria-label={presentation ? getHumanPresentationLabel(presentation) : undefined} />
+              </SelectTrigger>
+              <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                {item.presentations.map((candidate: ProductPresentation) => (
+                  <SelectItem key={candidate.id} value={candidate.id} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">
+                    {getHumanPresentationLabel(candidate)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -115,14 +156,15 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
           <button
             type="button"
             disabled={!line}
-            onClick={() => {
-              if (line) addItem(line, quantity);
-            }}
+            onClick={handleAdd}
             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-black text-black transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ShoppingCart className="h-4 w-4" aria-hidden="true" />
-            Agregar
+            {feedback ? "Agregado" : "Agregar"}
           </button>
+          <p key={feedback?.key ?? "empty"} className="min-h-5 text-xs font-bold text-green-300 motion-safe:animate-in motion-safe:fade-in" role="status" aria-live="polite">
+            {feedback?.text ?? ""}
+          </p>
         </div>
       </div>
     </article>
@@ -132,7 +174,7 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
 export default function StorePage() {
   const { snapshot } = useCommercialData();
   const { totalItems } = useCart();
-  const items = useMemo(() => buildStoreCatalog(snapshot), [snapshot]);
+  const items = useMemo(() => buildStoreCatalogWithDemo(snapshot), [snapshot]);
   const [query, setQuery] = useState("");
   const [mainCategory, setMainCategory] = useState<StoreMainCategory>("all");
   const [subcategory, setSubcategory] = useState("all");
@@ -141,7 +183,7 @@ export default function StorePage() {
   const checkoutButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const subcategories = useMemo(() => listStoreSubcategories(items, mainCategory), [items, mainCategory]);
-  const presentationTypes = useMemo(() => listStorePresentationTypes(items), [items]);
+  const presentationOptions = useMemo(() => listStorePresentationOptions(items), [items]);
   const filtered = useMemo(
     () => filterStoreCatalog(items, { query, mainCategory, subcategory, presentationType }),
     [items, query, mainCategory, subcategory, presentationType],
@@ -169,7 +211,7 @@ export default function StorePage() {
 
   return (
     <div className="min-h-screen bg-background text-white">
-      <a href="#tienda-contenido" className="skip-link">Saltar al catalogo</a>
+      <a href="#tienda-contenido" className="skip-link">Saltar al catálogo</a>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link href="/" className="font-display text-xl font-black text-white">Lupulados</Link>
@@ -187,13 +229,13 @@ export default function StorePage() {
         <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
           <div>
             <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-primary">Tienda mockup V1</p>
-            <h1 className="font-display text-4xl font-black leading-tight text-white sm:text-5xl">Presupuesta lo que necesitas</h1>
+            <h1 className="font-display text-4xl font-black leading-tight text-white sm:text-5xl">Presupuestá lo que necesitás</h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/62">
-              Revisa productos, elegi presentaciones y arma un pedido mixto. Al finalizar se prepara un mensaje de WhatsApp para coordinar detalles.
+              Revisá productos, elegí presentaciones y armá un pedido mixto. Al finalizar se prepara un mensaje de WhatsApp para coordinar detalles.
             </p>
           </div>
           <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-relaxed text-amber-100">
-            Catalogo de demostracion. Los productos, precios y disponibilidad son ilustrativos y deben confirmarse por WhatsApp. Prohibida la venta de bebidas alcoholicas a menores de 18 anos. Beber con moderacion.
+            Catálogo de demostración. Los productos, precios y disponibilidad son ilustrativos y deben confirmarse por WhatsApp. Prohibida la venta de bebidas alcohólicas a menores de 18 años. Beber con moderación.
           </div>
         </section>
 
@@ -210,18 +252,28 @@ export default function StorePage() {
               />
             </label>
             <label>
-              <span className="sr-only">Subcategoria</span>
-              <select value={subcategory} onChange={(event) => setSubcategory(event.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-black/35 px-3 text-white focus:border-primary focus:outline-none">
-                <option value="all">Todas las subcategorias</option>
-                {subcategories.map((value) => <option key={value} value={value}>{value}</option>)}
-              </select>
+              <span className="sr-only">Subcategoría</span>
+              <Select value={subcategory} onValueChange={setSubcategory}>
+                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                  <SelectValue placeholder="Todas las subcategorías" />
+                </SelectTrigger>
+                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                  <SelectItem value="all" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Todas las subcategorías</SelectItem>
+                  {subcategories.map((value) => <SelectItem key={value} value={value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">{value}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </label>
             <label>
-              <span className="sr-only">Tipo o presentacion</span>
-              <select value={presentationType} onChange={(event) => setPresentationType(event.target.value)} className="h-11 w-full rounded-xl border border-white/10 bg-black/35 px-3 text-white focus:border-primary focus:outline-none">
-                <option value="all">Todas las presentaciones</option>
-                {presentationTypes.map((value) => <option key={value} value={value}>{value}</option>)}
-              </select>
+              <span className="sr-only">Tipo o presentación</span>
+              <Select value={presentationType} onValueChange={setPresentationType}>
+                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                  <SelectValue placeholder="Todas las presentaciones" />
+                </SelectTrigger>
+                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                  <SelectItem value="all" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Todas las presentaciones</SelectItem>
+                  {presentationOptions.map((option) => <SelectItem key={option.value} value={option.value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">{option.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </label>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">

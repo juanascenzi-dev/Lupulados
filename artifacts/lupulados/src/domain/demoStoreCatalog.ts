@@ -4,8 +4,6 @@ type DemoProductInput = Omit<Product, "image" | "status"> & {
   presentations: Omit<ProductPresentation, "id" | "productId" | "active">[];
 };
 
-const DEMO_IMAGE_SOURCE = "https://example.com/lupulados-demo-placeholder";
-
 const demoProductsInput: DemoProductInput[] = [
   {
     id: "demo-wine-malbec",
@@ -419,7 +417,7 @@ const demoProductsInput: DemoProductInput[] = [
 
 export const demoStoreProducts: Product[] = demoProductsInput.map(({ presentations: _presentations, ...product }) => ({
   ...product,
-  image: DEMO_IMAGE_SOURCE,
+  image: "",
   status: "active",
 }));
 

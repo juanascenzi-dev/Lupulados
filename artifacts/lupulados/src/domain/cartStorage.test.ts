@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { commercialSnapshot } from "./commercialData";
+import { tastingPack } from "./beerCatalog";
 import {
   CART_STORAGE_KEY,
   CURRENT_CART_STORAGE_VERSION,
@@ -376,5 +377,26 @@ describe("cartStorage", () => {
     expect(items).toHaveLength(2);
     expect(items[0]).toMatchObject({ productId: "malbec-test", qty: 3 });
     expect(items[1]).toMatchObject({ productId: "tonic-test", qty: 1 });
+  });
+
+  it("persists and reconciles repeated Pack Degustacion as one incremented line", () => {
+    const draft = { ...tastingPack, productCategory: "pack" as const };
+    const cart = addCartItemToCart(addCartItemToCart([], beerLine, 1), draft, 2);
+    const repeated = addCartItemToCart(cart, draft, 1);
+    const storage = { setItem: vi.fn(), getItem: vi.fn(), removeItem: vi.fn() };
+
+    writeCartItems(storage, repeated);
+    const restored = parseCartItems(storage.setItem.mock.calls[0][1]);
+    const reconciled = reconcileCartItemsWithSnapshot(restored, commercialSnapshot);
+
+    expect(repeated.find((item) => item.productId === tastingPack.productId)).toMatchObject({ qty: 3 });
+    expect(repeated).toHaveLength(2);
+    expect(reconciled.find((item) => item.productId === tastingPack.productId)).toMatchObject({
+      productName: tastingPack.productName,
+      presentationLabel: tastingPack.presentationLabel,
+      qty: 3,
+      productCategory: "pack",
+    });
+    expect(reconciled.find((item) => item.productId === "blonde-ale")).toBeTruthy();
   });
 });

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboa
 import { MessageCircle, Minus, Plus, Trash2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useCommercialData } from "@/context/CommercialDataContext";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/domain/format";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
@@ -28,7 +29,7 @@ export function SharedCheckoutPanel({
   const [formData, setFormData] = useState<CheckoutFormData>({
     name: "",
     eventDate: "",
-    timeSlot: "Manana 9-12hs",
+    timeSlot: "Mañana 9-12hs",
     delivery: extras.delivery,
     address: "",
     notes: "",
@@ -137,7 +138,7 @@ export function SharedCheckoutPanel({
           </div>
           {items.length === 0 ? (
             <p className="rounded-xl border border-dashed border-white/10 bg-black/20 p-4 text-sm text-white/55" role="status">
-              Todavia no agregaste productos.
+              Todavía no agregaste productos.
             </p>
           ) : (
             <div className="space-y-3">
@@ -191,28 +192,37 @@ export function SharedCheckoutPanel({
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/65">Horario</span>
-              <select value={formData.timeSlot} onChange={(event) => setFormData((prev) => ({ ...prev, timeSlot: event.target.value }))} className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-white focus:border-primary focus:outline-none">
-                <option value="Manana 9-12hs">Manana (9-12hs)</option>
-                <option value="Tarde 12-16hs">Tarde (12-16hs)</option>
-                <option value="Noche 16-20hs">Noche (16-20hs)</option>
-              </select>
+              <Select value={formData.timeSlot} onValueChange={(value) => setFormData((prev) => ({ ...prev, timeSlot: value }))}>
+                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/5 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                  <SelectItem value="Mañana 9-12hs" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Mañana (9-12hs)</SelectItem>
+                  <SelectItem value="Tarde 12-16hs" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Tarde (12-16hs)</SelectItem>
+                  <SelectItem value="Noche 16-20hs" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Noche (16-20hs)</SelectItem>
+                </SelectContent>
+              </Select>
             </label>
             <label className="block">
               <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/65">Entrega o retiro</span>
-              <select
+              <Select
                 value={extras.delivery}
-                onChange={(event) => setExtras((prev) => ({ ...prev, delivery: event.target.value }))}
-                className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-white focus:border-primary focus:outline-none"
+                onValueChange={(value) => setExtras((prev) => ({ ...prev, delivery: value }))}
               >
-                {deliveryOptions.map((option) => (
-                  <option key={option.id} value={option.id}>{option.label}</option>
-                ))}
-              </select>
+                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-white/5 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                  {deliveryOptions.map((option) => (
+                    <SelectItem key={option.id} value={option.id} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">{option.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </label>
           </div>
           {selectedDelivery?.requiresAddress && (
             <label className="mt-4 block">
-              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/65">Direccion *</span>
+              <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/65">Dirección *</span>
               <input value={formData.address} onChange={(event) => setFormData((prev) => ({ ...prev, address: event.target.value }))} autoComplete="street-address" className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-white focus:border-primary focus:outline-none" />
             </label>
           )}
@@ -235,20 +245,20 @@ export function SharedCheckoutPanel({
           </div>
           {demoNotice && (
             <p className="mt-3 rounded-xl border border-amber-400/20 bg-black/20 p-3 text-xs leading-relaxed text-amber-100">
-              Catalogo de demostracion. Productos, precios y disponibilidad son ilustrativos y se confirman por WhatsApp.
+              Catálogo de demostración. Productos, precios y disponibilidad son ilustrativos y se confirman por WhatsApp.
             </p>
           )}
         </section>
 
         <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 space-y-4">
           <div>
-            <label htmlFor="shared-promo-code" className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/65">Promocion</label>
+            <label htmlFor="shared-promo-code" className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/65">Promoción</label>
             <div className="flex gap-2">
               <input id="shared-promo-code" value={promoInput} onChange={(event) => setPromoInput(event.target.value)} placeholder={promotion?.code ? `Ej: ${promotion.code}` : "Codigo"} className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-white placeholder:text-white/30 focus:border-primary focus:outline-none" />
               <button type="button" onClick={applyPromo} className="rounded-xl border border-white/10 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/15">Aplicar</button>
             </div>
-            {promoStatus === "valid" && <p className="mt-2 text-xs font-bold text-green-300" role="status">Promocion aplicada.</p>}
-            {promoStatus === "invalid" && <p className="mt-2 text-xs font-bold text-red-300" role="alert">Codigo no valido.</p>}
+            {promoStatus === "valid" && <p className="mt-2 text-xs font-bold text-green-300" role="status">Promoción aplicada.</p>}
+            {promoStatus === "invalid" && <p className="mt-2 text-xs font-bold text-red-300" role="alert">Código no válido.</p>}
           </div>
           <WhatsAppChannelSelector channels={channels} selectedChannelId={selectedChannel?.id ?? ""} onSelect={setSelectedChannelId} />
           {!validation.valid && (

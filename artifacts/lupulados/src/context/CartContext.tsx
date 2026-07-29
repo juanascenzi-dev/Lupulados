@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import {
   addCartItemToCart,
   normalizeCartQuantity,
@@ -11,6 +11,7 @@ import {
 import { calculateOrderSummary, type OrderSummary } from "@/domain/orderSummary";
 import { useCommercialData } from "@/context/CommercialDataContext";
 import type { DeliveryOptionId } from "@/domain/commercialTypes";
+import { buildStoreSnapshot } from "@/domain/storeCatalog";
 
 export type CartItem = StoredCartItem;
 
@@ -38,6 +39,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const { snapshot } = useCommercialData();
+  const cartSnapshot = useMemo(() => buildStoreSnapshot(snapshot), [snapshot]);
   const [items, setItems] = useState<CartItem[]>(() => {
     if (typeof window === "undefined") return [];
     return readCartItems(window.localStorage);
@@ -60,10 +62,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setItems((prev) => {
-      const next = reconcileCartItemsWithSnapshot(prev, snapshot);
+      const next = reconcileCartItemsWithSnapshot(prev, cartSnapshot);
       return JSON.stringify(next) === JSON.stringify(prev) ? prev : next;
     });
-  }, [snapshot]);
+  }, [cartSnapshot]);
 
   const addItem = (newItem: Omit<CartItem, "qty">, qty = 1) => {
     setItems((prev) => addCartItemToCart(prev, newItem, qty));
@@ -87,7 +89,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setExtras({ chopera: false, delivery: "fabrica", hielo: 0, vasos: 0, promoCode: "", discount: 0 });
   };
 
-  const orderSummary = calculateOrderSummary(items, extras, snapshot);
+  const orderSummary = calculateOrderSummary(items, extras, cartSnapshot);
   const totalItems = orderSummary.totalItems;
   const totalPrice = orderSummary.total;
 

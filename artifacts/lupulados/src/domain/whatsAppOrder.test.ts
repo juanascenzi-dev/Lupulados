@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beerCatalog, createBeerCartItem } from "./beerCatalog";
+import { beerCatalog, createBeerCartItem, tastingPack } from "./beerCatalog";
 import { calculateOrderSummary, type OrderSummaryExtras, type OrderSummaryItem } from "./orderSummary";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "./whatsAppOrder";
 
@@ -227,5 +227,19 @@ describe("whatsAppOrder", () => {
     expect(JSON.stringify(items)).toBe(itemsBefore);
     expect(JSON.stringify(extras)).toBe(extrasBefore);
     expect(JSON.stringify(summary)).toBe(summaryBefore);
+  });
+
+  it("includes Pack Degustacion quantity, name and subtotal in summary and WhatsApp text", () => {
+    const summary = calculateOrderSummary([{ ...tastingPack, productCategory: "pack", qty: 2 }], baseExtras);
+    const message = buildWhatsAppOrderMessage({
+      customer: { name: "Cliente" },
+      summary,
+    });
+
+    expect(summary.items).toMatchObject([{ productName: tastingPack.productName, qty: 2, price: tastingPack.price }]);
+    expect(message).toContain("Pack Degust");
+    expect(message).toContain("Cantidad: 2 unidades");
+    expect(message).toContain("Subtotal: $21.000");
+    expect(message).toContain("Total estimado: $21.000");
   });
 });
