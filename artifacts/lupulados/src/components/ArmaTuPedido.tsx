@@ -46,6 +46,8 @@ import {
 import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 import { getGuardedActivationState } from "@/domain/activationGuard";
+import { WhatsAppChannelSelector } from "@/components/commercial/WhatsAppChannelSelector";
+import { getDefaultWhatsAppChannelId, listOrderWhatsAppChannels } from "@/domain/checkout";
 import {
   createCommercialCartItem,
   listCatalogProductsByCategory,
@@ -64,8 +66,20 @@ interface ArmaTuPedidoProps {
   sectionRef: RefObject<HTMLElement | null>;
 }
 
-const STEP_LABELS = ["Tipo", "Cerveza", "Cantidad", "Extras", "Ticket"];
+const PHASE_LABELS = ["Productos", "Datos", "Confirmacion"];
+const STEP_LABELS = ["Productos", "Productos", "Productos", "Datos", "Confirmacion"];
 const WHATSAPP_ACTIVATION_GUARD_MS = 1500;
+const QUICK_ORDER_CATEGORIES: ProductCategory[] = [
+  "beer",
+  "wine",
+  "fernet",
+  "gin",
+  "whisky",
+  "mixer",
+  "soft-drink",
+  "pack",
+  "accessory",
+];
 
 const BUBBLES = Array.from({ length: 12 }, (_, i) => ({
   id: i,
@@ -137,7 +151,8 @@ function BeerGlass({
 }
 
 function BeerGlassStepper({ step }: { step: Step }) {
-  const progress = ((step - 1) / 4) * 100;
+  const phase = step <= 3 ? 1 : step === 4 ? 2 : 3;
+  const progress = ((phase - 1) / 2) * 100;
   return (
     <div className="mb-8 md:mb-9">
       <div className="hidden md:flex justify-between items-end relative max-w-xl mx-auto">
@@ -148,11 +163,11 @@ function BeerGlassStepper({ step }: { step: Step }) {
           animate={{ width: `calc(${progress}% - 0px)` }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
         />
-        {([1, 2, 3, 4, 5] as Step[]).map((i) => (
+        {([1, 2, 3] as const).map((i) => (
           <div key={i} className="relative z-10">
             <BeerGlass
-              state={step > i ? "done" : step === i ? "active" : "future"}
-              label={STEP_LABELS[i - 1]}
+              state={phase > i ? "done" : phase === i ? "active" : "future"}
+              label={PHASE_LABELS[i - 1]}
             />
           </div>
         ))}
@@ -617,13 +632,15 @@ export function ArmaTuPedido({
     deliveryOptions,
     orderTypeOptions: ORDER_TYPES,
     priceDisclaimer,
-    primaryOrderWhatsAppChannel,
     promotionConfig,
   } = useCommercialDerivedData();
   const [step, setStep] = useState<Step>(1);
   const [direction, setDirection] = useState(1);
   const [orderId] = useState(() => Math.floor(10000 + Math.random() * 90000));
-  const visibleCategories = useMemo(() => listVisibleCatalogCategories(snapshot), [snapshot]);
+  const visibleCategories = useMemo(
+    () => listVisibleCatalogCategories(snapshot).filter((category) => QUICK_ORDER_CATEGORIES.includes(category.id)),
+    [snapshot],
+  );
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>(visibleCategories[0]?.id ?? "beer");
   const activeCategory = visibleCategories.some((category) => category.id === selectedCategory)
     ? selectedCategory
@@ -663,6 +680,12 @@ export function ArmaTuPedido({
   const whatsAppLastActivationRef = useRef(0);
   const whatsAppUnlockTimerRef = useRef<number | null>(null);
   const [whatsAppOpening, setWhatsAppOpening] = useState(false);
+  const whatsAppChannels = useMemo(() => listOrderWhatsAppChannels(snapshot.whatsappChannels), [snapshot.whatsappChannels]);
+  const [selectedWhatsAppChannelId, setSelectedWhatsAppChannelId] = useState(() =>
+    getDefaultWhatsAppChannelId(snapshot.whatsappChannels),
+  );
+  const selectedWhatsAppChannel =
+    whatsAppChannels.find((channel) => channel.id === selectedWhatsAppChannelId) ?? whatsAppChannels[0];
 
   useEffect(() => {
     if (!pendingRecommendation) return;
@@ -755,6 +778,11 @@ export function ArmaTuPedido({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (selectedWhatsAppChannelId && whatsAppChannels.some((channel) => channel.id === selectedWhatsAppChannelId)) return;
+    setSelectedWhatsAppChannelId(whatsAppChannels[0]?.id ?? "");
+  }, [selectedWhatsAppChannelId, whatsAppChannels]);
 
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
     .toISOString()
@@ -931,8 +959,8 @@ export function ArmaTuPedido({
     });
   let whatsAppOrderUrl: string | null = null;
   try {
-    whatsAppOrderUrl = primaryOrderWhatsAppChannel
-      ? buildWhatsAppOrderUrl(primaryOrderWhatsAppChannel.phoneE164, whatsAppOrderMessage)
+    whatsAppOrderUrl = selectedWhatsAppChannel
+      ? buildWhatsAppOrderUrl(selectedWhatsAppChannel.phoneE164, whatsAppOrderMessage)
       : null;
   } catch {
     whatsAppOrderUrl = null;
@@ -2246,6 +2274,11 @@ export function ArmaTuPedido({
                   </div>
 
                   <div className="mt-6 space-y-3">
+                    <WhatsAppChannelSelector
+                      channels={whatsAppChannels}
+                      selectedChannelId={selectedWhatsAppChannel?.id ?? ""}
+                      onSelect={setSelectedWhatsAppChannelId}
+                    />
                     {whatsAppOrderUrl ? (
                       <a
                         href={whatsAppOrderUrl}

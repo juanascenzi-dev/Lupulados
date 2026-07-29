@@ -207,6 +207,12 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
           </button>
 
           <div className="hidden lg:flex items-center gap-6">
+            <a
+              href="/tienda"
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary whitespace-nowrap"
+            >
+              Tienda
+            </a>
             {mainLinks.map((link) => {
               const isActive = activeSection === link.href;
               return (
@@ -299,6 +305,13 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
                 </button>
                 );
               })}
+              <a
+                href="/tienda"
+                role="menuitem"
+                className="w-full text-left px-4 py-3 rounded-lg hover:bg-white/5 transition-colors text-lg font-medium border-l-2 text-muted-foreground border-transparent hover:text-primary"
+              >
+                Tienda
+              </a>
               {contactLink && (
                 <button
                   type="button"

@@ -79,11 +79,13 @@ describe("commercialData", () => {
     expect(getPrimaryOrderWhatsAppChannel(channels)).toBeNull();
   });
 
-  it("keeps product ids unique and stable for the public catalog", () => {
+  it("keeps product ids unique and stable for the real beer catalog while exposing demo products", () => {
     const productIds = commercialSnapshot.products.map((product) => product.id);
+    const realBeerIds = commercialSnapshot.products.filter((product) => product.category === "beer" && !product.demo).map((product) => product.id);
+    const demoIds = commercialSnapshot.products.filter((product) => product.demo).map((product) => product.id);
 
     expect(new Set(productIds).size).toBe(productIds.length);
-    expect(productIds).toEqual([
+    expect(realBeerIds).toEqual([
       "blonde-ale",
       "apa",
       "ipa",
@@ -93,6 +95,8 @@ describe("commercialData", () => {
       "session-ipa",
       "scotch-ale",
     ]);
+    expect(demoIds).toContain("demo-combo-fernet");
+    expect(demoIds).toContain("demo-gin-dry");
   });
 
   it("keeps presentation ids unique and attached to valid products", () => {

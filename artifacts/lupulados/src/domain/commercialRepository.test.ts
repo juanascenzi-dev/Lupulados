@@ -211,10 +211,11 @@ describe("commercial repository mutations", () => {
 });
 
 describe("commercial public compatibility", () => {
-  it("keeps static catalog IDs", () => {
-    expect(commercialSnapshot.products.map((product) => product.id)).toEqual([
+  it("keeps real beer catalog IDs stable and adds demo IDs explicitly", () => {
+    expect(commercialSnapshot.products.filter((product) => product.category === "beer" && !product.demo).map((product) => product.id)).toEqual([
       "blonde-ale", "apa", "ipa", "red-ale", "stout", "honey-wheat", "session-ipa", "scotch-ale",
     ]);
+    expect(commercialSnapshot.products.filter((product) => product.demo).map((product) => product.id)).toContain("demo-combo-gin");
   });
 
   it("falls back to the first active order channel when primary is inactive", () => {

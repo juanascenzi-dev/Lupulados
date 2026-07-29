@@ -4,10 +4,17 @@ export type ProductCategory =
   | "beer"
   | "wine"
   | "fernet"
+  | "aperitif"
   | "gin"
+  | "vodka"
   | "whisky"
+  | "rum"
+  | "tequila"
+  | "liqueur"
   | "mixer"
   | "soft-drink"
+  | "water"
+  | "ice"
   | "accessory"
   | "pack";
 export type PresentationType =
@@ -51,6 +58,12 @@ export interface Product {
   description: string;
   style?: string;
   category: ProductCategory;
+  mainCategory?: "beer" | "alcohol" | "non-alcohol" | "combo" | "accessory";
+  subcategory?: string;
+  tags?: string[];
+  demo?: boolean;
+  demoNote?: string;
+  components?: string[];
   abv?: number;
   ibu?: number;
   badge?: string;

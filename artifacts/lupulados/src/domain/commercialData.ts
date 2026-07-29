@@ -6,6 +6,7 @@ import type {
   Product,
   ProductPresentation,
 } from "./commercialTypes";
+import { demoStorePresentations, demoStoreProducts } from "./demoStoreCatalog";
 
 const presentationDefinitions: Omit<ProductPresentation, "id" | "productId" | "unitPrice">[] = [
   {
@@ -49,6 +50,9 @@ const productsWithPrices = [
       description: "Suave, refrescante, ideal para los que arrancan en la artesanal.",
       style: "Blonde Ale",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 4.8,
       ibu: 15,
       badge: "Suave",
@@ -66,6 +70,9 @@ const productsWithPrices = [
       description: "Cítrica y lupulada, con amargor presente y final fácil.",
       style: "American Pale Ale",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 5.2,
       ibu: 35,
       badge: "Cítrica",
@@ -83,6 +90,9 @@ const productsWithPrices = [
       description: "Intensa, aromática, para los que les gusta el lúpulo.",
       style: "IPA",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 6.5,
       ibu: 55,
       badge: "Lupulada",
@@ -100,6 +110,9 @@ const productsWithPrices = [
       description: "Maltosa, caramelo, equilibrada.",
       style: "Red Ale / Amber",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 5,
       ibu: 25,
       badge: "Maltosa",
@@ -117,6 +130,9 @@ const productsWithPrices = [
       description: "Oscura, con notas de café y chocolate.",
       style: "Stout",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 5.8,
       ibu: 30,
       badge: "Oscura",
@@ -134,6 +150,9 @@ const productsWithPrices = [
       description: "Dulce, suave y fácil de tomar.",
       style: "Honey / Wheat",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 4.5,
       ibu: 12,
       badge: "Suave",
@@ -151,6 +170,9 @@ const productsWithPrices = [
       description: "Lupulada pero liviana, para tomar toda la noche.",
       style: "Session IPA",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 4.2,
       ibu: 40,
       badge: "Liviana",
@@ -168,6 +190,9 @@ const productsWithPrices = [
       description: "Fuerte, maltosa y de cuerpo pleno.",
       style: "Scotch Ale",
       category: "beer",
+      mainCategory: "beer",
+      subcategory: "Barriles, growlers y porrones",
+      demo: false,
       abv: 7.5,
       ibu: 20,
       badge: "Intensa",
@@ -179,16 +204,19 @@ const productsWithPrices = [
   },
 ] satisfies { product: Product; prices: number[] }[];
 
-const products = productsWithPrices.map(({ product }) => product);
+const products = [...productsWithPrices.map(({ product }) => product), ...demoStoreProducts];
 
-const productPresentations = productsWithPrices.flatMap(({ product, prices }) =>
-  presentationDefinitions.map((presentation, index) => ({
-    ...presentation,
-    id: `${product.id}:${presentation.presentationType}`,
-    productId: product.id,
-    unitPrice: prices[index],
-  })),
-);
+const productPresentations = [
+  ...productsWithPrices.flatMap(({ product, prices }) =>
+    presentationDefinitions.map((presentation, index) => ({
+      ...presentation,
+      id: `${product.id}:${presentation.presentationType}`,
+      productId: product.id,
+      unitPrice: prices[index],
+    })),
+  ),
+  ...demoStorePresentations,
+];
 
 const deliveryOptions: DeliveryOption[] = [
   {

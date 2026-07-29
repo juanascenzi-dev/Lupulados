@@ -27,6 +27,15 @@ export function getRouteMetadata(pathname: string): RouteMetadata {
     };
   }
 
+  if (pathname === "/tienda") {
+    return {
+      title: "Tienda demo - Lupulados",
+      description: "Catalogo demostrativo de bebidas, combos y accesorios para preparar pedidos mixtos por WhatsApp.",
+      robots: "index, follow",
+      canonical: `${SITE_URL}tienda`,
+    };
+  }
+
   if (pathname === "/admin") {
     return {
       title: "Administracion - Lupulados",

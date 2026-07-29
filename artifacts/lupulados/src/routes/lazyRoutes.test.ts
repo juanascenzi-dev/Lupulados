@@ -9,6 +9,7 @@ describe("lazy route setup", () => {
   it("keeps the expected public, admin and fallback routes", () => {
     expect(routeDefinitions).toEqual([
       { path: "/", page: "landing", admin: false },
+      { path: "/tienda", page: "store", admin: false },
       { path: "/admin/login", page: "adminLogin", admin: true },
       { path: "/admin", page: "adminDashboard", admin: true },
       { path: "*", page: "notFound", admin: false },
@@ -18,6 +19,7 @@ describe("lazy route setup", () => {
   it("does not import AdminDashboard when lazy pages are created", () => {
     const importers = {
       landing: vi.fn(),
+      store: vi.fn(),
       adminLogin: vi.fn(),
       adminDashboard: vi.fn(),
       adminRouteShell: vi.fn(),
@@ -26,7 +28,7 @@ describe("lazy route setup", () => {
 
     const pages = createLazyPages(importers);
 
-    expect(Object.keys(pages)).toEqual(["Landing", "AdminLogin", "AdminDashboard", "AdminRouteShell", "NotFound"]);
+    expect(Object.keys(pages)).toEqual(["Landing", "Store", "AdminLogin", "AdminDashboard", "AdminRouteShell", "NotFound"]);
     expect(importers.adminDashboard).not.toHaveBeenCalled();
     expect(importers.adminRouteShell).not.toHaveBeenCalled();
     expect(importers.landing).not.toHaveBeenCalled();

@@ -14,7 +14,7 @@ import { CommercialDataProvider } from "@/context/CommercialDataContext";
 import { createLazyPages } from "@/routes/lazyRoutes";
 
 const queryClient = new QueryClient();
-const { Landing, AdminLogin, AdminDashboard, AdminRouteShell, NotFound } = createLazyPages();
+const { Landing, Store, AdminLogin, AdminDashboard, AdminRouteShell, NotFound } = createLazyPages();
 
 function LazyRoute({ children }: { children: ReactNode }) {
   return (
@@ -30,6 +30,11 @@ function Router() {
       <Route path="/">
         <LazyRoute>
           <Landing />
+        </LazyRoute>
+      </Route>
+      <Route path="/tienda">
+        <LazyRoute>
+          <Store />
         </LazyRoute>
       </Route>
       <Route path="/admin/login">
