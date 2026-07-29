@@ -1,6 +1,7 @@
 import type { CommercialSnapshot, Product, ProductCategory, ProductPresentation } from "./commercialTypes";
 import { demoStorePresentations, demoStoreProducts } from "./demoStoreCatalog";
 import { isValidCatalogPresentation } from "./productCatalog";
+import { getProductMaxSavings, hasPromotion, hasVolumeSavings } from "./storePricing";
 
 export type StoreMainCategory = "all" | "beer" | "alcohol" | "non-alcohol" | "combo" | "accessory";
 
@@ -14,18 +15,41 @@ export interface StoreCatalogItem {
   isDemo: boolean;
 }
 
+export type StoreSortOption = "recommended" | "price-asc" | "price-desc" | "savings-desc" | "name-asc" | "name-desc";
+export type StorePriceRange = "all" | "lte-10000" | "10000-25000" | "25000-50000" | "gt-50000";
+
 export interface StoreFilters {
   query?: string;
   mainCategory?: StoreMainCategory;
   subcategory?: string;
   productCategory?: ProductCategory | "all";
   presentationType?: string;
+  onlyPromotions?: boolean;
+  onlyVolumeSavings?: boolean;
+  priceRange?: StorePriceRange;
 }
 
 export interface StorePresentationOption {
   value: string;
   label: string;
 }
+
+export const STORE_SORT_LABELS = {
+  recommended: "Recomendados",
+  "price-asc": "Precio: menor a mayor",
+  "price-desc": "Precio: mayor a menor",
+  "savings-desc": "Mayor ahorro",
+  "name-asc": "Nombre: AZ",
+  "name-desc": "Nombre: ZA",
+} as const satisfies Record<StoreSortOption, string>;
+
+export const STORE_PRICE_RANGE_LABELS = {
+  all: "Todos los precios",
+  "lte-10000": "Hasta $10.000",
+  "10000-25000": "$10.000 a $25.000",
+  "25000-50000": "$25.000 a $50.000",
+  "gt-50000": "Mas de $50.000",
+} as const satisfies Record<StorePriceRange, string>;
 
 export const STORE_MAIN_CATEGORY_LABELS = {
   all: "Todo",
@@ -220,8 +244,52 @@ export function filterStoreCatalog(items: readonly StoreCatalogItem[], filters: 
     ) {
       return false;
     }
+    if (filters.onlyPromotions && !hasPromotion(item.presentations)) return false;
+    if (filters.onlyVolumeSavings && !hasVolumeSavings(item.presentations)) return false;
+    if (filters.priceRange && filters.priceRange !== "all" && !isPriceInRange(item.priceFrom, filters.priceRange)) return false;
     return !query || item.searchText.includes(query);
   });
+}
+
+export function sortStoreCatalog(items: readonly StoreCatalogItem[], sortBy: StoreSortOption = "recommended") {
+  const collator = new Intl.Collator("es", { sensitivity: "base" });
+  const sorted = [...items];
+
+  sorted.sort((left, right) => {
+    if (sortBy === "price-asc") return left.priceFrom - right.priceFrom || left.product.sortOrder - right.product.sortOrder;
+    if (sortBy === "price-desc") return right.priceFrom - left.priceFrom || left.product.sortOrder - right.product.sortOrder;
+    if (sortBy === "savings-desc") {
+      const diff = getProductMaxSavings(right.presentations) - getProductMaxSavings(left.presentations);
+      return diff || left.product.sortOrder - right.product.sortOrder;
+    }
+    if (sortBy === "name-asc") return collator.compare(left.product.name, right.product.name);
+    if (sortBy === "name-desc") return collator.compare(right.product.name, left.product.name);
+    return left.product.sortOrder - right.product.sortOrder || collator.compare(left.product.name, right.product.name);
+  });
+
+  return sorted;
+}
+
+export function getActiveStoreFilterCount(filters: StoreFilters) {
+  return [
+    filters.query?.trim(),
+    filters.mainCategory && filters.mainCategory !== "all",
+    filters.subcategory && filters.subcategory !== "all",
+    filters.productCategory && filters.productCategory !== "all",
+    filters.presentationType && filters.presentationType !== "all",
+    filters.onlyPromotions,
+    filters.onlyVolumeSavings,
+    filters.priceRange && filters.priceRange !== "all",
+  ].filter(Boolean).length;
+}
+
+function isPriceInRange(price: number, range: StorePriceRange) {
+  if (!Number.isFinite(price)) return false;
+  if (range === "lte-10000") return price <= 10000;
+  if (range === "10000-25000") return price > 10000 && price <= 25000;
+  if (range === "25000-50000") return price > 25000 && price <= 50000;
+  if (range === "gt-50000") return price > 50000;
+  return true;
 }
 
 export function listStoreSubcategories(items: readonly StoreCatalogItem[], mainCategory: StoreMainCategory = "all") {

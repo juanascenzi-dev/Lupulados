@@ -80,6 +80,13 @@ export interface ProductPresentation {
   volumeLiters: number;
   unitPrice: number;
   category: "barril" | "growler" | "porrón" | "pack";
+  comparisonGroup?: string;
+  comparisonQuantity?: number;
+  comparisonUnit?: "botella" | "lata" | "unidad" | "litro" | "pack" | "evento" | (string & {});
+  unitsPerPresentation?: number;
+  compareAtPrice?: number;
+  promotional?: boolean;
+  promotionLabel?: string;
   description?: string;
   active: boolean;
   sortOrder: number;

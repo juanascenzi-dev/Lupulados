@@ -20,6 +20,8 @@ export interface OrderSummaryItem {
   presentationCategory?: string;
   variantId?: string;
   variantLabel?: string;
+  promotional?: boolean;
+  promotionLabel?: string;
 }
 
 export interface OrderSummaryExtras {

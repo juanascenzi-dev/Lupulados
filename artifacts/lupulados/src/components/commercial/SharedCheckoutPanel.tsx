@@ -148,6 +148,11 @@ export function SharedCheckoutPanel({
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-white leading-tight">{item.productName ?? item.name}</h3>
                       <p className="text-xs text-white/45">{item.presentationLabel ?? item.category}</p>
+                      {item.promotional && (
+                        <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-amber-200">
+                          {item.promotionLabel ?? "Precio promocional demo"}
+                        </p>
+                      )}
                     </div>
                     <p className="shrink-0 font-mono text-sm font-bold text-primary">{formatPrice(item.price * item.qty)}</p>
                   </div>

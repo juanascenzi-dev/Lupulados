@@ -89,6 +89,9 @@ export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: Whats
     }
     lines.push(`  Cantidad: ${formatQuantity(item.qty, "unidad", "unidades")}`);
     lines.push(`  Precio unitario: ${formatPrice(item.price)}`);
+    if (item.promotional) {
+      lines.push(`  ${item.promotionLabel ?? "Precio promocional demo"}`);
+    }
     lines.push(`  Subtotal: ${formatPrice(item.price * item.qty)}`);
     lines.push("");
   });

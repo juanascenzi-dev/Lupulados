@@ -26,6 +26,8 @@ export interface StoredCartItem {
   presentationCategory?: string;
   variantId?: string;
   variantLabel?: string;
+  promotional?: boolean;
+  promotionLabel?: string;
 }
 
 const legacyBeerCategories = new Set(["barril", "growler", "porron", "porrÃ³n"]);
@@ -80,6 +82,8 @@ function normalizeStoredCartItem(value: StoredCartItem): StoredCartItem | null {
     presentationCategory: typeof value.presentationCategory === "string" ? value.presentationCategory : undefined,
     variantId: typeof value.variantId === "string" ? value.variantId : undefined,
     variantLabel: typeof value.variantLabel === "string" ? value.variantLabel : undefined,
+    promotional: value.promotional === true ? true : undefined,
+    promotionLabel: typeof value.promotionLabel === "string" ? value.promotionLabel : undefined,
   };
 }
 
@@ -279,6 +283,8 @@ function reconcilePresentationItem(
     presentationCategory: presentation.category,
     variantId,
     variantLabel,
+    promotional: presentation.promotional,
+    promotionLabel: presentation.promotionLabel,
   } satisfies StoredCartItem;
 }
 

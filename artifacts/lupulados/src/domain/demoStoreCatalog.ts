@@ -4,6 +4,34 @@ type DemoProductInput = Omit<Product, "image" | "status"> & {
   presentations: Omit<ProductPresentation, "id" | "productId" | "active">[];
 };
 
+const demoProductImages: Record<string, string> = {
+  "demo-wine-malbec": "/store/products/wine-malbec.png",
+  "demo-wine-white": "/store/products/wine-white.png",
+  "demo-fernet-classic": "/store/products/fernet-classic.png",
+  "demo-vermouth-red": "/store/products/vermouth-red.png",
+  "demo-whisky-blend": "/store/products/whisky-blend.png",
+  "demo-bourbon": "/store/products/bourbon.png",
+  "demo-gin-dry": "/store/products/gin-dry.png",
+  "demo-vodka": "/store/products/vodka.png",
+  "demo-rum": "/store/products/rum-gold.png",
+  "demo-tequila": "/store/products/tequila-white.png",
+  "demo-liqueur": "/store/products/cream-liqueur.png",
+  "demo-cola": "/store/products/cola.png",
+  "demo-tonic": "/store/products/tonic.png",
+  "demo-water": "/store/products/water.png",
+  "demo-soda": "/store/products/soda.png",
+  "demo-orange-juice": "/store/products/orange-juice.png",
+  "demo-energy": "/store/products/energy-drink.png",
+  "demo-ice": "/store/products/ice.png",
+  "demo-rental-chopera": "/store/accessories/rental-chopera.png",
+  "demo-cups": "/store/accessories/disposable-cups.png",
+  "demo-cooler": "/store/accessories/cooler.png",
+  "demo-combo-fernet": "/store/combos/combo-fernet.png",
+  "demo-combo-gin": "/store/combos/combo-gin-tonic.png",
+  "demo-combo-beer-event": "/store/combos/combo-barrel-chopera.png",
+  "demo-combo-meeting": "/store/combos/pack-meeting.png",
+};
+
 const demoProductsInput: DemoProductInput[] = [
   {
     id: "demo-wine-malbec",
@@ -417,15 +445,78 @@ const demoProductsInput: DemoProductInput[] = [
 
 export const demoStoreProducts: Product[] = demoProductsInput.map(({ presentations: _presentations, ...product }) => ({
   ...product,
-  image: "",
+  image: demoProductImages[product.id] ?? "",
   status: "active",
 }));
 
 export const demoStorePresentations: ProductPresentation[] = demoProductsInput.flatMap((product) =>
   product.presentations.map((presentation) => ({
     ...presentation,
+    ...getDemoPresentationCommercialFields(product.id, presentation),
     id: `${product.id}:${presentation.presentationType}`,
     productId: product.id,
     active: true,
   })),
 );
+
+function getDemoPresentationCommercialFields(
+  productId: string,
+  presentation: Omit<ProductPresentation, "id" | "productId" | "active">,
+): Partial<ProductPresentation> {
+  if (productId === "demo-wine-malbec") {
+    return {
+      comparisonGroup: "wine-malbec-bottle",
+      comparisonQuantity: presentation.presentationType === "caja6" ? 6 : 1,
+      comparisonUnit: "botella",
+      unitsPerPresentation: presentation.presentationType === "caja6" ? 6 : 1,
+      promotional: presentation.presentationType === "caja6",
+      promotionLabel: presentation.presentationType === "caja6" ? "Promo demo" : undefined,
+    };
+  }
+
+  if (productId === "demo-cola") {
+    return {
+      comparisonGroup: "cola-2-25",
+      comparisonQuantity: presentation.presentationType === "pack6" ? 6 : 1,
+      comparisonUnit: "botella",
+      unitsPerPresentation: presentation.presentationType === "pack6" ? 6 : 1,
+    };
+  }
+
+  if (productId === "demo-tonic") {
+    return {
+      comparisonGroup: "tonic-can",
+      comparisonQuantity: presentation.presentationType === "pack6" ? 6 : 1,
+      comparisonUnit: "lata",
+      unitsPerPresentation: presentation.presentationType === "pack6" ? 6 : 1,
+      promotional: presentation.presentationType === "pack6",
+      promotionLabel: presentation.presentationType === "pack6" ? "Promo demo" : undefined,
+    };
+  }
+
+  if (productId === "demo-combo-fernet") {
+    return { compareAtPrice: 21000, promotional: true, promotionLabel: "Promo demo", comparisonUnit: "pack" };
+  }
+
+  if (productId === "demo-combo-gin") {
+    return { compareAtPrice: 25200, promotional: true, promotionLabel: "Promo demo", comparisonUnit: "pack" };
+  }
+
+  if (productId === "demo-combo-beer-event") {
+    return { compareAtPrice: 62000, promotional: true, promotionLabel: "Promo demo", comparisonUnit: "evento" };
+  }
+
+  if (productId === "demo-combo-meeting") {
+    return { compareAtPrice: 31500, promotional: true, promotionLabel: "Promo demo", comparisonUnit: "pack" };
+  }
+
+  if (presentation.presentationType === "750ml") {
+    return { comparisonGroup: `${productId}-bottle`, comparisonQuantity: 1, comparisonUnit: "botella", unitsPerPresentation: 1 };
+  }
+
+  if (presentation.presentationType === "1l" || presentation.presentationType === "1-5l" || presentation.presentationType === "2l") {
+    return { comparisonGroup: `${productId}-liter`, comparisonQuantity: presentation.volumeLiters, comparisonUnit: "litro" };
+  }
+
+  return { comparisonQuantity: 1, comparisonUnit: "unidad" };
+}

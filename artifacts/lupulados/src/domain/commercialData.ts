@@ -210,6 +210,7 @@ const productPresentations = [
   ...productsWithPrices.flatMap(({ product, prices }) =>
     presentationDefinitions.map((presentation, index) => ({
       ...presentation,
+      ...getBeerPresentationCommercialFields(presentation.presentationType, presentation.volumeLiters),
       id: `${product.id}:${presentation.presentationType}`,
       productId: product.id,
       unitPrice: prices[index],
@@ -217,6 +218,38 @@ const productPresentations = [
   ),
   ...demoStorePresentations,
 ];
+
+function getBeerPresentationCommercialFields(
+  presentationType: ProductPresentation["presentationType"],
+  volumeLiters: number,
+): Partial<ProductPresentation> {
+  if (String(presentationType).startsWith("barril")) {
+    return {
+      comparisonGroup: "beer-barrel",
+      comparisonQuantity: volumeLiters,
+      comparisonUnit: "litro",
+    };
+  }
+
+  if (String(presentationType).startsWith("growler")) {
+    return {
+      comparisonGroup: "beer-growler",
+      comparisonQuantity: volumeLiters,
+      comparisonUnit: "litro",
+    };
+  }
+
+  if (presentationType === "porron500ml") {
+    return {
+      comparisonGroup: "beer-porron",
+      comparisonQuantity: 1,
+      comparisonUnit: "botella",
+      unitsPerPresentation: 1,
+    };
+  }
+
+  return {};
+}
 
 const deliveryOptions: DeliveryOption[] = [
   {

@@ -73,6 +73,8 @@ export interface CommercialCartLineDraft {
   presentationCategory?: string;
   variantId?: string;
   variantLabel?: string;
+  promotional?: boolean;
+  promotionLabel?: string;
 }
 
 export interface CatalogCategoryOption {
@@ -148,6 +150,8 @@ export function createCommercialCartItem(product: Product, presentation: Product
     presentationCategory: presentation.category,
     variantId,
     variantLabel,
+    promotional: presentation.promotional,
+    promotionLabel: presentation.promotionLabel,
   };
 }
 

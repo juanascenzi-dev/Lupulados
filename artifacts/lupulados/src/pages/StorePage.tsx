@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
-import { Beer, BottleWine, Droplets, Gift, IceCreamBowl, Package, Search, ShoppingCart, SlidersHorizontal, X } from "lucide-react";
+import { ArrowDownAZ, Beer, BottleWine, Droplets, Gift, IceCreamBowl, Package, Search, ShoppingCart, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { SharedCheckoutPanel } from "@/components/commercial/SharedCheckoutPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,19 +11,48 @@ import { formatPrice } from "@/domain/format";
 import { createCommercialCartItem, normalizeCatalogQuantity } from "@/domain/productCatalog";
 import {
   STORE_MAIN_CATEGORY_LABELS,
+  STORE_PRICE_RANGE_LABELS,
+  STORE_SORT_LABELS,
   buildStoreCatalogWithDemo,
   filterStoreCatalog,
+  getActiveStoreFilterCount,
   getStoreResultLabel,
   getHumanPresentationLabel,
   getStoreImageSource,
   listStorePresentationOptions,
   listStoreSubcategories,
+  sortStoreCatalog,
   type StoreCatalogItem,
   type StoreMainCategory,
+  type StorePriceRange,
+  type StoreSortOption,
 } from "@/domain/storeCatalog";
+import { buildPresentationComparison, getProductMaxSavings, hasPromotion, hasVolumeSavings } from "@/domain/storePricing";
 import type { ProductPresentation } from "@/domain/commercialTypes";
 
 const mainCategories: StoreMainCategory[] = ["all", "beer", "alcohol", "non-alcohol", "combo", "accessory"];
+const sortOptions = Object.keys(STORE_SORT_LABELS) as StoreSortOption[];
+const priceRangeOptions = Object.keys(STORE_PRICE_RANGE_LABELS) as StorePriceRange[];
+
+function formatPercent(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "0%";
+  return `${Math.round(value * 100)}%`;
+}
+
+function getSavingsCopy(comparison: ReturnType<typeof buildPresentationComparison>) {
+  if (!comparison) return null;
+  const savings = comparison.hasPromotionalSavings ? comparison.promotionalSavings : comparison.savings;
+  const rate = comparison.hasPromotionalSavings ? comparison.promotionalSavingsRate : comparison.savingsRate;
+  if (savings <= 0) return null;
+  if (comparison.hasPromotionalSavings) {
+    return `Ahorras ${formatPrice(savings)} (${formatPercent(rate)})`;
+  }
+  if (comparison.referencePresentation) {
+    const referenceLabel = getHumanPresentationLabel(comparison.referencePresentation);
+    return `Ahorras ${formatPrice(savings)} comparado con ${referenceLabel}`;
+  }
+  return `Ahorras ${formatPrice(savings)} (${formatPercent(rate)})`;
+}
 
 function ProductVisual({ item }: { item: StoreCatalogItem }) {
   const imageSource = getStoreImageSource(item.product);
@@ -70,6 +99,10 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
   const [feedback, setFeedback] = useState<{ key: number; text: string } | null>(null);
   const presentation = item.presentations.find((candidate) => candidate.id === presentationId) ?? item.presentations[0];
   const line = presentation ? createCommercialCartItem(item.product, presentation) : null;
+  const comparison = presentation ? buildPresentationComparison(presentation, item.presentations) : null;
+  const savingsCopy = getSavingsCopy(comparison);
+  const promotionActive = presentation?.promotional === true;
+  const promotionSavings = comparison?.hasPromotionalSavings ? comparison.promotionalSavings : 0;
 
   const updateQuantity = (next: number) => setQuantity(normalizeCatalogQuantity(next));
 
@@ -104,6 +137,16 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
                 Precio demo
               </span>
             )}
+            {hasPromotion(item.presentations) && (
+              <span className="rounded-full border border-amber-300/35 bg-amber-400/15 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-amber-100">
+                Promo demo
+              </span>
+            )}
+            {hasVolumeSavings(item.presentations) && (
+              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white/70">
+                Ahorro por volumen
+              </span>
+            )}
             {item.product.category === "beer" && (
               <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white/60">
                 Producto Lupulados
@@ -136,11 +179,37 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
               </SelectContent>
             </Select>
           </label>
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Valor estimado</p>
-              <p className="font-mono text-xl font-black text-primary">{formatPrice(presentation?.unitPrice ?? item.priceFrom)}</p>
+          <div className="min-h-[104px] rounded-xl border border-white/10 bg-black/25 p-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">{promotionActive ? "Precio promo demo" : "Valor estimado"}</p>
+                {promotionActive && presentation?.compareAtPrice && promotionSavings > 0 && (
+                  <p className="font-mono text-xs font-bold text-white/35 line-through">{formatPrice(presentation.compareAtPrice)}</p>
+                )}
+                <p className="font-mono text-xl font-black text-primary">{formatPrice(presentation?.unitPrice ?? item.priceFrom)}</p>
+              </div>
+              {promotionActive && (
+                <span className="shrink-0 rounded-full border border-amber-300/30 bg-amber-400/15 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-amber-100">
+                  {presentation?.promotionLabel ?? "Promo demo"}
+                </span>
+              )}
             </div>
+            {comparison && (
+              <div className="mt-2 space-y-1 text-xs leading-relaxed text-white/58">
+                <p>
+                  {formatPrice(comparison.effectiveUnitPrice)} por {comparison.unitLabel}
+                </p>
+                {comparison.referenceCost && comparison.hasSavings && (
+                  <p className="text-white/45">Referencia: {formatPrice(comparison.referenceCost)}</p>
+                )}
+                {comparison.bestValueLabel && (
+                  <p className="font-bold text-amber-100">{comparison.bestValueLabel}</p>
+                )}
+                {savingsCopy && <p className="font-bold text-green-200">{savingsCopy}</p>}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-3">
             <label className="w-24">
               <span className="sr-only">Cantidad</span>
               <input
@@ -179,21 +248,33 @@ export default function StorePage() {
   const [mainCategory, setMainCategory] = useState<StoreMainCategory>("all");
   const [subcategory, setSubcategory] = useState("all");
   const [presentationType, setPresentationType] = useState("all");
+  const [sortBy, setSortBy] = useState<StoreSortOption>("recommended");
+  const [onlyPromotions, setOnlyPromotions] = useState(false);
+  const [onlyVolumeSavings, setOnlyVolumeSavings] = useState(false);
+  const [priceRange, setPriceRange] = useState<StorePriceRange>("all");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const checkoutButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const subcategories = useMemo(() => listStoreSubcategories(items, mainCategory), [items, mainCategory]);
   const presentationOptions = useMemo(() => listStorePresentationOptions(items), [items]);
-  const filtered = useMemo(
-    () => filterStoreCatalog(items, { query, mainCategory, subcategory, presentationType }),
-    [items, query, mainCategory, subcategory, presentationType],
+  const filters = useMemo(
+    () => ({ query, mainCategory, subcategory, presentationType, onlyPromotions, onlyVolumeSavings, priceRange }),
+    [query, mainCategory, subcategory, presentationType, onlyPromotions, onlyVolumeSavings, priceRange],
   );
+  const filtered = useMemo(
+    () => sortStoreCatalog(filterStoreCatalog(items, filters), sortBy),
+    [items, filters, sortBy],
+  );
+  const activeFilterCount = getActiveStoreFilterCount(filters);
 
   const clearFilters = () => {
     setQuery("");
     setMainCategory("all");
     setSubcategory("all");
     setPresentationType("all");
+    setOnlyPromotions(false);
+    setOnlyVolumeSavings(false);
+    setPriceRange("all");
   };
 
   useEffect(() => {
@@ -240,7 +321,7 @@ export default function StorePage() {
         </section>
 
         <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px]">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px_220px]">
             <label className="relative block">
               <span className="sr-only">Buscar productos</span>
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" aria-hidden="true" />
@@ -275,6 +356,36 @@ export default function StorePage() {
                 </SelectContent>
               </Select>
             </label>
+            <label>
+              <span className="sr-only">Rango de precio</span>
+              <Select value={priceRange} onValueChange={(value) => setPriceRange(value as StorePriceRange)}>
+                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                  <SelectValue placeholder="Todos los precios" />
+                </SelectTrigger>
+                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                  {priceRangeOptions.map((value) => (
+                    <SelectItem key={value} value={value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">
+                      {STORE_PRICE_RANGE_LABELS[value]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label>
+              <span className="sr-only">Ordenar por</span>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as StoreSortOption)}>
+                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
+                  {sortOptions.map((value) => (
+                    <SelectItem key={value} value={value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">
+                      {STORE_SORT_LABELS[value]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-2">
             {mainCategories.map((category) => (
@@ -293,9 +404,31 @@ export default function StorePage() {
                 {STORE_MAIN_CATEGORY_LABELS[category]}
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => setOnlyPromotions((value) => !value)}
+              className={cn(
+                "flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-bold transition-colors",
+                onlyPromotions ? "border-primary bg-primary text-black" : "border-white/10 bg-white/5 text-white/65 hover:border-primary/60",
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+              Solo promociones
+            </button>
+            <button
+              type="button"
+              onClick={() => setOnlyVolumeSavings((value) => !value)}
+              className={cn(
+                "flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-bold transition-colors",
+                onlyVolumeSavings ? "border-primary bg-primary text-black" : "border-white/10 bg-white/5 text-white/65 hover:border-primary/60",
+              )}
+            >
+              <ArrowDownAZ className="h-3.5 w-3.5" aria-hidden="true" />
+              Con ahorro
+            </button>
             <button type="button" onClick={clearFilters} className="ml-auto flex items-center gap-1 rounded-full border border-white/10 px-3 py-2 text-xs font-bold text-white/55 hover:bg-white/10">
               <X className="h-3.5 w-3.5" aria-hidden="true" />
-              Limpiar filtros
+              Limpiar filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
             </button>
           </div>
           <p className="mt-3 flex items-center gap-2 text-sm text-white/50" role="status">
