@@ -112,7 +112,14 @@ Cobertura principal:
 
 ## Commit y push
 
-Pendiente al momento de escribir esta nota. Registrar SHA final y push en la entrega final.
+Commit funcional:
+
+- `0135d52465a24d7c3801dc267db2f13a83e5764a` - `feat: add configurable multi-pack beer builder`
+
+Push:
+
+- `main` fue empujada a `origin/main`.
+- Verificacion posterior: `main` y `origin/main` quedaron sincronizados en `0135d52465a24d7c3801dc267db2f13a83e5764a`.
 
 ## Prueba manual pendiente
 
