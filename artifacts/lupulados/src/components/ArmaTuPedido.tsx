@@ -31,7 +31,6 @@ import {
   getBeerPresentation,
   getCartItemImage,
   growlerPresentationIds,
-  packagedPresentationIds,
   tastingPack,
   type Beer as CatalogBeer,
 } from "@/domain/beerCatalog";
@@ -47,6 +46,7 @@ import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation"
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 import { getGuardedActivationState } from "@/domain/activationGuard";
 import { WhatsAppChannelSelector } from "@/components/commercial/WhatsAppChannelSelector";
+import { ConfigurableBeerPackBuilder } from "@/components/ConfigurableBeerPackBuilder";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getDefaultWhatsAppChannelId, listOrderWhatsAppChannels } from "@/domain/checkout";
 import {
@@ -542,6 +542,16 @@ function LiveOrderSummary({
                         {linePresentation}
                       </p>
                     )}
+                    {item.pack?.type === "configurable-beer-pack" && (
+                      <div className="mt-1 space-y-0.5 text-[11px] text-white/55">
+                        {item.pack.composition.map((selection) => (
+                          <p key={selection.productId}>
+                            {selection.quantity} {selection.name ?? "Estilo"}
+                          </p>
+                        ))}
+                        <p>{item.qty * item.pack.capacity} porrones en total</p>
+                      </div>
+                    )}
                     <p className="text-primary text-[11px] font-mono mt-1">
                       Unitario: {formatPrice(item.price)}
                     </p>
@@ -862,7 +872,7 @@ export function ArmaTuPedido({
   const goNext = () => {
     if (!canProceed) return;
     setDirection(1);
-    if (isBeerCategory && step === 1 && orderType === "paquete") {
+    if (isBeerCategory && step === 1 && (orderType === "paquete" || orderType === "porrón")) {
       setStep(3);
       return;
     }
@@ -871,7 +881,7 @@ export function ArmaTuPedido({
 
   const goPrev = () => {
     setDirection(-1);
-    if (isBeerCategory && step === 3 && orderType === "paquete") {
+    if (isBeerCategory && step === 3 && (orderType === "paquete" || orderType === "porrón")) {
       setStep(1);
       return;
     }
@@ -1695,78 +1705,15 @@ export function ArmaTuPedido({
                       })}
 
                     {orderType === "porrón" && (
-                      <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col items-center gap-5">
-                        <div className="text-center">
-                          <h4 className="text-2xl font-bold text-white">
-                            Botellas 500ml
-                          </h4>
-                          <p className="text-primary font-mono font-bold mt-1 text-xl">
-                            {formatPrice(selectedBeer?.precios.porron500ml || 0)} c/u
-                          </p>
-                        </div>
-                        <div className="flex flex-col sm:flex-row items-center gap-4">
-                          {(() => {
-                            if (!selectedBeer) return null;
-                            const presentationId = packagedPresentationIds[0];
-                            const cartDraft = createBeerCartItem(selectedBeer, presentationId);
-                            const cartItem = items.find((i) => i.id === cartDraft.id);
-
-                            return (
-                            <>
-                          <div className="flex items-center gap-4">
-                          <button
-                            type="button"
-                            aria-label={`Restar una unidad de ${cartDraft.name}`}
-                            onClick={() =>
-                              cartItem
-                                ? updateQty(cartDraft.id, cartItem.qty - 1)
-                                : setDraftQuantity(cartDraft.id, getDraftQuantity(cartDraft.id) - 1)
-                            }
-                            className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-black transition-all"
-                          >
-                            <Minus className="w-6 h-6" aria-hidden="true" />
-                          </button>
-                          <input
-                            aria-label={`Cantidad de ${cartDraft.name}`}
-                            type="number"
-                            min={1}
-                            max={999}
-                            step={1}
-                            value={cartItem?.qty ?? getDraftQuantity(cartDraft.id)}
-                            onChange={(event) =>
-                              cartItem
-                                ? updateQty(cartDraft.id, Number(event.target.value))
-                                : setDraftQuantity(cartDraft.id, Number(event.target.value))
-                            }
-                            className="text-3xl font-display font-bold text-white w-20 text-center bg-white/5 rounded-xl py-2 focus:outline-none focus:ring-1 focus:ring-primary"
-                          />
-                          <button
-                            type="button"
-                            aria-label={`Sumar una unidad de ${cartDraft.name}`}
-                            onClick={() => (cartItem ? updateQty(cartDraft.id, cartItem.qty + 1) : setDraftQuantity(cartDraft.id, getDraftQuantity(cartDraft.id) + 1))}
-                            className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center hover:bg-primary hover:text-black transition-all"
-                          >
-                            <Plus className="w-6 h-6" aria-hidden="true" />
-                          </button>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => addDraftToOrder(cartDraft, cartItem ? 1 : getDraftQuantity(cartDraft.id))}
-                            className="px-5 py-3 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
-                          >
-                            Agregar al pedido
-                          </button>
-                            </>
-                            );
-                          })()}
-                        </div>
-                        {totalItems === 0 && (
-                          <p className="text-muted-foreground text-sm italic">
-                            Elegí la cantidad para continuar
-                          </p>
-                        )}
-                      </div>
+                      <ConfigurableBeerPackBuilder
+                        beers={BEERS}
+                        onAddPacks={(lines) => {
+                          lines.forEach((line) => addItem(line.item, line.qty));
+                        }}
+                        onAdded={setLastAddedMessage}
+                      />
                     )}
+
                   </div>
 
                   {pendingRecommendation && selectedBeer && orderType === "barril" && (

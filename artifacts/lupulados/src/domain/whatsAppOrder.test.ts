@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { beerCatalog, createBeerCartItem, tastingPack } from "./beerCatalog";
 import { calculateOrderSummary, type OrderSummaryExtras, type OrderSummaryItem } from "./orderSummary";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "./whatsAppOrder";
+import { buildConfigurablePackCartItem, listPackAvailableProducts } from "./configurableBeerPack";
 
 const baseExtras: OrderSummaryExtras = {
   chopera: false,
@@ -241,5 +242,30 @@ describe("whatsAppOrder", () => {
     expect(message).toContain("Cantidad: 2 unidades");
     expect(message).toContain("Subtotal: $21.000");
     expect(message).toContain("Total estimado: $21.000");
+  });
+
+  it("summarizes configurable beer packs without leaking ids, JSON or invalid values", () => {
+    const products = listPackAvailableProducts(beerCatalog);
+    const line = buildConfigurablePackCartItem(
+      { capacity: 6, selections: [{ productId: "blonde-ale", quantity: 3 }, { productId: "stout", quantity: 3 }] },
+      products,
+    );
+    const summary = calculateOrderSummary([{ ...line, qty: 2 }], baseExtras);
+    const message = buildWhatsAppOrderMessage({ customer: { name: "Cliente" }, summary });
+
+    expect(message).toContain("Pack de 6 porrones");
+    expect(message).toContain("Cantidad: 2 packs");
+    expect(message).toContain("Composicion por pack:");
+    expect(message).toContain("- Blonde Ale: 3");
+    expect(message).toContain("- Stout: 3");
+    expect(message).toContain("Total de porrones: 12");
+    expect(message).toContain("Precio por pack: ");
+    expect(message).toContain("Subtotal: ");
+    expect(message).not.toContain("blonde-ale");
+    expect(message).not.toContain("canonicalKey");
+    expect(message).not.toContain("{");
+    expect(message).not.toContain("undefined");
+    expect(message).not.toContain("null");
+    expect(message).not.toContain("NaN");
   });
 });

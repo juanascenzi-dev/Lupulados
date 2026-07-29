@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Link } from "wouter";
 import { ArrowDownAZ, Beer, BottleWine, Droplets, Gift, IceCreamBowl, Package, Search, ShoppingCart, SlidersHorizontal, Sparkles, X } from "lucide-react";
 import { Footer } from "@/components/Footer";
+import { ConfigurableBeerPackBuilder } from "@/components/ConfigurableBeerPackBuilder";
 import { SharedCheckoutPanel } from "@/components/commercial/SharedCheckoutPanel";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCart } from "@/context/CartContext";
 import { useCommercialData } from "@/context/CommercialDataContext";
 import { cn } from "@/lib/utils";
 import { formatPrice } from "@/domain/format";
+import { buildBeerCatalog } from "@/domain/commercialAdapters";
+import { CONFIGURABLE_BEER_PACK_CAPACITY, listPackAvailableProducts } from "@/domain/configurableBeerPack";
 import { createCommercialCartItem, normalizeCatalogQuantity } from "@/domain/productCatalog";
 import {
   STORE_MAIN_CATEGORY_LABELS,
@@ -240,9 +243,85 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
   );
 }
 
+function ConfigurablePackStoreCard({
+  onCustomize,
+  buttonRef,
+}: {
+  onCustomize: () => void;
+  buttonRef: RefObject<HTMLButtonElement | null>;
+}) {
+  const { snapshot } = useCommercialData();
+  const beers = useMemo(() => buildBeerCatalog(snapshot), [snapshot]);
+  const products = useMemo(() => listPackAvailableProducts(beers), [beers]);
+  const [failedImage, setFailedImage] = useState(false);
+  const minBottlePrice = products.length > 0 ? Math.min(...products.map((product) => product.price)) : 0;
+  const priceFrom = minBottlePrice * CONFIGURABLE_BEER_PACK_CAPACITY;
+  const image = beers.find((beer) => beer.presentations.some((presentation) => presentation.id === "porron500ml"))?.image;
+
+  return (
+    <article className="flex min-h-full flex-col overflow-hidden rounded-2xl border border-primary/25 bg-primary/[0.08] shadow-lg shadow-black/20">
+      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.22),transparent_36%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]">
+        {image && !failedImage ? (
+          <img
+            src={image}
+            alt="Pack de porrones configurables"
+            className="h-full w-full object-cover"
+            loading="lazy"
+            onError={() => setFailedImage(true)}
+          />
+        ) : (
+          <Beer className="h-16 w-16 text-primary/85" aria-hidden="true" />
+        )}
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-black/70 to-transparent" />
+        <span className="absolute bottom-3 left-3 rounded-full bg-black/55 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-white/75">
+          Packs
+        </span>
+      </div>
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        <div>
+          <div className="mb-2 flex flex-wrap gap-2">
+            <span className="rounded-full border border-primary/35 bg-primary/15 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-primary">
+              Configurable
+            </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-white/60">
+              Producto Lupulados
+            </span>
+          </div>
+          <h2 className="text-lg font-black leading-tight text-white">Pack de porrones x6</h2>
+          <p className="mt-2 text-sm leading-relaxed text-white/58">
+            Arma uno o varios packs de 6 porrones combinando estilos disponibles.
+          </p>
+        </div>
+        <div className="mt-auto space-y-3">
+          <div className="min-h-[104px] rounded-xl border border-white/10 bg-black/25 p-3">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Precio estimado desde</p>
+            <p className="font-mono text-xl font-black text-primary">
+              {priceFrom > 0 ? formatPrice(priceFrom) : "No disponible"}
+            </p>
+            <p className="mt-2 text-xs leading-relaxed text-white/58">
+              El precio final suma los 6 porrones elegidos segun el precio activo de cada estilo.
+            </p>
+          </div>
+          <button
+            ref={buttonRef}
+            type="button"
+            disabled={products.length === 0}
+            onClick={onCustomize}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 font-black text-black transition-colors hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+            Personalizar pack
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function StorePage() {
   const { snapshot } = useCommercialData();
-  const { totalItems } = useCart();
+  const { totalItems, addItem } = useCart();
+  const beers = useMemo(() => buildBeerCatalog(snapshot), [snapshot]);
   const items = useMemo(() => buildStoreCatalogWithDemo(snapshot), [snapshot]);
   const [query, setQuery] = useState("");
   const [mainCategory, setMainCategory] = useState<StoreMainCategory>("all");
@@ -253,7 +332,9 @@ export default function StorePage() {
   const [onlyVolumeSavings, setOnlyVolumeSavings] = useState(false);
   const [priceRange, setPriceRange] = useState<StorePriceRange>("all");
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [packBuilderOpen, setPackBuilderOpen] = useState(false);
   const checkoutButtonRef = useRef<HTMLButtonElement | null>(null);
+  const packBuilderButtonRef = useRef<HTMLButtonElement | null>(null);
 
   const subcategories = useMemo(() => listStoreSubcategories(items, mainCategory), [items, mainCategory]);
   const presentationOptions = useMemo(() => listStorePresentationOptions(items), [items]);
@@ -289,6 +370,19 @@ export default function StorePage() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [checkoutOpen]);
+
+  useEffect(() => {
+    if (!packBuilderOpen) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setPackBuilderOpen(false);
+      packBuilderButtonRef.current?.focus();
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [packBuilderOpen]);
 
   return (
     <div className="min-h-screen bg-background text-white">
@@ -444,10 +538,46 @@ export default function StorePage() {
           </section>
         ) : (
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <ConfigurablePackStoreCard
+              buttonRef={packBuilderButtonRef}
+              onCustomize={() => setPackBuilderOpen(true)}
+            />
             {filtered.map((item) => <ProductCard key={item.product.id} item={item} />)}
           </section>
         )}
       </main>
+
+      {packBuilderOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Configurar pack de porrones">
+          <div className="mx-auto flex max-h-[calc(100vh-1.5rem)] max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101010] shadow-2xl">
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <h2 className="text-lg font-black text-white">Pack de porrones</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setPackBuilderOpen(false);
+                  packBuilderButtonRef.current?.focus();
+                }}
+                className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white"
+                aria-label="Cerrar configurador de pack"
+              >
+                <X className="h-5 w-5" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="overflow-y-auto p-4">
+              <ConfigurableBeerPackBuilder
+                beers={beers}
+                onAddPacks={(lines) => {
+                  lines.forEach((line) => addItem(line.item, line.qty));
+                  setPackBuilderOpen(false);
+                  packBuilderButtonRef.current?.focus();
+                }}
+                compact
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {checkoutOpen && (
         <div className="fixed inset-0 z-50 bg-black/70 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Checkout">

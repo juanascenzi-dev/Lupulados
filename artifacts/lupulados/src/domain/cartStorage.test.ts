@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { commercialSnapshot } from "./commercialData";
-import { tastingPack } from "./beerCatalog";
+import { beerCatalog, tastingPack } from "./beerCatalog";
 import {
   CART_STORAGE_KEY,
   CURRENT_CART_STORAGE_VERSION,
@@ -19,6 +19,7 @@ import {
 } from "./cartStorage";
 import type { CommercialSnapshot, Product, ProductPresentation } from "./commercialTypes";
 import { createCartLineKey } from "./productCatalog";
+import { buildConfigurablePackCartItem, listPackAvailableProducts } from "./configurableBeerPack";
 
 const beerLine = {
   id: createCartLineKey({
@@ -398,5 +399,47 @@ describe("cartStorage", () => {
       productCategory: "pack",
     });
     expect(reconciled.find((item) => item.productId === "blonde-ale")).toBeTruthy();
+  });
+
+  it("persists and reconciles configurable pack composition without breaking old carts", () => {
+    const products = listPackAvailableProducts(beerCatalog);
+    const packLine = buildConfigurablePackCartItem(
+      { capacity: 6, selections: [{ productId: "blonde-ale", quantity: 3 }, { productId: "stout", quantity: 3 }] },
+      products,
+    );
+    const storage = { setItem: vi.fn(), getItem: vi.fn(), removeItem: vi.fn() };
+
+    writeCartItems(storage, [{ ...packLine, qty: 2 }, { ...beerLine, qty: 1 }]);
+    const restored = parseCartItems(storage.setItem.mock.calls[0][1]);
+    const reconciled = reconcileCartItemsWithSnapshot(restored, commercialSnapshot);
+
+    expect(restored.find((item) => item.pack)?.pack).toMatchObject({
+      capacity: 6,
+      composition: [
+        { productId: "blonde-ale", quantity: 3, name: "Blonde Ale" },
+        { productId: "stout", quantity: 3, name: "Stout" },
+      ],
+    });
+    expect(reconciled.find((item) => item.pack)?.qty).toBe(2);
+    expect(reconciled.find((item) => item.productId === "blonde-ale" && !item.pack)).toBeTruthy();
+  });
+
+  it("drops invalid configurable pack metadata without dropping other valid lines", () => {
+    const invalidPack = {
+      id: "bad-pack",
+      name: "Bad pack",
+      price: 1,
+      qty: 1,
+      category: "pack",
+      productCategory: "pack" as const,
+      productId: "pack-porrones-configurable",
+      pack: { type: "configurable-beer-pack", version: 1, capacity: 6, composition: [], canonicalKey: "bad", compositionLabel: "", unitPrice: Number.NaN },
+    };
+
+    const parsed = parseCartItems(JSON.stringify({ version: CURRENT_CART_STORAGE_VERSION, items: [invalidPack, { ...beerLine, qty: 1 }] }));
+    const reconciled = reconcileCartItemsWithSnapshot(parsed, commercialSnapshot);
+
+    expect(reconciled).toHaveLength(1);
+    expect(reconciled[0].productId).toBe("blonde-ale");
   });
 });

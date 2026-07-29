@@ -70,6 +70,19 @@ export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: Whats
 
   lines.push("PEDIDO");
   summary.items.forEach((item, index) => {
+    if (item.pack?.type === "configurable-beer-pack") {
+      lines.push(`${index + 1}. ${item.productName ?? "Pack de 6 porrones"}`);
+      lines.push(`  Cantidad: ${formatQuantity(item.qty, "pack", "packs")}`);
+      lines.push("  Composicion por pack:");
+      item.pack.composition.forEach((selection) => {
+        lines.push(`  - ${selection.name ?? "Estilo"}: ${selection.quantity}`);
+      });
+      lines.push(`  Total de porrones: ${item.qty * item.pack.capacity}`);
+      lines.push(`  Precio por pack: ${formatPrice(item.price)}`);
+      lines.push(`  Subtotal: ${formatPrice(item.price * item.qty)}`);
+      lines.push("");
+      return;
+    }
     const splitName = splitItemName(item.name);
     const productName = item.productName ?? item.beerName ?? splitName.product;
     const variantLabel =

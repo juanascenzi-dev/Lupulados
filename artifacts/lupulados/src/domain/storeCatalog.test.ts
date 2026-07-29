@@ -146,6 +146,9 @@ describe("storeCatalog", () => {
     const source = readFileSync(resolve(process.cwd(), "src/pages/StorePage.tsx"), "utf8");
 
     expect(source).toContain("@/components/ui/select");
+    expect(source).toContain("ConfigurableBeerPackBuilder");
+    expect(source).toContain("Pack de porrones x6");
+    expect(source).toContain("Personalizar pack");
     expect(source).not.toContain("<select");
     expect(source).toContain("onError={() => setFailedSource(imageSource)}");
     expect(source).toContain("role=\"status\"");
@@ -161,6 +164,8 @@ describe("storeCatalog", () => {
     expect(checkout).toContain("@/components/ui/select");
     expect(checkout).not.toContain("<select");
     expect(orderWizard).toContain("@/components/ui/select");
+    expect(orderWizard).toContain("ConfigurableBeerPackBuilder");
+    expect(orderWizard).toContain("orderType === \"porrón\"");
     expect(orderWizard).not.toContain("<select");
     expect(orderWizard).toContain("orderType === \"paquete\" &&");
     expect(orderWizard).toContain("setStep(3)");

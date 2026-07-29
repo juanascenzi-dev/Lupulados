@@ -147,7 +147,21 @@ export function SharedCheckoutPanel({
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <h3 className="text-sm font-bold text-white leading-tight">{item.productName ?? item.name}</h3>
-                      <p className="text-xs text-white/45">{item.presentationLabel ?? item.category}</p>
+                      <p className="text-xs text-white/45">
+                        {item.pack?.type === "configurable-beer-pack"
+                          ? `${item.qty} ${item.qty === 1 ? "pack" : "packs"} · ${item.qty * item.pack.capacity} porrones`
+                          : item.presentationLabel ?? item.category}
+                      </p>
+                      {item.pack?.type === "configurable-beer-pack" && (
+                        <ul className="mt-2 space-y-0.5 text-xs text-white/60">
+                          {item.pack.composition.map((selection) => (
+                            <li key={selection.productId}>{selection.quantity} {selection.name ?? "Estilo"}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {item.pack?.type === "configurable-beer-pack" && (
+                        <p className="mt-1 text-xs text-white/45">Precio por pack: {formatPrice(item.price)}</p>
+                      )}
                       {item.promotional && (
                         <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-amber-200">
                           {item.promotionLabel ?? "Precio promocional demo"}

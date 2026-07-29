@@ -2,6 +2,7 @@ import { getDeliveryOption } from "./businessConfig";
 import { buildBusinessConfig, getCartItemLitersFromSnapshot, getDeliveryOptionFromSnapshot } from "./commercialAdapters";
 import { commercialSnapshot } from "./commercialData";
 import type { CommercialSnapshot, DeliveryOptionId } from "./commercialTypes";
+import type { PackLineMetadata } from "./configurableBeerPack";
 
 export interface OrderSummaryItem {
   id: string;
@@ -22,6 +23,7 @@ export interface OrderSummaryItem {
   variantLabel?: string;
   promotional?: boolean;
   promotionLabel?: string;
+  pack?: PackLineMetadata;
 }
 
 export interface OrderSummaryExtras {
@@ -67,7 +69,10 @@ export function calculateOrderSummary(
   const itemsSubtotal = safeItems.reduce((acc, item) => acc + item.price * item.qty, 0);
   const totalItems = safeItems.reduce((acc, item) => acc + item.qty, 0);
   const totalLiters = safeItems.reduce(
-    (acc, item) => acc + getCartItemLitersFromSnapshot(item.presentationId ?? item.id, snapshot) * item.qty,
+    (acc, item) => {
+      if (item.pack?.type === "configurable-beer-pack") return acc + item.pack.capacity * 0.5 * item.qty;
+      return acc + getCartItemLitersFromSnapshot(item.presentationId ?? item.id, snapshot) * item.qty;
+    },
     0,
   );
   const has50L = safeItems.some((item) => (item.presentationType ?? item.presentationId ?? item.id).includes("barril50L"));

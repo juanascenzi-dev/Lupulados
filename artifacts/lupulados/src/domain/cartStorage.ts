@@ -2,6 +2,13 @@ import type { CartCategory } from "./beerCatalog";
 import { tastingPack } from "./beerCatalog";
 import type { CommercialSnapshot, ProductCategory } from "./commercialTypes";
 import { createCartLineKey, isProductCategory } from "./productCatalog";
+import {
+  buildConfigurablePackCartItem,
+  isConfigurableBeerPackItem,
+  isPackLineMetadata,
+  listPackAvailableProducts,
+  type PackLineMetadata,
+} from "./configurableBeerPack";
 
 export const CART_STORAGE_KEY = "lupulados-cart";
 export const MAX_CART_ITEM_QTY = 999;
@@ -28,6 +35,7 @@ export interface StoredCartItem {
   variantLabel?: string;
   promotional?: boolean;
   promotionLabel?: string;
+  pack?: PackLineMetadata;
 }
 
 const legacyBeerCategories = new Set(["barril", "growler", "porron", "porrÃ³n"]);
@@ -84,6 +92,7 @@ function normalizeStoredCartItem(value: StoredCartItem): StoredCartItem | null {
     variantLabel: typeof value.variantLabel === "string" ? value.variantLabel : undefined,
     promotional: value.promotional === true ? true : undefined,
     promotionLabel: typeof value.promotionLabel === "string" ? value.promotionLabel : undefined,
+    pack: isPackLineMetadata(value.pack) ? { ...value.pack, composition: value.pack.composition.map((selection) => ({ ...selection })) } : undefined,
   };
 }
 
@@ -231,6 +240,8 @@ export function reconcileCartItemsWithSnapshot(
     const next =
       isTastingPackLine(item)
         ? { ...tastingPack, productCategory: "pack" as const, qty }
+        : isConfigurableBeerPackItem(item)
+          ? reconcileConfigurablePackItem(item, qty, snapshot)
         : reconcilePresentationItem(item, qty, activeProducts, activePresentations);
     if (!next) return;
 
@@ -244,6 +255,55 @@ export function reconcileCartItemsWithSnapshot(
 
 function isTastingPackLine(item: StoredCartItem) {
   return item.id === tastingPack.id || item.productId === tastingPack.productId;
+}
+
+function reconcileConfigurablePackItem(
+  item: StoredCartItem,
+  qty: number,
+  snapshot: CommercialSnapshot,
+): StoredCartItem | null {
+  if (!isPackLineMetadata(item.pack)) return null;
+  const products = listPackAvailableProductsFromSnapshot(snapshot);
+  if (products.length === 0) return null;
+  const line = buildConfigurablePackCartItem(
+    { capacity: item.pack.capacity, selections: item.pack.composition },
+    products,
+  );
+  if (!isPackLineMetadata(line.pack) || line.pack.canonicalKey !== item.pack.canonicalKey) return null;
+  return { ...line, qty };
+}
+
+function listPackAvailableProductsFromSnapshot(snapshot: CommercialSnapshot) {
+  const activeProducts = snapshot.products.filter((product) => product.status === "active" && product.category === "beer");
+  const beers = activeProducts.map((product) => ({
+    id: product.id,
+    name: product.name,
+    description: product.description,
+    desc: product.description,
+    abv: product.abv ?? 0,
+    ibu: product.ibu ?? 0,
+    badge: product.badge,
+    image: product.image,
+    img: product.image,
+    precios: {} as never,
+    presentations: snapshot.productPresentations
+      .filter((presentation) =>
+        presentation.productId === product.id &&
+        presentation.active &&
+        presentation.presentationType === "porron500ml" &&
+        Number.isFinite(presentation.unitPrice) &&
+        presentation.unitPrice > 0
+      )
+      .map((presentation) => ({
+        id: "porron500ml" as const,
+        label: presentation.label,
+        price: presentation.unitPrice,
+        category: presentation.category as CartCategory,
+        liters: presentation.volumeLiters,
+        description: presentation.description,
+      })),
+  }));
+  return listPackAvailableProducts(beers);
 }
 
 function reconcilePresentationItem(
