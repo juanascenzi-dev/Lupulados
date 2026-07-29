@@ -21,7 +21,7 @@ describe("orderWizardValidation", () => {
       "Eleg\u00ed qu\u00e9 quer\u00e9s pedir para continuar.",
     );
     expect(getOrderWizardValidationMessage({ ...baseInput, step: 2, hasSelectedBeer: false })).toBe(
-      "Eleg\u00ed un estilo de cerveza para continuar.",
+      "Eleg\u00ed un producto para continuar.",
     );
     expect(getOrderWizardValidationMessage({ ...baseInput, step: 3, hasCurrentSelection: false })).toBe(
       "Agreg\u00e1 una cantidad al pedido para continuar.",

@@ -29,7 +29,7 @@ export function getOrderWizardValidationMessage({
   address,
 }: OrderWizardValidationInput) {
   if (step === 1 && !orderType) return "Eleg\u00ed qu\u00e9 quer\u00e9s pedir para continuar.";
-  if (step === 2 && !hasSelectedBeer) return "Eleg\u00ed un estilo de cerveza para continuar.";
+  if (step === 2 && !hasSelectedBeer) return "Eleg\u00ed un producto para continuar.";
   if (step === 3 && !hasCurrentSelection) return "Agreg\u00e1 una cantidad al pedido para continuar.";
 
   if (step === 4) {

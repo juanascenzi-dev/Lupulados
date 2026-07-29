@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type RefObject } from "react";
+import { useState, useRef, useEffect, useMemo, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import {
@@ -46,6 +46,16 @@ import {
 import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 import { getGuardedActivationState } from "@/domain/activationGuard";
+import {
+  createCommercialCartItem,
+  listCatalogProductsByCategory,
+  listVisibleCatalogCategories,
+  normalizeCatalogQuantity,
+  PRODUCT_CATEGORY_LABELS,
+  shouldShowCategorySelector,
+  type CatalogProductOption,
+} from "@/domain/productCatalog";
+import type { ProductCategory, ProductPresentation } from "@/domain/commercialTypes";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -174,16 +184,214 @@ function BeerGlassStepper({ step }: { step: Step }) {
 
 function getCartLineTitle(item: { category: string; productName?: string; beerName?: string; name: string }) {
   if (item.category === "pack") return item.productName ?? item.name;
-  return item.category.charAt(0).toUpperCase() + item.category.slice(1);
+  return item.productName ?? item.beerName ?? item.name;
 }
 
-function getCartLineBeer(item: { category: string; beerName?: string; productName?: string; name: string }) {
+function getCartLineBeer(item: { category: string; productCategory?: string; beerName?: string; productName?: string; variantLabel?: string; name: string }) {
+  if (item.productCategory && item.productCategory !== "beer" && item.productCategory in PRODUCT_CATEGORY_LABELS) {
+    return item.variantLabel && item.variantLabel !== item.productName
+      ? item.variantLabel
+      : PRODUCT_CATEGORY_LABELS[item.productCategory as keyof typeof PRODUCT_CATEGORY_LABELS];
+  }
   if (item.category === "pack") return null;
   return item.beerName ?? item.productName ?? item.name.split("—")[0]?.trim() ?? item.name;
 }
 
 function getCartLinePresentation(item: { presentationLabel?: string; name: string }) {
   return item.presentationLabel ?? item.name.split("—")[1]?.trim() ?? null;
+}
+
+function ProductImageFallback({ className = "w-full h-full" }: { className?: string }) {
+  return (
+    <div className={cn(className, "bg-primary/15 flex items-center justify-center")}>
+      <Beer className="w-7 h-7 text-primary" aria-hidden="true" />
+    </div>
+  );
+}
+
+function getPresentationDetails(presentation: ProductPresentation) {
+  return [
+    presentation.description,
+    presentation.volumeLiters > 0 ? `${presentation.volumeLiters} L` : null,
+    presentation.presentationType && presentation.presentationType !== presentation.label ? presentation.presentationType : null,
+  ].filter((part): part is string => Boolean(part));
+}
+
+function CategorySelector({
+  categories,
+  selectedCategory,
+  onSelect,
+}: {
+  categories: ReturnType<typeof listVisibleCatalogCategories>;
+  selectedCategory: ProductCategory;
+  onSelect: (category: ProductCategory) => void;
+}) {
+  if (!shouldShowCategorySelector(categories)) return null;
+
+  const selectedIndex = Math.max(0, categories.findIndex((category) => category.id === selectedCategory));
+
+  const focusTab = (index: number) => {
+    const tab = document.getElementById(`order-category-${categories[index]?.id}`);
+    tab?.focus();
+  };
+
+  return (
+    <div className="mb-6" role="tablist" aria-label="Categorias de productos">
+      <div className="flex flex-wrap gap-2 justify-center">
+        {categories.map((category) => {
+          const selected = category.id === selectedCategory;
+          return (
+            <button
+              key={category.id}
+              id={`order-category-${category.id}`}
+              type="button"
+              role="tab"
+              aria-selected={selected}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => onSelect(category.id)}
+              onKeyDown={(event) => {
+                if (event.key !== "ArrowRight" && event.key !== "ArrowLeft" && event.key !== "Home" && event.key !== "End") return;
+                event.preventDefault();
+                const nextIndex =
+                  event.key === "Home"
+                    ? 0
+                    : event.key === "End"
+                      ? categories.length - 1
+                      : event.key === "ArrowRight"
+                        ? (selectedIndex + 1) % categories.length
+                        : (selectedIndex - 1 + categories.length) % categories.length;
+                onSelect(categories[nextIndex].id);
+                window.requestAnimationFrame(() => focusTab(nextIndex));
+              }}
+              className={cn(
+                "min-h-11 rounded-xl px-4 py-2 text-sm font-bold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                selected
+                  ? "bg-primary text-black border-primary"
+                  : "bg-white/5 text-white/75 border-white/10 hover:border-primary/60 hover:text-white",
+              )}
+            >
+              {category.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ProductSelector({
+  products,
+  selectedProductId,
+  onSelect,
+}: {
+  products: CatalogProductOption[];
+  selectedProductId: string;
+  onSelect: (productId: string) => void;
+}) {
+  if (products.length === 0) {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+        <p className="text-white font-bold">No hay productos disponibles</p>
+        <p className="text-sm text-muted-foreground mt-1">Elegí otra categoría o intentá nuevamente más tarde.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {products.map(({ product, variantLabel, priceFrom }) => {
+        const selected = selectedProductId === product.id;
+        return (
+          <button
+            key={product.id}
+            type="button"
+            onClick={() => onSelect(product.id)}
+            aria-pressed={selected}
+            className={cn(
+              "group text-left rounded-2xl overflow-hidden border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              selected
+                ? "border-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.25)]"
+                : "border-transparent bg-white/5 hover:border-amber-500/40 hover:scale-[1.02]",
+            )}
+          >
+            <div className="relative h-28 overflow-hidden">
+              {product.image ? (
+                <img
+                  src={product.image}
+                  alt={product.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  onError={(event) => {
+                    (event.currentTarget as HTMLImageElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <ProductImageFallback />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+              {selected && (
+                <span className="absolute top-2 right-2 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
+                  <Check className="w-3.5 h-3.5 text-black" strokeWidth={3} aria-hidden="true" />
+                </span>
+              )}
+            </div>
+            <div className={cn("p-3 transition-colors", selected ? "bg-amber-500/10" : "bg-white/5")}>
+              <h4 className={cn("font-bold text-sm mb-1 leading-tight", selected ? "text-amber-300" : "text-white")}>
+                {product.name}
+              </h4>
+              {variantLabel && variantLabel !== product.name && (
+                <p className="text-xs text-white/65 mb-1">{variantLabel}</p>
+              )}
+              {product.description && (
+                <p className="text-xs text-muted-foreground leading-snug line-clamp-2 mb-2">{product.description}</p>
+              )}
+              <p className="text-primary font-mono text-xs font-bold">Desde {formatPrice(priceFrom)}</p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function PresentationSelector({
+  product,
+  selectedPresentationId,
+  onSelect,
+}: {
+  product: CatalogProductOption;
+  selectedPresentationId: string;
+  onSelect: (presentationId: string) => void;
+}) {
+  return (
+    <div className="grid gap-3">
+      {product.presentations.map((presentation) => {
+        const selected = selectedPresentationId === presentation.id;
+        const details = getPresentationDetails(presentation);
+        return (
+          <button
+            key={presentation.id}
+            type="button"
+            onClick={() => onSelect(presentation.id)}
+            aria-pressed={selected}
+            className={cn(
+              "w-full rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              selected ? "border-primary bg-primary/10" : "border-white/10 bg-white/5 hover:border-primary/60",
+            )}
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-white font-bold">{presentation.label}</p>
+                {details.length > 0 && (
+                  <p className="text-xs text-muted-foreground mt-1">{details.join(" · ")}</p>
+                )}
+              </div>
+              <p className="text-primary font-mono font-bold shrink-0">{formatPrice(presentation.unitPrice)}</p>
+            </div>
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 function LiveOrderSummary({
@@ -204,6 +412,7 @@ function LiveOrderSummary({
     clearCart,
   } = useCart();
   const {
+    snapshot,
     deliveryOptions,
     priceDisclaimer,
   } = useCommercialDerivedData();
@@ -255,7 +464,7 @@ function LiveOrderSummary({
         ) : (
           <AnimatePresence>
             {items.map((item) => {
-              const beerImg = getCartItemImage(item.name);
+              const beerImg = snapshot.products.find((product) => product.id === item.productId)?.image || getCartItemImage(item.name);
               const lineTitle = getCartLineTitle(item);
               const lineBeer = getCartLineBeer(item);
               const linePresentation = getCartLinePresentation(item);
@@ -414,8 +623,24 @@ export function ArmaTuPedido({
   const [step, setStep] = useState<Step>(1);
   const [direction, setDirection] = useState(1);
   const [orderId] = useState(() => Math.floor(10000 + Math.random() * 90000));
+  const visibleCategories = useMemo(() => listVisibleCatalogCategories(snapshot), [snapshot]);
+  const [selectedCategory, setSelectedCategory] = useState<ProductCategory>(visibleCategories[0]?.id ?? "beer");
+  const activeCategory = visibleCategories.some((category) => category.id === selectedCategory)
+    ? selectedCategory
+    : visibleCategories[0]?.id ?? "beer";
+  const activeCategoryProducts = useMemo(
+    () => listCatalogProductsByCategory(snapshot, activeCategory),
+    [snapshot, activeCategory],
+  );
+  const isBeerCategory = activeCategory === "beer";
   const [orderType, setOrderType] = useState<OrderType>(null);
   const [selectedBeer, setSelectedBeer] = useState<CatalogBeer | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState("");
+  const selectedProduct = activeCategoryProducts.find((item) => item.product.id === selectedProductId) ?? null;
+  const [selectedPresentationId, setSelectedPresentationId] = useState("");
+  const selectedPresentation =
+    selectedProduct?.presentations.find((presentation) => presentation.id === selectedPresentationId) ?? null;
+  const [genericQuantity, setGenericQuantity] = useState(1);
   const [draftQuantities, setDraftQuantities] = useState<Record<string, number>>({});
   const [lastAddedMessage, setLastAddedMessage] = useState("");
   const [promoInput, setPromoInput] = useState("");
@@ -442,6 +667,7 @@ export function ArmaTuPedido({
   useEffect(() => {
     if (!pendingRecommendation) return;
 
+    setSelectedCategory("beer");
     setOrderType("barril");
     setStep(2);
     setDirection(1);
@@ -449,6 +675,58 @@ export function ArmaTuPedido({
     setRecommendationError("");
     appliedRecommendationKeyRef.current = "";
   }, [pendingRecommendation]);
+
+  useEffect(() => {
+    if (visibleCategories.length === 0) {
+      setSelectedProductId("");
+      setSelectedPresentationId("");
+      setSelectedBeer(null);
+      setOrderType(null);
+      return;
+    }
+
+    if (!visibleCategories.some((category) => category.id === selectedCategory)) {
+      setSelectedCategory(visibleCategories[0].id);
+    }
+  }, [selectedCategory, visibleCategories]);
+
+  useEffect(() => {
+    setLastAddedMessage("");
+    setSelectedProductId("");
+    setSelectedPresentationId("");
+    setGenericQuantity(1);
+    if (!isBeerCategory) {
+      setSelectedBeer(null);
+      setOrderType(null);
+    }
+  }, [activeCategory, isBeerCategory]);
+
+  useEffect(() => {
+    if (isBeerCategory) return;
+
+    if (selectedProductId && !activeCategoryProducts.some((item) => item.product.id === selectedProductId)) {
+      setSelectedProductId("");
+    }
+  }, [activeCategoryProducts, isBeerCategory, selectedProductId]);
+
+  useEffect(() => {
+    if (!selectedProduct) {
+      setSelectedPresentationId("");
+      return;
+    }
+
+    if (selectedProduct.presentations.length === 1 && selectedPresentationId !== selectedProduct.presentations[0].id) {
+      setSelectedPresentationId(selectedProduct.presentations[0].id);
+      return;
+    }
+
+    if (
+      selectedPresentationId &&
+      !selectedProduct.presentations.some((presentation) => presentation.id === selectedPresentationId)
+    ) {
+      setSelectedPresentationId("");
+    }
+  }, [selectedProduct, selectedPresentationId]);
 
   useEffect(() => {
     setRecommendationStatus("idle");
@@ -486,10 +764,22 @@ export function ArmaTuPedido({
     deliveryOptions.find((option) => option.id === extras.delivery) ?? deliveryOptions[0];
   const deliveryRequiresAddress = selectedDeliveryOption?.requiresAddress ?? false;
   const hasCurrentSelection = hasCurrentSelectionInCart(items, selectedBeer, orderType);
+  const hasCatalogProducts = visibleCategories.length > 0;
+  const genericCartDraft = selectedProduct && selectedPresentation
+    ? createCommercialCartItem(selectedProduct.product, selectedPresentation)
+    : null;
+  const hasGenericSelection = Boolean(selectedProduct && selectedPresentation && genericQuantity > 0);
   const canProceed = (() => {
-    if (step === 1) return orderType !== null;
-    if (step === 2) return selectedBeer !== null;
-    if (step === 3) return totalItems > 0;
+    if (!hasCatalogProducts) return false;
+    if (isBeerCategory) {
+      if (step === 1) return orderType !== null;
+      if (step === 2) return selectedBeer !== null;
+      if (step === 3) return totalItems > 0;
+    } else {
+      if (step === 1) return selectedProduct !== null;
+      if (step === 2) return selectedPresentation !== null;
+      if (step === 3) return totalItems > 0;
+    }
     if (step === 4)
       return (
         totalItems > 0 &&
@@ -503,8 +793,8 @@ export function ArmaTuPedido({
   const validationMessage = getOrderWizardValidationMessage({
     step,
     orderType,
-    hasSelectedBeer: selectedBeer !== null,
-    hasCurrentSelection: step === 3 ? totalItems > 0 : hasCurrentSelection,
+    hasSelectedBeer: isBeerCategory ? selectedBeer !== null : selectedProduct !== null,
+    hasCurrentSelection: step === 3 ? totalItems > 0 : isBeerCategory ? hasCurrentSelection : hasGenericSelection,
     hasCartItems: totalItems > 0,
     customerName: formData.nombre,
     date: formData.fecha,
@@ -517,7 +807,7 @@ export function ArmaTuPedido({
   const goNext = () => {
     if (!canProceed) return;
     setDirection(1);
-    if (step === 1 && orderType === "paquete") {
+    if (isBeerCategory && step === 1 && orderType === "paquete") {
       addItem(tastingPack);
       setLastAddedMessage("Pack Degustación agregado al pedido.");
       setStep(4);
@@ -528,7 +818,7 @@ export function ArmaTuPedido({
 
   const goPrev = () => {
     setDirection(-1);
-    if (step === 4 && orderType === "paquete") {
+    if (isBeerCategory && step === 4 && orderType === "paquete") {
       setStep(1);
       return;
     }
@@ -586,6 +876,17 @@ export function ArmaTuPedido({
     addItem(cartDraft, qty);
     setLastAddedMessage(`${cartDraft.name} agregado al pedido.`);
     setDraftQuantity(cartDraft.id, 1);
+  };
+
+  const setNormalizedGenericQuantity = (qty: number) => {
+    setGenericQuantity(normalizeCatalogQuantity(qty));
+  };
+
+  const addGenericDraftToOrder = () => {
+    if (!genericCartDraft) return;
+    addItem(genericCartDraft, genericQuantity);
+    setLastAddedMessage(`${genericCartDraft.name} agregado al pedido.`);
+    setGenericQuantity(1);
   };
 
   const handleWhatsAppOrderClick = (event: MouseEvent<HTMLAnchorElement>) => {
@@ -673,7 +974,7 @@ export function ArmaTuPedido({
               : "bg-white/10 text-white/30 cursor-not-allowed",
           )}
         >
-          {step === 1 && orderType === "paquete" ? "Agregar al pedido" : step === 4 ? "Ver resumen" : step === 3 ? "Continuar" : "Siguiente"}{" "}
+          {isBeerCategory && step === 1 && orderType === "paquete" ? "Agregar al pedido" : step === 4 ? "Ver resumen" : step === 3 ? "Continuar" : "Siguiente"}{" "}
           <ChevronRight className="w-5 h-5" />
         </button>
       )}
@@ -786,6 +1087,26 @@ export function ArmaTuPedido({
           </div>
         )}
 
+        <CategorySelector
+          categories={visibleCategories}
+          selectedCategory={activeCategory}
+          onSelect={(category) => {
+            setSelectedCategory(category);
+            setStep(1);
+            setDirection(1);
+          }}
+        />
+
+        {!hasCatalogProducts ? (
+          <div className="max-w-2xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+            <ShoppingCart className="w-10 h-10 text-primary mx-auto mb-4" aria-hidden="true" />
+            <h3 className="text-xl font-bold text-white mb-2">Catalogo no disponible</h3>
+            <p className="text-sm text-muted-foreground">
+              No hay productos activos para armar un pedido en este momento.
+            </p>
+          </div>
+        ) : (
+        <>
         <BeerGlassStepper step={step} />
 
         <div data-section-secondary className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
@@ -802,6 +1123,8 @@ export function ArmaTuPedido({
                   animate="animate"
                   exit="exit"
                 >
+                  {isBeerCategory ? (
+                    <>
                   <h3 className="text-xl font-bold text-white mb-5 text-center">
                     ¿Qué querés pedir?
                   </h3>
@@ -916,6 +1239,26 @@ export function ArmaTuPedido({
                       </p>
                     )}
                   </div>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-bold text-white mb-5 text-center">
+                        Elegí un producto
+                      </h3>
+                      <ProductSelector
+                        products={activeCategoryProducts}
+                        selectedProductId={selectedProductId}
+                        onSelect={(productId) => {
+                          setSelectedProductId(productId);
+                          setSelectedPresentationId("");
+                          setLastAddedMessage("");
+                        }}
+                      />
+                      <div className="relative">
+                        <NavButtons />
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               )}
 
@@ -929,6 +1272,8 @@ export function ArmaTuPedido({
                   animate="animate"
                   exit="exit"
                 >
+                  {isBeerCategory ? (
+                    <>
                   <h3 className="text-xl font-bold text-white mb-5 text-center">
                     Elegí el estilo
                   </h3>
@@ -1007,6 +1352,42 @@ export function ArmaTuPedido({
                   <div className="relative">
                     <NavButtons />
                   </div>
+                    </>
+                  ) : selectedProduct ? (
+                    <>
+                      <div className="text-center mb-6">
+                        <div className="inline-block px-4 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2">
+                          {selectedProduct.product.name}
+                        </div>
+                        <h3 className="text-xl md:text-2xl font-bold text-white">
+                          Elegí la presentación
+                        </h3>
+                        {selectedProduct.variantLabel && selectedProduct.variantLabel !== selectedProduct.product.name && (
+                          <p className="text-sm text-muted-foreground mt-1">{selectedProduct.variantLabel}</p>
+                        )}
+                      </div>
+                      <PresentationSelector
+                        product={selectedProduct}
+                        selectedPresentationId={selectedPresentationId}
+                        onSelect={(presentationId) => {
+                          setSelectedPresentationId(presentationId);
+                          setLastAddedMessage("");
+                        }}
+                      />
+                      <div className="relative">
+                        <NavButtons />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+                        <p className="text-white font-bold">Seleccioná un producto para continuar</p>
+                      </div>
+                      <div className="relative">
+                        <NavButtons />
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               )}
 
@@ -1021,6 +1402,8 @@ export function ArmaTuPedido({
                   exit="exit"
                   className="max-w-2xl mx-auto w-full"
                 >
+                  {isBeerCategory ? (
+                    <>
                   <div className="text-center mb-6">
                     <div className="inline-block px-4 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2">
                       {selectedBeer?.name}
@@ -1355,6 +1738,104 @@ export function ArmaTuPedido({
                   <div className="relative">
                     <NavButtons />
                   </div>
+                    </>
+                  ) : selectedProduct && selectedPresentation && genericCartDraft ? (
+                    <>
+                      <div className="text-center mb-6">
+                        <div className="inline-block px-4 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2">
+                          {selectedProduct.product.name}
+                        </div>
+                        <h3 className="text-xl md:text-2xl font-bold text-white">
+                          Elegí la cantidad
+                        </h3>
+                        {lastAddedMessage && (
+                          <p className="mt-3 text-sm font-bold text-green-300" role="status">
+                            {lastAddedMessage}
+                          </p>
+                        )}
+                      </div>
+                      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+                        <div className="min-w-0">
+                          <h4 className="text-lg font-bold text-white">{selectedPresentation.label}</h4>
+                          {selectedProduct.variantLabel && selectedProduct.variantLabel !== selectedProduct.product.name && (
+                            <p className="text-xs text-muted-foreground mt-1">{selectedProduct.variantLabel}</p>
+                          )}
+                          <p className="text-primary font-mono font-bold mt-1">
+                            {formatPrice(selectedPresentation.unitPrice)}
+                          </p>
+                          <p className="text-xs text-white/45 mt-1">
+                            Subtotal: {formatPrice(selectedPresentation.unitPrice * genericQuantity)}
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+                          <div className="flex items-center bg-white/10 rounded-xl p-1">
+                            <button
+                              type="button"
+                              aria-label={`Restar cantidad a agregar de ${genericCartDraft.name}`}
+                              onClick={() => setNormalizedGenericQuantity(genericQuantity - 1)}
+                              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                            >
+                              <Minus className="w-4 h-4 text-white" aria-hidden="true" />
+                            </button>
+                            <input
+                              aria-label={`Cantidad de ${genericCartDraft.name}`}
+                              type="number"
+                              min={1}
+                              max={999}
+                              step={1}
+                              value={genericQuantity}
+                              onChange={(event) => setNormalizedGenericQuantity(Number(event.target.value))}
+                              className="w-14 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
+                            />
+                            <button
+                              type="button"
+                              aria-label={`Sumar cantidad a agregar de ${genericCartDraft.name}`}
+                              onClick={() => setNormalizedGenericQuantity(genericQuantity + 1)}
+                              className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
+                            >
+                              <Plus className="w-4 h-4 text-white" aria-hidden="true" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={addGenericDraftToOrder}
+                            className="px-5 py-3 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
+                          >
+                            Agregar al pedido
+                          </button>
+                        </div>
+                      </div>
+                      {totalItems > 0 && (
+                        <div className="mt-5 flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDirection(-1);
+                              setStep(1);
+                              setSelectedProductId("");
+                              setSelectedPresentationId("");
+                              setLastAddedMessage("");
+                            }}
+                            className="px-5 py-3 rounded-xl bg-white/5 text-white font-bold hover:bg-white/10 transition-colors border border-white/10"
+                          >
+                            Agregar otro producto
+                          </button>
+                        </div>
+                      )}
+                      <div className="relative">
+                        <NavButtons />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+                        <p className="text-white font-bold">Seleccioná una presentación para continuar</p>
+                      </div>
+                      <div className="relative">
+                        <NavButtons />
+                      </div>
+                    </>
+                  )}
                 </motion.div>
               )}
 
@@ -1809,6 +2290,8 @@ export function ArmaTuPedido({
             </div>
           </div>
         </div>
+        </>
+        )}
       </div>
 
       {/* Mobile bottom bar + drawer */}
