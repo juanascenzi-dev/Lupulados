@@ -121,17 +121,22 @@ export function PwaInstall() {
   const installApp = useCallback(async () => {
     if (!deferredPrompt || isPrompting) return;
 
+    const clearNativePrompt = () => {
+      setDeferredPrompt(null);
+      setInstallAvailable(false);
+      setMobileExplanationOpen(false);
+      setInteractionExpanded(false);
+    };
+
     setIsPrompting(true);
     try {
       await deferredPrompt.prompt();
       const choice = await deferredPrompt.userChoice.catch(() => null);
-      if (choice?.outcome === "accepted") {
-        setDeferredPrompt(null);
-        setInstallAvailable(false);
-        setMobileExplanationOpen(false);
+      if (choice) {
+        clearNativePrompt();
       }
     } catch {
-      // Keep the UI usable if the browser rejects the prompt call.
+      clearNativePrompt();
     } finally {
       setIsPrompting(false);
     }

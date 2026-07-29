@@ -106,13 +106,15 @@ describe("productCatalog", () => {
     const inactiveProduct = product({ id: "inactive-test", slug: "inactive-test", status: "archived" });
     const inactivePresentation = presentation({ id: "active-test:inactive", productId: "active-test", active: false });
     const invalidPrice = presentation({ id: "active-test:negative", productId: "active-test", unitPrice: -1 });
+    const zeroPrice = presentation({ id: "active-test:zero", productId: "active-test", unitPrice: 0 });
     const validPresentation = presentation({ id: "active-test:750ml", productId: "active-test" });
-    const data = snapshot([active, inactiveProduct], [inactivePresentation, invalidPrice, validPresentation]);
+    const data = snapshot([active, inactiveProduct], [inactivePresentation, invalidPrice, zeroPrice, validPresentation]);
 
     expect(findActiveProductPresentation(data, "active-test", "active-test:750ml")).not.toBeNull();
     expect(findActiveProductPresentation(data, "inactive-test", "inactive-test:750ml")).toBeNull();
     expect(findActiveProductPresentation(data, "active-test", "active-test:inactive")).toBeNull();
     expect(findActiveProductPresentation(data, "active-test", "active-test:negative")).toBeNull();
+    expect(findActiveProductPresentation(data, "active-test", "active-test:zero")).toBeNull();
   });
 
   it("creates stable line keys that change by presentation, product, category or variant", () => {

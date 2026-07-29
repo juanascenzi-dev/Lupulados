@@ -1281,11 +1281,13 @@ export function ArmaTuPedido({
                     {BEERS.map((beer) => {
                       const sel = selectedBeer?.id === beer.id;
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={beer.id}
                           onClick={() => setSelectedBeer(beer)}
+                          aria-pressed={sel}
                           className={cn(
-                            "group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-200",
+                            "group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-200 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                             sel
                               ? "border-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.25)]"
                               : "border-transparent bg-white/5 hover:border-amber-500/40 hover:scale-[1.02]",
@@ -1345,7 +1347,7 @@ export function ArmaTuPedido({
                               )}
                             </p>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>

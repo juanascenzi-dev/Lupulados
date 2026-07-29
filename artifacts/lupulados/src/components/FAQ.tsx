@@ -51,7 +51,11 @@ export function FAQ() {
               )}
             >
               <button
+                id={`faq-question-${i}`}
+                type="button"
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                aria-expanded={openIndex === i}
+                aria-controls={`faq-answer-${i}`}
                 className="flex min-h-14 items-center justify-between w-full p-4 md:px-5 md:py-4 text-left gap-4"
               >
                 <span className="text-base md:text-lg font-bold text-white">{faq.q}</span>
@@ -60,6 +64,7 @@ export function FAQ() {
                     "w-5 h-5 text-primary transition-transform duration-300",
                     openIndex === i ? "rotate-180" : ""
                   )} 
+                  aria-hidden="true"
                 />
               </button>
               
@@ -71,7 +76,12 @@ export function FAQ() {
                     exit={{ height: 0, opacity: 0 }}
                     className="overflow-hidden"
                   >
-                    <div className="px-4 pb-4 pt-0 md:px-5 md:pb-5 text-sm md:text-base text-muted-foreground leading-snug">
+                    <div
+                      id={`faq-answer-${i}`}
+                      role="region"
+                      aria-labelledby={`faq-question-${i}`}
+                      className="px-4 pb-4 pt-0 md:px-5 md:pb-5 text-sm md:text-base text-muted-foreground leading-snug"
+                    >
                       {faq.a}
                     </div>
                   </motion.div>
@@ -94,7 +104,11 @@ export function FAQ() {
                   )}
                 >
                   <button
+                    id={`faq-question-${i}`}
+                    type="button"
                     onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                    aria-expanded={openIndex === i}
+                    aria-controls={`faq-answer-${i}`}
                     className="flex min-h-14 items-center justify-between w-full p-4 md:px-5 md:py-4 text-left gap-4"
                   >
                     <span className="text-base md:text-lg font-bold text-white">{faq.q}</span>
@@ -103,6 +117,7 @@ export function FAQ() {
                         "w-5 h-5 text-primary transition-transform duration-300",
                         openIndex === i ? "rotate-180" : ""
                       )}
+                      aria-hidden="true"
                     />
                   </button>
 
@@ -114,7 +129,12 @@ export function FAQ() {
                         exit={{ height: 0, opacity: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="px-4 pb-4 pt-0 md:px-5 md:pb-5 text-sm md:text-base text-muted-foreground leading-snug">
+                        <div
+                          id={`faq-answer-${i}`}
+                          role="region"
+                          aria-labelledby={`faq-question-${i}`}
+                          className="px-4 pb-4 pt-0 md:px-5 md:pb-5 text-sm md:text-base text-muted-foreground leading-snug"
+                        >
                           {faq.a}
                         </div>
                       </motion.div>

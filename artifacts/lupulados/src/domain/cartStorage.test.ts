@@ -335,6 +335,21 @@ describe("cartStorage", () => {
     expect(items).toEqual([]);
   });
 
+  it("drops active persisted lines when the current presentation has no positive price", () => {
+    const snapshot = {
+      ...structuredClone(commercialSnapshot),
+      productPresentations: commercialSnapshot.productPresentations.map((presentation) =>
+        presentation.id === "ipa:barril50L" ? { ...presentation, unitPrice: 0 } : presentation,
+      ),
+    };
+
+    const items = reconcileCartItemsWithSnapshot([
+      { id: "ipa:barril50L", name: "IPA vieja", price: 105000, qty: 1, category: "barril" },
+    ], snapshot);
+
+    expect(items).toEqual([]);
+  });
+
   it("reconciles generic wine, mixer and accessory fixtures without beer fields", () => {
     const snapshot = withGenericProducts();
     const items = reconcileCartItemsWithSnapshot([

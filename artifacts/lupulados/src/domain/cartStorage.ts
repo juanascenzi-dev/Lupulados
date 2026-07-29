@@ -215,7 +215,7 @@ export function reconcileCartItemsWithSnapshot(
   );
   const activePresentations = new Map(
     snapshot.productPresentations
-      .filter((presentation) => presentation.active && activeProducts.has(presentation.productId) && presentation.unitPrice >= 0)
+      .filter((presentation) => presentation.active && activeProducts.has(presentation.productId) && presentation.unitPrice > 0)
       .map((presentation) => [presentation.id, presentation]),
   );
   const reconciled = new Map<string, StoredCartItem>();

@@ -142,7 +142,7 @@ export function buildActiveCatalogIndexes(snapshot: CommercialSnapshot) {
   );
   const presentationsById = new Map(
     snapshot.productPresentations
-      .filter((presentation) => presentation.active && productsById.has(presentation.productId) && presentation.unitPrice >= 0)
+      .filter((presentation) => presentation.active && productsById.has(presentation.productId) && isValidCatalogPresentation(presentation))
       .map((presentation) => [presentation.id, presentation]),
   );
 

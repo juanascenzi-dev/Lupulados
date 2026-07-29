@@ -155,6 +155,7 @@ describe("PwaInstall component wiring", () => {
     expect(pwaInstallSource).toContain('window.addEventListener("appinstalled", handleAppInstalled)');
     expect(pwaInstallSource).toContain('window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)');
     expect(pwaInstallSource).toContain('window.removeEventListener("appinstalled", handleAppInstalled)');
+    expect(pwaInstallSource).toContain("clearNativePrompt");
     expect(pwaInstallSource).not.toContain("console.error");
     expect(pwaInstallSource).not.toContain("console.log");
   });
