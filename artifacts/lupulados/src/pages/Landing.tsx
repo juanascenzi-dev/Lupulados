@@ -10,7 +10,7 @@ import { CartFloating } from "@/components/CartFloating";
 import { RouteFallback } from "@/components/RouteFallback";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
-import { scrollToSection } from "@/lib/sectionNavigation";
+import { getSectionIdFromHash, scrollToSection } from "@/lib/sectionNavigation";
 
 const Calculadora = lazy(() => import("@/components/Calculadora").then((module) => ({ default: module.Calculadora })));
 const ArmaTuPedido = lazy(() => import("@/components/ArmaTuPedido").then((module) => ({ default: module.ArmaTuPedido })));
@@ -79,8 +79,35 @@ export default function Landing() {
       ...recommendation,
       parts: recommendation.parts.map((part) => ({ ...part })),
     });
-    scrollToSection("arma-tu-pedido");
+    scrollToSection("arma-tu-pedido", { updateHash: true });
   };
+
+  useEffect(() => {
+    let frameId: number | null = null;
+
+    const scrollToCurrentHash = () => {
+      const sectionId = getSectionIdFromHash(window.location.hash);
+      if (!sectionId) return;
+
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      frameId = window.requestAnimationFrame(() => {
+        frameId = null;
+        scrollToSection(sectionId);
+      });
+    };
+
+    scrollToCurrentHash();
+    window.addEventListener("hashchange", scrollToCurrentHash);
+    window.addEventListener("popstate", scrollToCurrentHash);
+    window.addEventListener("resize", scrollToCurrentHash);
+
+    return () => {
+      if (frameId !== null) window.cancelAnimationFrame(frameId);
+      window.removeEventListener("hashchange", scrollToCurrentHash);
+      window.removeEventListener("popstate", scrollToCurrentHash);
+      window.removeEventListener("resize", scrollToCurrentHash);
+    };
+  }, [promoBannerHeight, showBanner]);
 
   return (
     <div className="relative w-full bg-background">

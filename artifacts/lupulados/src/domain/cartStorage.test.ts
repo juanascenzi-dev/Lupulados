@@ -165,6 +165,47 @@ describe("cartStorage", () => {
     expect(parseCartItems(JSON.stringify({ version: 2, items: [{ ...beerLine, qty: 1 }] }))).toHaveLength(1);
   });
 
+  it("normalizes known mojibake in legacy catalog cart text without changing line identity", () => {
+    const mojibakePackName = "Pack Degustaci\u00c3\u00b3n";
+    const doubleEncodedPackName = "Pack Degustaci\u00c3\u0192\u00c2\u00b3n";
+    const mojibakeCategory = "porr\u00c3\u00b3n";
+
+    const parsed = parseCartItems(JSON.stringify([
+      {
+        ...tastingPack,
+        name: `${mojibakePackName} \u00e2\u20ac\u201d 6 estilos`,
+        productName: doubleEncodedPackName,
+        category: "pack",
+        qty: 1,
+      },
+      {
+        ...beerLine,
+        id: "legacy-porron",
+        name: "Blonde Ale \u00e2\u20ac\u201d Porr\u00c3\u00b3n 500ml",
+        category: mojibakeCategory,
+        presentationCategory: mojibakeCategory,
+        presentationLabel: "Porr\u00c3\u00b3n 500ml",
+        productName: "Blonde Ale",
+        qty: 1,
+      },
+    ]));
+
+    expect(parsed[0]).toMatchObject({
+      id: tastingPack.id,
+      name: "Pack Degustación — 6 estilos",
+      productName: "Pack Degustación",
+      category: "pack",
+    });
+    expect(parsed[1]).toMatchObject({
+      id: "legacy-porron",
+      name: "Blonde Ale — Porrón 500ml",
+      category: "porrón",
+      presentationCategory: "porrón",
+      presentationLabel: "Porrón 500ml",
+      productCategory: "beer",
+    });
+  });
+
   it("migrates legacy beerId and beerName into generic product fields", () => {
     const parsed = parseCartItems(JSON.stringify([
       {

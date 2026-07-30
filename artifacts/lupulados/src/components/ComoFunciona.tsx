@@ -31,9 +31,10 @@ const STEPS = [
 
 export function ComoFunciona() {
   return (
-    <section id="como-funciona" className="site-section site-section-compact bg-secondary/30 relative">
-      <div data-section-entry className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-7 md:mb-8">
+    <section id="como-funciona" className="site-section how-it-works-section site-section-compact bg-secondary/30 relative flex items-center">
+      <span data-section-entry className="absolute top-0 h-px w-px overflow-hidden" aria-hidden="true" />
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-6 md:mb-7">
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-3">
             Alquilar es muy fácil
           </h2>
@@ -47,7 +48,7 @@ export function ComoFunciona() {
           <div className="absolute left-[22px] md:left-1/2 top-3 bottom-3 w-0.5 bg-white/10 -translate-x-1/2 md:block hidden" />
           <div className="absolute left-[22px] top-3 bottom-3 w-0.5 bg-white/10 -translate-x-1/2 md:hidden" />
 
-          <div className="space-y-5 md:space-y-6">
+          <div className="space-y-4 md:space-y-4">
             {STEPS.map((step, i) => {
               const isEven = i % 2 !== 0;
               return (
@@ -55,14 +56,14 @@ export function ComoFunciona() {
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: "-100px" }}
+                  viewport={{ once: true, amount: 0.1, margin: "0px 0px 96px 0px" }}
                   className={`flex flex-col md:flex-row items-start md:items-center relative ${
                     isEven ? 'md:flex-row-reverse' : ''
                   }`}
                 >
                   {/* Content Box */}
                   <div className={`w-full md:w-1/2 pl-14 md:pl-0 ${isEven ? 'md:pl-12' : 'md:pr-12 text-left md:text-right'}`}>
-                    <div className="bg-card border border-white/5 p-4 md:p-5 rounded-xl shadow-xl hover:border-primary/30 transition-colors">
+                    <div className="bg-card border border-white/5 p-4 rounded-xl shadow-xl hover:border-primary/30 transition-colors">
                       <h4 className="text-lg md:text-xl font-bold text-white mb-1.5">{step.title}</h4>
                       <p className="text-sm md:text-base text-muted-foreground leading-snug">{step.desc}</p>
                     </div>

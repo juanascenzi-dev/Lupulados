@@ -52,6 +52,7 @@
   --ring: 40 90% 50%;
   
   --radius: 0.75rem;
+  --site-sticky-offset: 80px;
   --site-header-offset: 80px;
   --section-anchor-gap: 8px;
   --section-entry-gap: 12px;
@@ -147,11 +148,11 @@
 }
 
 .site-section {
-  scroll-margin-top: calc(var(--site-header-offset) + var(--section-anchor-gap));
+  scroll-margin-top: calc(var(--site-sticky-offset) + var(--section-anchor-gap));
 }
 
 [data-section-entry] {
-  scroll-margin-top: calc(var(--site-header-offset) + var(--section-entry-gap));
+  scroll-margin-top: calc(var(--site-sticky-offset) + var(--section-entry-gap));
 }
 
 .site-section-standard {
@@ -167,7 +168,12 @@
 }
 
 .site-section-viewport {
-  min-height: calc(100svh - var(--site-header-offset));
+  min-height: calc(100svh - var(--site-sticky-offset));
+}
+
+.services-section,
+.how-it-works-section {
+  min-height: calc(100dvh - var(--site-sticky-offset));
 }
 
 .section-continue-hint {

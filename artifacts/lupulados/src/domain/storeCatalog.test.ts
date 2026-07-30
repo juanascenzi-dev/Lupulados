@@ -171,6 +171,45 @@ describe("storeCatalog", () => {
     expect(orderWizard).toContain("setStep(3)");
     expect(orderWizard).not.toContain("setStep(4);\n      return;\n    }");
   });
+
+  it("keeps configurable beer pack layout and step navigation behavior scoped to the shared builder", () => {
+    const orderWizard = readFileSync(resolve(process.cwd(), "src/components/ArmaTuPedido.tsx"), "utf8");
+    const storePage = readFileSync(resolve(process.cwd(), "src/pages/StorePage.tsx"), "utf8");
+    const builder = readFileSync(resolve(process.cwd(), "src/components/ConfigurableBeerPackBuilder.tsx"), "utf8");
+
+    expect(orderWizard).toContain("CONFIGURABLE_PACK_ORDER_TYPE");
+    expect(orderWizard).toContain("isConfigurablePackStep");
+    expect(orderWizard).toContain("!isConfigurablePackStep &&");
+    expect(orderWizard).toContain("scrollIntoView");
+    expect(orderWizard).toContain("prefers-reduced-motion: reduce");
+    expect(orderWizard).toContain("layout=\"wide\"");
+    expect(orderWizard).toContain("WizardActionBar");
+    expect(orderWizard).toContain("MobileCartSummary");
+    expect(orderWizard).toContain("getCompactCartLineDescription");
+    expect(orderWizard).toContain("detailed && item.pack?.type === \"configurable-beer-pack\"");
+    expect(orderWizard).toContain("--wizard-action-bottom-inset");
+    expect(orderWizard).toContain("lg:h-[var(--wizard-viewport-height)]");
+    expect(orderWizard).toContain("min-h-0 flex-1 overflow-hidden");
+    expect(orderWizard).not.toContain("hover:scale-[1.02]");
+    expect(storePage).toContain("ConfigurableBeerPackBuilder");
+    expect(storePage).toContain("Personalizar pack");
+    expect(storePage).not.toContain("layout=\"wide\"");
+    expect(builder).toContain("layout?: \"default\" | \"wide\"");
+    expect(builder).toContain("minmax(0,1fr)");
+    expect(builder).toContain("grid-rows-[auto_auto_minmax(0,1fr)]");
+    expect(builder).toContain("lg:overflow-y-auto");
+    expect(builder).toContain("Completa todos los packs");
+    expect(builder).not.toContain("position:absolute");
+  });
+
+  it("uses a local event image for weddings and keeps an image fallback", () => {
+    const events = readFileSync(resolve(process.cwd(), "src/components/Eventos.tsx"), "utf8");
+
+    expect(events).toContain("/events/wedding-reception.jpg");
+    expect(events).toContain("EventImage");
+    expect(events).toContain("onError={() => setFailed(true)}");
+    expect(events).toContain("aria-label={alt}");
+  });
 });
 describe("shared cart and checkout domain", () => {
   it("keeps beer, alcoholic drinks, non alcoholic drinks and combos together with stable line behavior", () => {

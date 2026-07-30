@@ -17,11 +17,11 @@ export function RouteFallback({
     <section
       id={id}
       ref={sectionRef}
-      className={`${minHeightClassName} bg-background border-y border-white/5 px-4 py-16 flex items-center justify-center`}
+      className={`site-section ${minHeightClassName} bg-background border-y border-white/5 px-4 py-16 flex items-center justify-center`}
       aria-busy="true"
       aria-live="polite"
     >
-      <div className="w-full max-w-3xl rounded-lg border border-white/10 bg-card/70 p-6">
+      <div data-section-entry className="w-full max-w-3xl rounded-lg border border-white/10 bg-card/70 p-6">
         <div className="h-4 w-40 rounded bg-primary/30 mb-4" />
         <div className="h-8 w-3/4 rounded bg-white/10 mb-3" />
         <div className="h-4 w-full rounded bg-white/10 mb-2" />

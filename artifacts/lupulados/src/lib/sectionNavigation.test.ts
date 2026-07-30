@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getActiveSectionId,
+  getSectionIdFromHash,
   getScrollTopForSectionTarget,
   getSectionEntryGap,
   getSectionScrollTarget,
   getSiteHeaderOffset,
+  isLandingSectionId,
   LANDING_SECTION_ORDER,
   NAV_LINKS,
   scrollToSection,
@@ -210,20 +212,23 @@ describe("section navigation helpers", () => {
   it("reads and writes the shared header offset CSS variable", () => {
     const style = {
       value: "",
-      setProperty: vi.fn((_name: string, value: string) => {
+      values: new Map<string, string>(),
+      setProperty: vi.fn((name: string, value: string) => {
         style.value = value;
+        style.values.set(name, value);
       }),
     };
 
     setDocument({ documentElement: { style } });
     setWindow({
       getComputedStyle: vi.fn(() => ({
-        getPropertyValue: vi.fn(() => style.value),
+        getPropertyValue: vi.fn((name: string) => style.values.get(name) ?? ""),
       })),
     });
 
     setSiteHeaderOffset(91.2);
 
+    expect(style.setProperty).toHaveBeenCalledWith("--site-sticky-offset", "92px");
     expect(style.setProperty).toHaveBeenCalledWith("--site-header-offset", "92px");
     expect(getSiteHeaderOffset()).toBe(92);
   });
@@ -272,7 +277,7 @@ describe("section navigation helpers", () => {
     setWindow({
       getComputedStyle: vi.fn(() => ({
         getPropertyValue: vi.fn((name: string) =>
-          name === "--site-header-offset" ? "96px" : "16px",
+          name === "--site-sticky-offset" ? "96px" : "16px",
         ),
       })),
     });
@@ -293,6 +298,37 @@ describe("section navigation helpers", () => {
 
     expect(getSiteHeaderOffset()).toBe(80);
     expect(getSectionEntryGap()).toBe(12);
+  });
+
+  it("falls back to the legacy header variable when the sticky offset is unavailable", () => {
+    setDocument({ documentElement: {} });
+    setWindow({
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn((name: string) =>
+          name === "--site-header-offset" ? "104px" : "",
+        ),
+      })),
+    });
+
+    expect(getSiteHeaderOffset()).toBe(104);
+  });
+
+  it("uses the measured navbar bottom before CSS variables", () => {
+    const navbar = {
+      getBoundingClientRect: vi.fn(() => ({ bottom: 118.2, height: 74 })),
+    };
+
+    setDocument({
+      documentElement: {},
+      querySelector: vi.fn(() => navbar),
+    });
+    setWindow({
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn(() => "80px"),
+      })),
+    });
+
+    expect(getSiteHeaderOffset()).toBe(119);
   });
 
   it("uses data-section-entry as the preferred scroll target", () => {
@@ -357,7 +393,7 @@ describe("section navigation helpers", () => {
       matchMedia: vi.fn(() => ({ matches: true })),
       getComputedStyle: vi.fn(() => ({
         getPropertyValue: vi.fn((name: string) =>
-          name === "--site-header-offset" ? "92px" : "12px",
+          name === "--site-sticky-offset" ? "92px" : "12px",
         ),
       })),
     });
@@ -365,5 +401,45 @@ describe("section navigation helpers", () => {
     scrollToSection("calculadora");
 
     expect(scrollTo).toHaveBeenCalledWith({ top: 496, behavior: "auto" });
+  });
+
+  it("parses only real landing section hashes", () => {
+    expect(isLandingSectionId("arma-tu-pedido")).toBe(true);
+    expect(getSectionIdFromHash("#servicios")).toBe("servicios");
+    expect(getSectionIdFromHash("#tienda")).toBeNull();
+    expect(getSectionIdFromHash("")).toBeNull();
+  });
+
+  it("can update hash through history without relying on native anchor scrolling", () => {
+    const scrollTo = vi.fn();
+    const pushState = vi.fn();
+    const element = {
+      querySelector: vi.fn(() => null),
+      getBoundingClientRect: vi.fn(() => ({ top: 900 })),
+    };
+
+    setDocument({
+      documentElement: {
+        style: {},
+      },
+      getElementById: vi.fn(() => element),
+    });
+    setWindow({
+      scrollY: 100,
+      scrollTo,
+      location: { hash: "#servicios" },
+      history: { pushState },
+      matchMedia: vi.fn(() => ({ matches: false })),
+      getComputedStyle: vi.fn(() => ({
+        getPropertyValue: vi.fn((name: string) =>
+          name === "--site-sticky-offset" ? "100px" : "14px",
+        ),
+      })),
+    });
+
+    scrollToSection("calculadora", { updateHash: true });
+
+    expect(scrollTo).toHaveBeenCalledWith({ top: 886, behavior: "smooth" });
+    expect(pushState).toHaveBeenCalledWith(null, "", "#calculadora");
   });
 });

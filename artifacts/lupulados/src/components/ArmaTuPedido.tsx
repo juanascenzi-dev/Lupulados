@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type RefObject } from "react";
+import { useState, useRef, useEffect, useMemo, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { useCart } from "@/context/CartContext";
 import {
@@ -81,6 +81,7 @@ const QUICK_ORDER_CATEGORIES: ProductCategory[] = [
   "pack",
   "accessory",
 ];
+const CONFIGURABLE_PACK_ORDER_TYPE: Exclude<OrderType, null> = "porr\u00f3n";
 
 function OrderTypeVisual({ option, selected }: { option: { img: string; title: string; emoji: string }; selected: boolean }) {
   const [failed, setFailed] = useState(false);
@@ -180,8 +181,8 @@ function BeerGlassStepper({ step }: { step: Step }) {
   const phase = step <= 3 ? 1 : step === 4 ? 2 : 3;
   const progress = ((phase - 1) / 2) * 100;
   return (
-    <div className="mb-8 md:mb-9">
-      <div className="hidden md:flex justify-between items-end relative max-w-xl mx-auto">
+    <div className="w-full">
+      <div className="hidden md:flex justify-between items-end relative mx-auto max-w-md lg:max-w-sm xl:max-w-md">
         <div className="absolute left-4 right-4 h-0.5 bg-white/10 bottom-7 z-0" />
         <motion.div
           className="absolute left-4 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400 bottom-7 z-0"
@@ -200,7 +201,7 @@ function BeerGlassStepper({ step }: { step: Step }) {
       </div>
 
       <div className="md:hidden">
-        <div className="flex items-center gap-3 mb-3">
+        <div className="flex items-center gap-3 mb-2">
           <span className="text-2xl">
             {["🛢️", "🍺", "📏", "✨", "🎟️"][step - 1]}
           </span>
@@ -240,6 +241,25 @@ function getCartLineBeer(item: { category: string; productCategory?: string; bee
 
 function getCartLinePresentation(item: { presentationLabel?: string; name: string }) {
   return item.presentationLabel ?? item.name.split("—")[1]?.trim() ?? null;
+}
+
+function getCompactCartLineDescription(item: {
+  category: string;
+  productCategory?: string;
+  pack?: { type: string; capacity: number; composition: Array<{ productId: string }> };
+  presentationLabel?: string;
+  variantLabel?: string;
+  qty: number;
+  name: string;
+}) {
+  if (item.pack?.type === "configurable-beer-pack") {
+    const styleCount = new Set(item.pack.composition.map((selection) => selection.productId)).size;
+    return `${item.qty * item.pack.capacity} porrones · ${styleCount} ${styleCount === 1 ? "estilo" : "estilos"}`;
+  }
+  if (item.category === "pack") return "6 estilos surtidos";
+  if (item.presentationLabel) return item.presentationLabel;
+  if (item.variantLabel) return item.variantLabel;
+  return getCartLinePresentation(item) ?? item.category;
 }
 
 function ProductImageFallback({ className = "w-full h-full" }: { className?: string }) {
@@ -349,10 +369,10 @@ function ProductSelector({
             onClick={() => onSelect(product.id)}
             aria-pressed={selected}
             className={cn(
-              "group text-left rounded-2xl overflow-hidden border-2 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              "group text-left rounded-2xl overflow-hidden border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(245,158,11,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:hover:translate-y-0",
               selected
                 ? "border-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.25)]"
-                : "border-transparent bg-white/5 hover:border-amber-500/40 hover:scale-[1.02]",
+                : "border-transparent bg-white/5 hover:border-amber-500/40",
             )}
           >
             <div className="relative h-28 overflow-hidden">
@@ -438,9 +458,11 @@ function PresentationSelector({
 function LiveOrderSummary({
   onClose,
   asDrawer = false,
+  detailed = false,
 }: {
   onClose?: () => void;
   asDrawer?: boolean;
+  detailed?: boolean;
 }) {
   const {
     items,
@@ -461,8 +483,8 @@ function LiveOrderSummary({
   const totalLiters = orderSummary.totalLiters;
 
   return (
-    <div className={cn("flex flex-col h-full", asDrawer ? "max-h-[75vh]" : "")}>
-      <div className="flex items-center justify-between mb-4 shrink-0">
+    <div className={cn("flex h-full min-h-0 flex-col", asDrawer ? "max-h-[65dvh]" : "")}>
+      <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <ShoppingCart className="w-5 h-5 text-primary" />
           <h3 className="font-bold text-white text-lg">Tu pedido</h3>
@@ -488,8 +510,8 @@ function LiveOrderSummary({
 
       <div
         className={cn(
-          "flex-1 overflow-y-auto space-y-3 pr-1",
-          asDrawer ? "min-h-0" : "",
+          "min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1",
+          items.length > 0 ? "space-y-2" : "",
         )}
       >
         {items.length === 0 ? (
@@ -507,60 +529,50 @@ function LiveOrderSummary({
             {items.map((item) => {
               const beerImg = snapshot.products.find((product) => product.id === item.productId)?.image || getCartItemImage(item.name);
               const lineTitle = getCartLineTitle(item);
-              const lineBeer = getCartLineBeer(item);
-              const linePresentation = getCartLinePresentation(item);
+              const lineDescription = getCompactCartLineDescription(item);
               return (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20, height: 0 }}
-                  className="flex items-center gap-3 bg-white/5 rounded-xl p-3 border border-white/5"
+                  className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border border-white/5 bg-white/5 p-2.5"
                 >
                   {beerImg ? (
                     <img
                       src={beerImg}
                       alt={item.name}
-                      className="w-10 h-10 rounded-lg object-cover shrink-0"
+                      className="h-11 w-11 rounded-lg object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/20">
                       <Beer className="w-5 h-5 text-primary" />
                     </div>
                   )}
                   <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-bold truncate">
+                    <p className="line-clamp-2 text-sm font-bold leading-tight text-white">
                       {lineTitle}
                     </p>
-                    {lineBeer && (
-                      <p className="text-white/75 text-xs truncate">
-                        {lineBeer}
+                    {lineDescription && (
+                      <p className="truncate text-xs text-white/50">
+                        {lineDescription}
                       </p>
                     )}
-                    {linePresentation && (
-                      <p className="text-white/45 text-xs truncate">
-                        {linePresentation}
-                      </p>
-                    )}
-                    {item.pack?.type === "configurable-beer-pack" && (
-                      <div className="mt-1 space-y-0.5 text-[11px] text-white/55">
+                    {detailed && item.pack?.type === "configurable-beer-pack" && (
+                      <div className="mt-2 space-y-0.5 rounded-lg border border-white/10 bg-black/20 p-2 text-[11px] text-white/60">
                         {item.pack.composition.map((selection) => (
                           <p key={selection.productId}>
                             {selection.quantity} {selection.name ?? "Estilo"}
                           </p>
                         ))}
-                        <p>{item.qty * item.pack.capacity} porrones en total</p>
                       </div>
                     )}
-                    <p className="text-primary text-[11px] font-mono mt-1">
-                      Unitario: {formatPrice(item.price)}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="mt-1 flex items-center gap-1.5">
                       <button
                         type="button"
                         aria-label={`Restar una unidad de ${item.name}`}
                         onClick={() => updateQty(item.id, item.qty - 1)}
-                        className="w-5 h-5 rounded bg-white/10 flex items-center justify-center hover:bg-primary hover:text-black transition-colors"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-primary hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <Minus className="w-3 h-3" aria-hidden="true" />
                       </button>
@@ -572,32 +584,29 @@ function LiveOrderSummary({
                         step={1}
                         value={item.qty}
                         onChange={(event) => updateQty(item.id, Number(event.target.value))}
-                        className="text-primary text-xs font-bold w-10 text-center bg-transparent focus:outline-none focus:ring-1 focus:ring-primary rounded"
+                        className="h-10 w-11 rounded-lg bg-transparent text-center text-sm font-bold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
                       />
                       <button
                         type="button"
                         aria-label={`Sumar una unidad de ${item.name}`}
                         onClick={() => updateQty(item.id, item.qty + 1)}
-                        className="w-5 h-5 rounded bg-white/10 flex items-center justify-center hover:bg-primary hover:text-black transition-colors"
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-primary hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         <Plus className="w-3 h-3" aria-hidden="true" />
                       </button>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-white/45 text-[10px] uppercase tracking-wider">
-                      Subtotal
-                    </span>
-                    <span className="text-white text-xs font-bold">
+                  <div className="flex shrink-0 flex-col items-end gap-2">
+                    <span className="text-right text-xs font-bold text-white">
                       {formatPrice(item.price * item.qty)}
                     </span>
                     <button
                       type="button"
                       aria-label={`Eliminar ${item.name} del carrito`}
                       onClick={() => removeItem(item.id)}
-                      className="text-white/30 hover:text-red-400 transition-colors"
+                      className="flex h-10 w-10 items-center justify-center rounded-lg text-white/35 transition-colors hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
-                      <Trash2 className="w-3.5 h-3.5" aria-hidden="true" />
+                      <Trash2 className="h-4 w-4" aria-hidden="true" />
                     </button>
                   </div>
                 </motion.div>
@@ -608,7 +617,7 @@ function LiveOrderSummary({
       </div>
 
       {items.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-white/10 space-y-2 shrink-0">
+        <div className="mt-3 shrink-0 space-y-2 border-t border-white/10 pt-3">
           {totalLiters > 0 && (
             <p className="text-xs text-amber-400 font-bold">
               🍺 {totalLiters}L en barriles
@@ -638,7 +647,7 @@ function LiveOrderSummary({
           <button
             type="button"
             onClick={clearCart}
-            className="w-full mt-2 py-2 rounded-xl bg-white/5 text-white/40 text-xs hover:text-red-400 hover:bg-red-500/10 transition-all flex items-center justify-center gap-2"
+            className="mt-1 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-white/5 py-2 text-xs text-white/45 transition-all hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <Trash2 className="w-3.5 h-3.5" aria-hidden="true" /> Vaciar pedido
           </button>
@@ -716,6 +725,8 @@ export function ArmaTuPedido({
   const whatsAppLastActivationRef = useRef(0);
   const whatsAppUnlockTimerRef = useRef<number | null>(null);
   const [whatsAppOpening, setWhatsAppOpening] = useState(false);
+  const wizardTopRef = useRef<HTMLDivElement | null>(null);
+  const previousStepRef = useRef<Step>(step);
   const whatsAppChannels = useMemo(() => listOrderWhatsAppChannels(snapshot.whatsappChannels), [snapshot.whatsappChannels]);
   const [selectedWhatsAppChannelId, setSelectedWhatsAppChannelId] = useState(() =>
     getDefaultWhatsAppChannelId(snapshot.whatsappChannels),
@@ -820,6 +831,25 @@ export function ArmaTuPedido({
     setSelectedWhatsAppChannelId(whatsAppChannels[0]?.id ?? "");
   }, [selectedWhatsAppChannelId, whatsAppChannels]);
 
+  useEffect(() => {
+    if (previousStepRef.current === step) return;
+    previousStepRef.current = step;
+
+    const target = wizardTopRef.current ?? sectionRef.current;
+    if (!target) return;
+
+    const frame = window.requestAnimationFrame(() => {
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      target.scrollIntoView({
+        block: "start",
+        behavior: reducedMotion ? "auto" : "smooth",
+      });
+      target.focus({ preventScroll: true });
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [sectionRef, step]);
+
   const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
     .toISOString()
     .slice(0, 10);
@@ -834,6 +864,7 @@ export function ArmaTuPedido({
     : null;
   const tastingPackDraft = { ...tastingPack, productCategory: "pack" as const };
   const hasGenericSelection = Boolean(selectedProduct && selectedPresentation && genericQuantity > 0);
+  const isConfigurablePackStep = isBeerCategory && step === 3 && orderType === CONFIGURABLE_PACK_ORDER_TYPE;
   const canProceed = (() => {
     if (!hasCatalogProducts) return false;
     if (isBeerCategory) {
@@ -1014,46 +1045,133 @@ export function ArmaTuPedido({
     }),
   };
 
-  const NavButtons = () => (
-    <div className="mt-7 md:mt-8 flex items-center gap-3">
-      {step > 1 && step < 5 && (
-        <button
-          onClick={goPrev}
-          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-white/5 text-white font-bold hover:bg-white/10 transition-colors border border-white/10"
-        >
-          <ChevronLeft className="w-5 h-5" /> Anterior
-        </button>
-      )}
-      {step < 5 && (
-        <button
-          onClick={goNext}
-          disabled={!canProceed}
-          title={!canProceed ? validationMessage ?? undefined : undefined}
-          aria-describedby={!canProceed ? `order-step-${step}-error` : undefined}
-          className={cn(
-            "flex-1 flex items-center justify-center gap-2 py-3 px-5 rounded-xl font-bold text-base transition-all",
-            canProceed
-              ? "bg-gradient-to-r from-primary to-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.25)] hover:shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:-translate-y-0.5"
-              : "bg-white/10 text-white/30 cursor-not-allowed",
-          )}
-        >
-          {step === 4 ? "Ver resumen" : step === 3 ? "Continuar" : "Siguiente"}{" "}
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      )}
+  const NavButtons = () => null;
+
+  const wizardViewportStyle = {
+    "--wizard-action-bottom-inset": "max(0.75rem, env(safe-area-inset-bottom))",
+    "--wizard-viewport-height": "calc(100dvh - var(--site-sticky-offset) - 1.5rem - var(--wizard-action-bottom-inset))",
+    scrollMarginTop: "calc(var(--site-sticky-offset) + var(--section-entry-gap))",
+  } as CSSProperties;
+
+  const primaryActionLabel = step === 4 ? "Ver resumen" : step === 5 ? "Confirmar" : step === 3 ? "Continuar" : "Siguiente";
+  const WizardActionBar = () => (
+    <div className="sticky bottom-[var(--wizard-action-bottom-inset)] z-20 shrink-0 border-t border-white/10 bg-background/95 pt-3 pb-[var(--wizard-action-bottom-inset)] backdrop-blur-md">
+      <div className="flex items-center gap-3">
+        {step > 1 && (
+          <button
+            type="button"
+            onClick={step === 5 ? () => {
+              setDirection(-1);
+              setStep(4);
+            } : goPrev}
+            className="flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <ChevronLeft className="h-5 w-5" aria-hidden="true" /> Anterior
+          </button>
+        )}
+        {step < 5 ? (
+          <button
+            type="button"
+            onClick={goNext}
+            disabled={!canProceed}
+            title={!canProceed ? validationMessage ?? undefined : undefined}
+            aria-describedby={!canProceed ? `order-step-${step}-error` : undefined}
+            className={cn(
+              "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-base font-bold transition-all",
+              canProceed
+                ? "bg-gradient-to-r from-primary to-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.22)] hover:-translate-y-0.5 hover:shadow-[0_0_28px_rgba(251,191,36,0.34)]"
+                : "cursor-not-allowed bg-white/10 text-white/30",
+            )}
+          >
+            {primaryActionLabel} <ChevronRight className="h-5 w-5" aria-hidden="true" />
+          </button>
+        ) : (
+          <a
+            href={whatsAppOrderUrl ?? undefined}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-disabled={!whatsAppOrderUrl || whatsAppOpening}
+            onClick={handleWhatsAppOrderClick}
+            onKeyDown={handleWhatsAppOrderKeyDown}
+            className={cn(
+              "flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-2.5 text-center text-base font-bold text-white transition-colors hover:bg-[#1db954] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              !whatsAppOrderUrl || whatsAppOpening ? "pointer-events-none opacity-70" : "",
+            )}
+          >
+            {whatsAppOpening ? "Abriendo WhatsApp..." : "Confirmar por WhatsApp"}
+          </a>
+        )}
+      </div>
       {!canProceed && step < 5 && (
-        <p id={`order-step-${step}-error`} className="text-white/70 text-xs absolute -bottom-6 left-0" role="alert">
+        <p id={`order-step-${step}-error`} className="mt-2 text-xs text-white/70" role="alert">
           {validationMessage}
         </p>
       )}
     </div>
   );
 
+  const MobileCartSummary = () => {
+    if (step < 3 || step > 4) return null;
+    return (
+      <div className="shrink-0 rounded-2xl border border-primary/20 bg-[#0f0f0f]/95 p-3 lg:hidden">
+        <button
+          ref={drawerToggleRef}
+          type="button"
+          onClick={() => setDrawerOpen(!drawerOpen)}
+          className="flex min-h-11 w-full items-center justify-between gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          aria-expanded={drawerOpen}
+          aria-controls="mobile-order-drawer"
+        >
+          <span className="flex items-center gap-3">
+            <span className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-primary/20">
+              <ShoppingCart className="h-4 w-4 text-primary" aria-hidden="true" />
+              {totalItems > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-black">
+                  {totalItems}
+                </span>
+              )}
+            </span>
+            <span>
+              <span className="block text-xs leading-none text-white/50">{totalItems} item{totalItems !== 1 ? "s" : ""}</span>
+              <span className="block text-base font-bold leading-tight text-white">{formatPrice(totalPrice)}</span>
+            </span>
+          </span>
+          {drawerOpen ? (
+            <ChevronDown className="h-4 w-4 text-white/45" aria-hidden="true" />
+          ) : (
+            <ChevronUp className="h-4 w-4 text-white/45" aria-hidden="true" />
+          )}
+        </button>
+        <AnimatePresence>
+          {drawerOpen && (
+            <motion.div
+              id="mobile-order-drawer"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="mt-3 max-h-[45dvh] overflow-y-auto border-t border-white/10 pt-3">
+                <LiveOrderSummary
+                  asDrawer
+                  onClose={() => {
+                    setDrawerOpen(false);
+                    drawerToggleRef.current?.focus();
+                  }}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
   return (
     <section
       id="arma-tu-pedido"
       ref={sectionRef}
-      className="site-section site-section-standard bg-background relative border-t border-white/5 overflow-hidden"
+      className="site-section site-section-standard relative overflow-x-clip overflow-y-visible border-t border-white/5 bg-background"
     >
       {/* Beer bubble decorations */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -1083,17 +1201,33 @@ export function ArmaTuPedido({
         ))}
       </div>
 
-      <div data-section-entry className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="text-center mb-8 md:mb-10">
-          <h2 className="text-3xl md:text-4xl font-display font-bold text-white mb-3">
+      <div
+        data-section-entry
+        ref={wizardTopRef}
+        tabIndex={-1}
+        style={wizardViewportStyle}
+        className={cn(
+          "relative z-10 mx-auto flex min-h-[min(760px,calc(100dvh-var(--site-sticky-offset)-1rem-var(--wizard-action-bottom-inset)))] flex-col px-4 focus:outline-none sm:px-6 lg:grid lg:h-[var(--wizard-viewport-height)] lg:min-h-[min(620px,var(--wizard-viewport-height))] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:px-8",
+          isConfigurablePackStep ? "max-w-7xl" : "max-w-6xl",
+        )}
+      >
+        <div className="mb-4 shrink-0 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] lg:items-center">
+          <div className="text-center lg:text-left">
+          <h2 className="text-2xl md:text-4xl font-display font-bold text-white mb-1.5">
             Armá tu pedido
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-sm md:text-base text-muted-foreground">
             Configurá tu experiencia cervecera paso a paso.
           </p>
-          <p className="text-xs text-white/40 mt-2">
+          <p className="text-xs text-white/40 mt-1.5">
             {priceDisclaimer}
           </p>
+          </div>
+          {hasCatalogProducts && (
+            <div className="min-w-0">
+              <BeerGlassStepper step={step} />
+            </div>
+          )}
         </div>
 
         {pendingRecommendation && (
@@ -1170,11 +1304,15 @@ export function ArmaTuPedido({
           </div>
         ) : (
         <>
-        <BeerGlassStepper step={step} />
-
-        <div data-section-secondary className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+        <div
+          data-section-secondary
+          className={cn(
+            "min-h-0 flex-1 overflow-hidden pb-[calc(6rem+max(0.75rem,env(safe-area-inset-bottom)))] lg:grid lg:gap-5 lg:pb-[calc(5.5rem+max(0.75rem,env(safe-area-inset-bottom)))]",
+            isConfigurablePackStep ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_320px]",
+          )}
+        >
           {/* Wizard */}
-          <div className="relative min-h-[360px]">
+          <div className="relative min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0 lg:pr-1">
             <AnimatePresence mode="wait" custom={direction}>
               {/* STEP 1: TIPO */}
               {step === 1 && (
@@ -1191,7 +1329,7 @@ export function ArmaTuPedido({
                   <h3 className="text-xl font-bold text-white mb-5 text-center">
                     ¿Qué querés pedir?
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-3">
+                  <div className="grid grid-cols-1 gap-3 overflow-visible sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
                     {ORDER_TYPES.map((opt) => {
                       const selected = orderType === opt.id;
                       return (
@@ -1202,10 +1340,10 @@ export function ArmaTuPedido({
                             setLastAddedMessage("");
                           }}
                           className={cn(
-                            "group relative flex flex-col text-left rounded-2xl overflow-hidden border-2 transition-all duration-200",
+                            "group relative flex flex-col text-left rounded-2xl border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(245,158,11,0.5)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:hover:translate-y-0",
                             selected
                               ? "border-amber-500 shadow-[0_0_25px_rgba(217,119,6,0.3)]"
-                              : "border-white/10 hover:border-amber-500/50 hover:scale-[1.02]",
+                              : "border-white/10 hover:border-amber-500/50",
                           )}
                         >
                           <div className="relative">
@@ -1264,25 +1402,11 @@ export function ArmaTuPedido({
                       );
                     })}
                   </div>
-                  <div className="relative mt-7">
-                    <button
-                      onClick={goNext}
-                      disabled={!canProceed}
-                      className={cn(
-                        "w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-base transition-all",
-                        canProceed
-                          ? "bg-gradient-to-r from-primary to-amber-400 text-black shadow-[0_0_20px_rgba(251,191,36,0.25)] hover:shadow-[0_0_30px_rgba(251,191,36,0.4)] hover:-translate-y-0.5"
-                          : "bg-white/10 text-white/30 cursor-not-allowed",
-                      )}
-                    >
-                      Siguiente <ChevronRight className="w-5 h-5" />
-                    </button>
-                    {!canProceed && (
-                      <p className="text-white/30 text-xs text-center mt-2">
-                        {validationMessage}
-                      </p>
-                    )}
-                  </div>
+                  {!canProceed && (
+                    <p className="mt-3 text-center text-xs text-white/35">
+                      {validationMessage}
+                    </p>
+                  )}
                     </>
                   ) : (
                     <>
@@ -1331,10 +1455,10 @@ export function ArmaTuPedido({
                           onClick={() => setSelectedBeer(beer)}
                           aria-pressed={sel}
                           className={cn(
-                            "group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-200 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                            "group cursor-pointer rounded-2xl overflow-hidden border-2 transition-all duration-200 text-left hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(245,158,11,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:hover:translate-y-0",
                             sel
                               ? "border-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.25)]"
-                              : "border-transparent bg-white/5 hover:border-amber-500/40 hover:scale-[1.02]",
+                              : "border-transparent bg-white/5 hover:border-amber-500/40",
                           )}
                         >
                           <div className="relative h-24 md:h-28 overflow-hidden">
@@ -1446,10 +1570,11 @@ export function ArmaTuPedido({
                   initial="initial"
                   animate="animate"
                   exit="exit"
-                  className="max-w-2xl mx-auto w-full"
+                  className={cn("mx-auto w-full", isConfigurablePackStep ? "max-w-none" : "max-w-2xl")}
                 >
                   {isBeerCategory ? (
                     <>
+                  {!isConfigurablePackStep && (
                   <div className="text-center mb-6">
                     <div className="inline-block px-4 py-1 rounded-full bg-primary/20 text-primary text-xs font-bold uppercase tracking-wider mb-2">
                       {orderType === "paquete" ? "Pack Degustación" : selectedBeer?.name}
@@ -1463,6 +1588,12 @@ export function ArmaTuPedido({
                       </p>
                     )}
                   </div>
+                  )}
+                  {isConfigurablePackStep && lastAddedMessage && (
+                    <p className="mb-3 text-sm font-bold text-green-300" role="status">
+                      {lastAddedMessage}
+                    </p>
+                  )}
 
                   <div className="grid gap-4">
                     {orderType === "paquete" && (
@@ -1711,6 +1842,7 @@ export function ArmaTuPedido({
                           lines.forEach((line) => addItem(line.item, line.qty));
                         }}
                         onAdded={setLastAddedMessage}
+                        layout="wide"
                       />
                     )}
 
@@ -2279,45 +2411,12 @@ export function ArmaTuPedido({
                     </div>
                   </div>
 
-                  <div className="mt-6 space-y-3">
+                  <div className="mt-6">
                     <WhatsAppChannelSelector
                       channels={whatsAppChannels}
                       selectedChannelId={selectedWhatsAppChannel?.id ?? ""}
                       onSelect={setSelectedWhatsAppChannelId}
                     />
-                    {whatsAppOrderUrl ? (
-                      <a
-                        href={whatsAppOrderUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-disabled={whatsAppOpening}
-                        onClick={handleWhatsAppOrderClick}
-                        onKeyDown={handleWhatsAppOrderKeyDown}
-                        className={cn(
-                          "w-full py-4 rounded-2xl bg-[#25D366] text-white font-bold text-lg shadow-lg hover:bg-[#1db954] transition-all flex items-center justify-center gap-3 text-center",
-                          whatsAppOpening ? "opacity-70 cursor-wait" : "",
-                        )}
-                      >
-                        {whatsAppOpening ? "Abriendo WhatsApp..." : "Consultar pedido por WhatsApp"}
-                      </a>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        className="w-full py-4 rounded-2xl bg-white/10 text-white/40 font-bold text-lg cursor-not-allowed flex items-center justify-center gap-3 text-center"
-                      >
-                        WhatsApp no disponible
-                      </button>
-                    )}
-                    <button
-                      onClick={() => {
-                        setDirection(-1);
-                        setStep(4);
-                      }}
-                      className="w-full py-3.5 rounded-2xl bg-white/5 text-white font-bold hover:bg-white/10 transition-colors flex items-center justify-center gap-2 border border-white/10"
-                    >
-                      <Edit className="w-4 h-4" /> Modificar pedido
-                    </button>
                   </div>
                 </motion.div>
               )}
@@ -2325,100 +2424,19 @@ export function ArmaTuPedido({
           </div>
 
           {/* Desktop order summary sidebar */}
-          <div className="hidden lg:block sticky top-[calc(var(--site-header-offset)+1rem)]">
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
-              <LiveOrderSummary />
+          {!isConfigurablePackStep && (
+            <div className="hidden min-h-0 lg:block">
+              <div className="h-full min-h-0 rounded-2xl border border-white/10 bg-white/5 p-4">
+                <LiveOrderSummary />
+              </div>
             </div>
-          </div>
+          )}
         </div>
+        <MobileCartSummary />
+        <WizardActionBar />
         </>
         )}
       </div>
-
-      {/* Mobile bottom bar + drawer */}
-      <AnimatePresence>
-        {step >= 2 && step < 5 && (
-          <motion.div
-            initial={{ y: 100 }}
-            animate={{ y: 0 }}
-            exit={{ y: 100 }}
-            className="fixed bottom-0 left-0 w-full z-50 lg:hidden"
-          >
-            {/* Drawer */}
-            <AnimatePresence>
-              {drawerOpen && (
-                <motion.div
-                  id="mobile-order-drawer"
-                  initial={{ height: 0 }}
-                  animate={{ height: "auto" }}
-                  exit={{ height: 0 }}
-                  className="bg-[#0f0f0f] border-t border-white/10 overflow-hidden"
-                >
-                  <div className="p-5 max-h-[65vh] overflow-y-auto">
-                    <LiveOrderSummary
-                      asDrawer
-                      onClose={() => {
-                        setDrawerOpen(false);
-                        drawerToggleRef.current?.focus();
-                      }}
-                    />
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Mini bar */}
-            <div className="bg-[#0f0f0f]/95 backdrop-blur-md border-t border-primary/20 px-4 py-3">
-              <div className="flex items-center justify-between gap-3 max-w-md mx-auto">
-                <button
-                  ref={drawerToggleRef}
-                  type="button"
-                  onClick={() => setDrawerOpen(!drawerOpen)}
-                  className="flex items-center gap-2 text-left"
-                  aria-expanded={drawerOpen}
-                  aria-controls="mobile-order-drawer"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center">
-                    <ShoppingCart className="w-4 h-4 text-primary" aria-hidden="true" />
-                    {totalItems > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-black text-[9px] font-bold flex items-center justify-center">
-                        {totalItems}
-                      </span>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-xs text-white/50 leading-none">
-                      {totalItems} item{totalItems !== 1 ? "s" : ""}
-                    </p>
-                    <p className="text-white font-bold text-base leading-tight">
-                      {formatPrice(totalPrice)}
-                    </p>
-                  </div>
-                  {drawerOpen ? (
-                    <ChevronDown className="w-4 h-4 text-white/40 ml-1" aria-hidden="true" />
-                  ) : (
-                    <ChevronUp className="w-4 h-4 text-white/40 ml-1" aria-hidden="true" />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={goNext}
-                  disabled={!canProceed}
-                  aria-describedby={!canProceed ? `order-step-${step}-error` : undefined}
-                  className={cn(
-                    "flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition-all",
-                    canProceed
-                      ? "bg-primary text-black"
-                      : "bg-white/10 text-white/30 cursor-not-allowed",
-                  )}
-                >
-                  Continuar <ChevronRight className="w-4 h-4" aria-hidden="true" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </section>
   );
 }

@@ -1,21 +1,25 @@
 import { motion } from "framer-motion";
+import { useState } from "react";
 import { buildWhatsAppUrl } from "@/domain/businessConfig";
 import { SectionContinueHint } from "@/components/SectionContinueHint";
 
 const EVENTS = [
   {
     name: "Casamientos y fiestas grandes",
-    img: "https://images.unsplash.com/photo-1530103862676-de88b487bb01?auto=format&fit=crop&q=80&w=800",
+    img: "/events/wedding-reception.jpg",
+    alt: "Pareja de casamiento celebrando al aire libre con invitados en una recepcion luminosa",
     size: "large"
   },
   {
     name: "Eventos de empresa",
     img: "https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=800",
+    alt: "Personas compartiendo una celebracion corporativa",
     size: "small"
   },
   {
     name: "Cumpleaños y juntadas",
     img: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?auto=format&fit=crop&q=80&w=800",
+    alt: "Grupo de personas brindando en una juntada",
     size: "small"
   }
 ];
@@ -25,6 +29,31 @@ const EVENT_PRIORITIES = [
   { title: "Entrega coordinada", desc: "Acordamos modalidad, horario y datos necesarios para el evento." },
   { title: "Servicio claro", desc: "Detalle de estilos, cantidades y costos antes de enviar la consulta." },
 ];
+
+function EventImage({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+
+  if (failed) {
+    return (
+      <div
+        className="h-full w-full bg-[radial-gradient(circle_at_28%_24%,rgba(245,158,11,0.28),transparent_34%),linear-gradient(135deg,#3f4f38,#11100d_72%)]"
+        role="img"
+        aria-label={alt}
+      />
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      decoding="async"
+      className="w-full h-full object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}
 
 export function Eventos() {
   return (
@@ -66,13 +95,7 @@ export function Eventos() {
             >
               <div className="absolute inset-0 bg-black/40 z-10" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-              <img 
-                src={ev.img} 
-                alt={ev.name} 
-                loading="lazy"
-                decoding="async"
-                className="w-full h-full object-cover"
-              />
+              <EventImage src={ev.img} alt={ev.alt} />
               <div className="absolute bottom-6 left-6 z-20">
                 <h4 className="text-white font-bold text-xl md:text-2xl">{ev.name}</h4>
               </div>

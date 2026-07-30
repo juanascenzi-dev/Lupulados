@@ -13,6 +13,7 @@ describe("Navbar accessibility", () => {
     expect(html).toContain('aria-controls="menu-mobile"');
     expect(html).toContain('aria-haspopup="menu"');
     expect(html).toContain('aria-current="location"');
+    expect(html).toContain("data-site-navbar");
     expect(html).not.toContain('tabIndex="1"');
   });
 

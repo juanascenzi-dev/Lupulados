@@ -8,13 +8,13 @@ const SERVICES = [
     icon: <Beer className="w-8 h-8 text-primary" />,
     title: "Alquiler de Barriles",
     description: "Barriles de 20L, 30L y 50L. Incluye chopera con hielo o eléctrica, tubo de CO2 y todo listo para tirar.",
-    action: () => scrollToSection("arma-tu-pedido"),
+    action: () => scrollToSection("arma-tu-pedido", { updateHash: true }),
   },
   {
     icon: <GlassWater className="w-8 h-8 text-primary" />,
     title: "Venta Directa",
     description: "Porrones, growlers y packs surtidos para disfrutar en casa o resolver una juntada chica.",
-    action: () => scrollToSection("arma-tu-pedido"),
+    action: () => scrollToSection("arma-tu-pedido", { updateHash: true }),
   },
   {
     icon: <Truck className="w-8 h-8 text-primary" />,
@@ -26,15 +26,16 @@ const SERVICES = [
     icon: <Users className="w-8 h-8 text-primary" />,
     title: "Asesoramiento",
     description: "Te ayudamos a calcular cantidades y elegir los mejores estilos de cerveza para tu evento.",
-    action: () => scrollToSection("calculadora"),
+    action: () => scrollToSection("calculadora", { updateHash: true }),
   }
 ];
 
 export function Services() {
   return (
-    <section id="servicios" className="site-section site-section-standard site-section-viewport bg-background relative flex items-start">
-      <div data-section-entry className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-3xl mx-auto mb-10 md:mb-12">
+    <section id="servicios" className="site-section services-section site-section-compact bg-background relative flex items-center">
+      <span data-section-entry className="absolute top-0 h-px w-px overflow-hidden" aria-hidden="true" />
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center max-w-3xl mx-auto mb-8 md:mb-9">
           <motion.h2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -48,13 +49,13 @@ export function Services() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-6"
+            className="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white"
           >
             Servicios diseñados para que vos solo disfrutes
           </motion.h3>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-5">
           {SERVICES.map((service, index) => (
             <motion.div
               key={index}
@@ -62,7 +63,7 @@ export function Services() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="glass-panel p-6 lg:p-7 rounded-2xl flex flex-col group hover:-translate-y-2 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_10px_30px_-10px_rgba(217,119,6,0.15)]"
+              className="glass-panel p-5 lg:p-6 rounded-2xl flex flex-col group hover:-translate-y-1 transition-all duration-300 hover:border-primary/30 hover:shadow-[0_10px_30px_-10px_rgba(217,119,6,0.15)]"
             >
               <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
                 {service.icon}

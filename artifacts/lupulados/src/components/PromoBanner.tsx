@@ -18,6 +18,7 @@ export function PromoBanner({ visible, onClose, bannerRef }: PromoBannerProps) {
       {visible && (
         <motion.div
           ref={bannerRef}
+          data-site-promo-banner
           initial={{ height: 0, opacity: 0 }}
           animate={{ height: "44px", opacity: 1 }}
           exit={{ height: 0, opacity: 0 }}

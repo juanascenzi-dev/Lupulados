@@ -41,8 +41,27 @@ function getCssPixelVariable(name: string, defaultValue: number) {
   return Number.isFinite(parsedValue) ? Math.max(0, parsedValue) : defaultValue;
 }
 
+function getMeasuredStickyOffset() {
+  if (typeof document === "undefined") return null;
+  if (typeof document.querySelector !== "function") return null;
+
+  const navbar = document.querySelector<HTMLElement>("[data-site-navbar]");
+  if (!navbar || typeof navbar.getBoundingClientRect !== "function") return null;
+
+  const rect = navbar.getBoundingClientRect();
+  if (rect.height <= 0 || rect.bottom <= 0) return null;
+
+  return Math.ceil(rect.bottom);
+}
+
 export function getSiteHeaderOffset() {
-  return getCssPixelVariable("--site-header-offset", DEFAULT_HEADER_OFFSET);
+  return (
+    getMeasuredStickyOffset() ??
+    getCssPixelVariable(
+      "--site-sticky-offset",
+      getCssPixelVariable("--site-header-offset", DEFAULT_HEADER_OFFSET),
+    )
+  );
 }
 
 export function getSectionEntryGap() {
@@ -52,10 +71,12 @@ export function getSectionEntryGap() {
 export function setSiteHeaderOffset(offset: number) {
   if (typeof document === "undefined") return;
 
+  const value = `${Math.max(0, Math.ceil(offset))}px`;
   document.documentElement.style.setProperty(
-    "--site-header-offset",
-    `${Math.max(0, Math.ceil(offset))}px`,
+    "--site-sticky-offset",
+    value,
   );
+  document.documentElement.style.setProperty("--site-header-offset", value);
 }
 
 export function getSectionScrollOffset() {
@@ -80,7 +101,16 @@ export function getScrollTopForSectionTarget({
   return Math.max(0, targetTop + scrollY - headerOffset - entryGap);
 }
 
-export function scrollToSection(id: string) {
+export function isLandingSectionId(id: string): id is NavSectionId {
+  return LANDING_SECTION_ORDER.includes(id as NavSectionId);
+}
+
+export function getSectionIdFromHash(hash: string) {
+  const id = hash.replace(/^#/, "");
+  return isLandingSectionId(id) ? id : null;
+}
+
+export function scrollToSection(id: string, options: { updateHash?: boolean } = {}) {
   const section = document.getElementById(id);
   if (!section) return;
 
@@ -96,6 +126,11 @@ export function scrollToSection(id: string) {
     top: offsetPosition,
     behavior: getMotionAwareScrollBehavior(),
   });
+
+  if (options.updateHash && window.location.hash !== `#${id}`) {
+    window.history.pushState(null, "", `#${id}`);
+  }
+
 }
 
 export function getActiveSectionId({

@@ -57,7 +57,7 @@ export const PRODUCT_CATEGORY_LABELS = {
   pack: "Packs",
 } as const satisfies Record<ProductCategory, string>;
 
-export type LegacyOrderCategory = "barril" | "growler" | "porron" | "porrÃ³n" | "pack";
+export type LegacyOrderCategory = "barril" | "growler" | "porron" | "porrón" | "pack";
 
 export interface CommercialCartLineDraft {
   id: string;
@@ -158,7 +158,7 @@ export function createCommercialCartItem(product: Product, presentation: Product
 export function formatCommercialLineName(productName: string, presentationLabel?: string, variantLabel?: string) {
   return [productName, variantLabel && variantLabel !== productName ? variantLabel : null, presentationLabel]
     .filter((part): part is string => Boolean(part && part.trim()))
-    .join(" â€” ");
+    .join(" — ");
 }
 
 export function buildActiveCatalogIndexes(snapshot: CommercialSnapshot) {

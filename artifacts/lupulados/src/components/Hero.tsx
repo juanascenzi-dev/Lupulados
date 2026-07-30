@@ -166,7 +166,7 @@ export function Hero() {
         >
           <button
             type="button"
-            onClick={() => scrollToSection('arma-tu-pedido')}
+            onClick={() => scrollToSection("arma-tu-pedido", { updateHash: true })}
             className="inline-flex items-center justify-center px-8 py-4 rounded-full text-lg font-bold bg-primary text-primary-foreground hover:bg-amber-400 transition-all shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_40px_rgba(217,119,6,0.5)] hover:-translate-y-1"
           >
             Pedí tu barril

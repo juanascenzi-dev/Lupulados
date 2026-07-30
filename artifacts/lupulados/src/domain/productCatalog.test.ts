@@ -306,7 +306,7 @@ describe("productCatalog", () => {
 
     expect(line).toMatchObject({
       id: "category=wine|product=wine-test|presentation=wine-test:750ml|variant=Reserva",
-      name: "Vino Test â€” Reserva â€” Botella 750ml",
+      name: "Vino Test — Reserva — Botella 750ml",
       price: 12000,
       productCategory: "wine",
       productId: "wine-test",

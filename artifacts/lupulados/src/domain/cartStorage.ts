@@ -38,7 +38,20 @@ export interface StoredCartItem {
   pack?: PackLineMetadata;
 }
 
-const legacyBeerCategories = new Set(["barril", "growler", "porron", "porrÃ³n"]);
+const LEGACY_MOJIBAKE_REPLACEMENTS: ReadonlyArray<readonly [string, string]> = [
+  ["Degustaci\u00c3\u00b3n", "Degustación"],
+  ["Degustaci\u00c3\u0192\u00c2\u00b3n", "Degustación"],
+  ["porr\u00c3\u00b3n", "porrón"],
+  ["Porr\u00c3\u00b3n", "Porrón"],
+  ["porr\u00c3\u0192\u00c2\u00b3n", "porrón"],
+  ["Porr\u00c3\u0192\u00c2\u00b3n", "Porrón"],
+  ["Porr\u00c3n", "Porrón"],
+  ["porr\u00c3n", "porrón"],
+  [" \u00e2\u20ac\u201d ", " — "],
+  [" \u00c3\u00a2\u00e2\u201a\u00ac\u00e2\u20ac\u009d ", " — "],
+];
+
+const legacyBeerCategories = new Set(["barril", "growler", "porron", "porrón"]);
 
 function isStoredCartItem(value: unknown): value is StoredCartItem {
   if (!value || typeof value !== "object") return false;
@@ -74,33 +87,50 @@ function normalizeStoredCartItem(value: StoredCartItem): StoredCartItem | null {
 
   return {
     id: value.id,
-    name: value.name,
+    name: normalizeLegacyCatalogText(value.name),
     price: value.price,
     qty,
-    category: value.category,
+    category: normalizeLegacyCatalogText(value.category),
     productCategory: getStoredProductCategory(value),
     productId: typeof value.productId === "string" ? value.productId : typeof value.beerId === "string" ? value.beerId : undefined,
     productName:
-      typeof value.productName === "string" ? value.productName : typeof value.beerName === "string" ? value.beerName : undefined,
+      typeof value.productName === "string" ? normalizeLegacyCatalogText(value.productName) : typeof value.beerName === "string" ? normalizeLegacyCatalogText(value.beerName) : undefined,
     beerId: typeof value.beerId === "string" ? value.beerId : undefined,
-    beerName: typeof value.beerName === "string" ? value.beerName : undefined,
+    beerName: typeof value.beerName === "string" ? normalizeLegacyCatalogText(value.beerName) : undefined,
     presentationId: typeof value.presentationId === "string" ? value.presentationId : undefined,
-    presentationLabel: typeof value.presentationLabel === "string" ? value.presentationLabel : undefined,
+    presentationLabel: typeof value.presentationLabel === "string" ? normalizeLegacyCatalogText(value.presentationLabel) : undefined,
     presentationType: typeof value.presentationType === "string" ? value.presentationType : undefined,
-    presentationCategory: typeof value.presentationCategory === "string" ? value.presentationCategory : undefined,
+    presentationCategory: typeof value.presentationCategory === "string" ? normalizeLegacyCatalogText(value.presentationCategory) : undefined,
     variantId: typeof value.variantId === "string" ? value.variantId : undefined,
-    variantLabel: typeof value.variantLabel === "string" ? value.variantLabel : undefined,
+    variantLabel: typeof value.variantLabel === "string" ? normalizeLegacyCatalogText(value.variantLabel) : undefined,
     promotional: value.promotional === true ? true : undefined,
     promotionLabel: typeof value.promotionLabel === "string" ? value.promotionLabel : undefined,
-    pack: isPackLineMetadata(value.pack) ? { ...value.pack, composition: value.pack.composition.map((selection) => ({ ...selection })) } : undefined,
+    pack: isPackLineMetadata(value.pack)
+      ? {
+          ...value.pack,
+          compositionLabel: normalizeLegacyCatalogText(value.pack.compositionLabel),
+          composition: value.pack.composition.map((selection) => ({
+            ...selection,
+            name: typeof selection.name === "string" ? normalizeLegacyCatalogText(selection.name) : undefined,
+          })),
+        }
+      : undefined,
   };
 }
 
+function normalizeLegacyCatalogText(value: string) {
+  return LEGACY_MOJIBAKE_REPLACEMENTS.reduce(
+    (current, [pattern, replacement]) => current.split(pattern).join(replacement),
+    value,
+  );
+}
+
 function getStoredProductCategory(value: Partial<StoredCartItem>): ProductCategory | undefined {
+  const category = typeof value.category === "string" ? normalizeLegacyCatalogText(value.category) : undefined;
   if (isProductCategory(value.productCategory)) return value.productCategory;
-  if (isProductCategory(value.category)) return value.category;
-  if (value.category === "pack") return "pack";
-  if (typeof value.beerId === "string" || typeof value.beerName === "string" || legacyBeerCategories.has(String(value.category))) {
+  if (isProductCategory(category)) return category;
+  if (category === "pack") return "pack";
+  if (typeof value.beerId === "string" || typeof value.beerName === "string" || legacyBeerCategories.has(String(category))) {
     return "beer";
   }
   return undefined;

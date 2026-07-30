@@ -25,19 +25,19 @@ export function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6">Navegación</h4>
             <ul className="space-y-3">
-              <li><button onClick={() => scrollToSection('servicios')} className="text-muted-foreground hover:text-primary transition-colors text-sm">Servicios</button></li>
-              <li><button onClick={() => scrollToSection('cervezas')} className="text-muted-foreground hover:text-primary transition-colors text-sm">Nuestras Cervezas</button></li>
-              <li><button onClick={() => scrollToSection('eventos')} className="text-muted-foreground hover:text-primary transition-colors text-sm">Eventos</button></li>
-              <li><button onClick={() => scrollToSection('calculadora')} className="text-muted-foreground hover:text-primary transition-colors text-sm">Calculadora de Barriles</button></li>
+          <li><button onClick={() => scrollToSection('servicios', { updateHash: true })} className="text-muted-foreground hover:text-primary transition-colors text-sm">Servicios</button></li>
+          <li><button onClick={() => scrollToSection('cervezas', { updateHash: true })} className="text-muted-foreground hover:text-primary transition-colors text-sm">Nuestras Cervezas</button></li>
+          <li><button onClick={() => scrollToSection('eventos', { updateHash: true })} className="text-muted-foreground hover:text-primary transition-colors text-sm">Eventos</button></li>
+          <li><button onClick={() => scrollToSection('calculadora', { updateHash: true })} className="text-muted-foreground hover:text-primary transition-colors text-sm">Calculadora de Barriles</button></li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-white font-bold mb-6">Ayuda</h4>
             <ul className="space-y-3">
-              <li><button onClick={() => scrollToSection('como-funciona')} className="text-muted-foreground hover:text-primary transition-colors text-sm">Cómo Funciona</button></li>
-              <li><button onClick={() => scrollToSection('faq')} className="text-muted-foreground hover:text-primary transition-colors text-sm">Preguntas Frecuentes</button></li>
-              <li><button onClick={() => scrollToSection('ubicacion')} className="text-muted-foreground hover:text-primary transition-colors text-sm">Contacto</button></li>
+          <li><button onClick={() => scrollToSection('como-funciona', { updateHash: true })} className="text-muted-foreground hover:text-primary transition-colors text-sm">Cómo Funciona</button></li>
+          <li><button onClick={() => scrollToSection('faq', { updateHash: true })} className="text-muted-foreground hover:text-primary transition-colors text-sm">Preguntas Frecuentes</button></li>
+          <li><button onClick={() => scrollToSection('ubicacion', { updateHash: true })} className="text-muted-foreground hover:text-primary transition-colors text-sm">Contacto</button></li>
             </ul>
           </div>
 

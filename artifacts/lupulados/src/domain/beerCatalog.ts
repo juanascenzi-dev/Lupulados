@@ -69,7 +69,7 @@ export const tastingPack = {
   price: 10500,
   category: "pack" as CartCategory,
   productId: "pack-degustacion",
-  productName: "Pack DegustaciÃ³n",
+  productName: "Pack Degustación",
   presentationId: "pack-degustacion",
   presentationLabel: "6 estilos",
 };

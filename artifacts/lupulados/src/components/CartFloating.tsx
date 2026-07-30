@@ -17,7 +17,7 @@ export function CartFloating() {
           exit={{ opacity: 0, y: 50, scale: 0.9 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => scrollToSection("arma-tu-pedido")}
+        onClick={() => scrollToSection("arma-tu-pedido", { updateHash: true })}
           className="fixed bottom-6 left-6 z-50 bg-primary text-black px-4 py-3 rounded-full flex items-center gap-3 shadow-[0_0_20px_rgba(217,119,6,0.4)] border border-amber-300 font-bold"
           aria-label={`Ver pedido, ${totalItems} items, total ${formatPrice(totalPrice)}`}
         >

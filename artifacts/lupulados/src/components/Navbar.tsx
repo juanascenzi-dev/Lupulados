@@ -173,7 +173,7 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
   const handleNavClick = (href: string) => {
     setActiveSection(href);
     setMobileMenuOpen(false);
-    scrollToSection(href);
+    scrollToSection(href, { updateHash: true });
   };
 
   const navTop = Math.max(0, bannerHeight);
@@ -183,6 +183,7 @@ export function Navbar({ bannerVisible, bannerHeight }: NavbarProps) {
   return (
     <header
       ref={headerRef}
+      data-site-navbar
       style={{ top: `${navTop}px` }}
       className={cn(
         "fixed left-0 right-0 z-40 transition-all duration-300",
