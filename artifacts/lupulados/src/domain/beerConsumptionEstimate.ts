@@ -1,9 +1,9 @@
 export type EventIntensity = "tranqui" | "normal" | "intensa" | "festival";
 
 export const EVENT_INTENSITY_MULTIPLIERS: Record<EventIntensity, number> = {
-  tranqui: 0.6,
-  normal: 1.0,
-  intensa: 1.4,
+  tranqui: 0.5,
+  normal: 0.8,
+  intensa: 1.3,
   festival: 1.8,
 };
 
@@ -24,7 +24,7 @@ export function estimateBeerLiters(input: BeerConsumptionEstimateInput): number 
     liters *= 1 - 0.15 * (4 - totalHoursDecimal);
   }
 
-  if (isSummer) liters *= 1.2;
+  if (isSummer) liters *= 1.25;
 
   return Math.ceil(liters);
 }

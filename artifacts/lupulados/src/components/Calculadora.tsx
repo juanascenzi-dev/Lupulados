@@ -339,7 +339,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   <Sun className={cn("w-6 h-6 shrink-0", isSummer ? "text-amber-500" : "text-muted-foreground")} aria-hidden="true" />
                   <div className="text-left">
                     <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-0.5">¿Es verano?</span>
-                    <span className="text-xs text-muted-foreground">La gente toma más con calor (+20%)</span>
+                    <span className="text-xs text-muted-foreground">La gente toma más con calor (+25%)</span>
                   </div>
                 </div>
                 <div className={cn("w-12 h-6 rounded-full p-1 transition-colors shrink-0", isSummer ? "bg-amber-500" : "bg-secondary")}>
