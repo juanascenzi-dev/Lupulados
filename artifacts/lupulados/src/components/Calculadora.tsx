@@ -85,19 +85,22 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     return Number.isFinite(value) ? value : null;
   };
 
+  // Mientras se tipea solo se acota el techo (para no romper el cálculo con un número absurdo);
+  // el piso y el redondeo a pasos de 15 (minutos) se aplican recién al salir del campo (onBlur),
+  // así escribir "15" dígito por dígito no salta a "10" apenas se tipea el primer "1".
   const handleGuestsInputChange = (raw: string) => {
     const value = parseNumericInput(raw);
-    if (value !== null) handleGuestsChange(value);
+    if (value !== null) setGuests(Math.min(Math.max(value, 0), 500));
   };
 
   const handleHoursInputChange = (raw: string) => {
     const value = parseNumericInput(raw);
-    if (value !== null) handleHoursChange(value);
+    if (value !== null) setHours(Math.min(Math.max(value, 0), 12));
   };
 
   const handleMinutesInputChange = (raw: string) => {
     const value = parseNumericInput(raw);
-    if (value !== null) handleMinutesChange(value);
+    if (value !== null) setMinutes(Math.min(Math.max(value, 0), 59));
   };
 
   const totalHoursDecimal = hours + minutes / 60;
@@ -108,9 +111,9 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     const finalLiters = estimateBeerLiters({ guests, intensity: type, totalHoursDecimal, isSummer });
     setTotalLiters(finalLiters);
 
-    const barrelRecommendation = calculateBarrelRecommendation(finalLiters, selectedBeer);
+    const barrelRecommendation = calculateBarrelRecommendation(finalLiters, selectedBeer, beerCatalog);
     setBarrelPlan(barrelRecommendation);
-  }, [guests, hours, minutes, type, isSummer, totalHoursDecimal, selectedBeer]);
+  }, [guests, hours, minutes, type, isSummer, totalHoursDecimal, selectedBeer, beerCatalog]);
 
   const isChipActive = (chip: { hours: number; minutes: number }) =>
     hours === chip.hours && minutes === chip.minutes;
@@ -155,6 +158,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                       type="number"
                       value={guests}
                       onChange={(e) => handleGuestsInputChange(e.target.value)}
+                      onBlur={() => handleGuestsChange(guests)}
                       className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                       min="10"
                       max="500"
@@ -178,7 +182,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   max="500"
                   step="5"
                   value={guests}
-                  onChange={(e) => setGuests(Number(e.target.value))}
+                  onChange={(e) => handleGuestsChange(Number(e.target.value))}
                   className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                 />
                 <div className="flex justify-between mt-1.5 text-xs text-muted-foreground font-mono">
@@ -215,6 +219,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         type="number"
                         value={hours}
                         onChange={(e) => handleHoursInputChange(e.target.value)}
+                        onBlur={() => handleHoursChange(hours)}
                         className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                         min="1"
                         max="12"
@@ -245,6 +250,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         type="number"
                         value={minutes}
                         onChange={(e) => handleMinutesInputChange(e.target.value)}
+                        onBlur={() => handleMinutesChange(minutes)}
                         className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                         min="0"
                         max="45"

@@ -1278,7 +1278,9 @@ export function ArmaTuPedido({
               </div>
               <div className="md:text-right shrink-0">
                 <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
-                  Estimado desde
+                  {pendingRecommendation.beerId && selectedBeer
+                    ? `Precio para ${selectedBeer.name}`
+                    : "Estimado desde"}
                 </p>
                 <p className="text-primary font-mono font-bold text-xl">
                   {formatPrice(pendingRecommendation.estimatedPrice)}

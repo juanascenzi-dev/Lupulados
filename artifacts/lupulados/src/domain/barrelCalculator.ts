@@ -19,23 +19,33 @@ export interface BarrelRecommendation {
   beerId: string | null;
 }
 
-const barrelOptions = barrelPresentationIds.map((presentationId) => {
-  const prices = beerCatalog.map((beer) => beer.precios[presentationId]);
-  return {
-    presentationId,
-    size: Number(presentationId.match(/\d+/)?.[0] ?? 0),
-    minPrice: Math.min(...prices),
-  };
-});
+function buildBarrelOptions(catalog: Beer[]) {
+  const barrelOptions = barrelPresentationIds.map((presentationId) => {
+    const prices = catalog.map((beer) => beer.precios[presentationId]);
+    return {
+      presentationId,
+      size: Number(presentationId.match(/\d+/)?.[0] ?? 0),
+      minPrice: Math.min(...prices),
+    };
+  });
 
-const smallestBarrelIndex = barrelOptions.reduce(
-  (minIndex, option, index) => (option.size < barrelOptions[minIndex].size ? index : minIndex),
-  0,
-);
-const minimumBarrelSize = barrelOptions[smallestBarrelIndex].size;
-const otherBarrelIndexes = barrelOptions.map((_, index) => index).filter((index) => index !== smallestBarrelIndex);
+  const smallestBarrelIndex = barrelOptions.reduce(
+    (minIndex, option, index) => (option.size < barrelOptions[minIndex].size ? index : minIndex),
+    0,
+  );
+  const minimumBarrelSize = barrelOptions[smallestBarrelIndex].size;
+  const otherBarrelIndexes = barrelOptions
+    .map((_, index) => index)
+    .filter((index) => index !== smallestBarrelIndex);
 
-const emptyRecommendation = (requiredLiters: number, beerId: string | null): BarrelRecommendation => ({
+  return { barrelOptions, smallestBarrelIndex, minimumBarrelSize, otherBarrelIndexes };
+}
+
+const emptyRecommendation = (
+  requiredLiters: number,
+  beerId: string | null,
+  minimumBarrelSize: number,
+): BarrelRecommendation => ({
   requiredLiters,
   coveredLiters: 0,
   excessLiters: 0,
@@ -56,15 +66,21 @@ function compareRecommendations(a: BarrelRecommendation, b: BarrelRecommendation
   );
 }
 
-export function calculateBarrelRecommendation(requiredLiters: number, beer?: Beer | null): BarrelRecommendation {
+export function calculateBarrelRecommendation(
+  requiredLiters: number,
+  beer?: Beer | null,
+  catalog: Beer[] = beerCatalog,
+): BarrelRecommendation {
   if (!Number.isFinite(requiredLiters)) {
     throw new RangeError("requiredLiters must be a finite number");
   }
 
+  const { barrelOptions, smallestBarrelIndex, minimumBarrelSize, otherBarrelIndexes } = buildBarrelOptions(catalog);
+
   const beerId = beer?.id ?? null;
   const normalizedRequired = Math.max(0, Math.ceil(requiredLiters));
   if (normalizedRequired <= 0) {
-    return emptyRecommendation(normalizedRequired, beerId);
+    return emptyRecommendation(normalizedRequired, beerId, minimumBarrelSize);
   }
 
   const effectiveRequired = Math.max(minimumBarrelSize, normalizedRequired);
@@ -127,5 +143,5 @@ export function calculateBarrelRecommendation(requiredLiters: number, beer?: Bee
     }
   }
 
-  return best ?? emptyRecommendation(normalizedRequired, beerId);
+  return best ?? emptyRecommendation(normalizedRequired, beerId, minimumBarrelSize);
 }

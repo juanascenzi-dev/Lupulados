@@ -184,4 +184,44 @@ describe("calculateBarrelRecommendation", () => {
       expect(priced.estimatedPrice).toBeGreaterThanOrEqual(generic.estimatedPrice);
     });
   });
+
+  describe("with an injected catalog", () => {
+    function makeCatalog(precios: Record<BeerPresentationId, number>): Beer[] {
+      return [
+        {
+          id: "custom-beer",
+          name: "Custom",
+          description: "",
+          desc: "",
+          abv: 0,
+          ibu: 0,
+          image: "",
+          img: "",
+          precios,
+          presentations: [],
+        },
+      ];
+    }
+
+    it("prices the no-style recommendation from the injected catalog instead of the frozen static default", () => {
+      const customCatalog = makeCatalog({
+        barril20L: 1000,
+        barril30L: 1500,
+        barril50L: 2500,
+      } as Record<BeerPresentationId, number>);
+
+      const result = calculateBarrelRecommendation(60, null, customCatalog);
+
+      expect(result.label).toBe("2x 30L");
+      expect(result.totalPrice).toBe(3000);
+      expect(result.totalPrice).not.toBe(calculateBarrelRecommendation(60).totalPrice);
+    });
+
+    it("falls back to the static beerCatalog when no catalog is passed", () => {
+      const withoutCatalogArg = calculateBarrelRecommendation(60);
+      const withExplicitStaticCatalog = calculateBarrelRecommendation(60, null, beerCatalog);
+
+      expect(withoutCatalogArg.totalPrice).toBe(withExplicitStaticCatalog.totalPrice);
+    });
+  });
 });
