@@ -12,11 +12,12 @@ export interface BeerConsumptionEstimateInput {
   intensity: EventIntensity;
   totalHoursDecimal: number;
   isSummer: boolean;
+  litersPerPerson?: number;
 }
 
 export function estimateBeerLiters(input: BeerConsumptionEstimateInput): number {
-  const { guests, intensity, totalHoursDecimal, isSummer } = input;
-  let liters = guests * EVENT_INTENSITY_MULTIPLIERS[intensity];
+  const { guests, intensity, totalHoursDecimal, isSummer, litersPerPerson } = input;
+  let liters = guests * (litersPerPerson ?? EVENT_INTENSITY_MULTIPLIERS[intensity]);
 
   if (totalHoursDecimal > 4) {
     liters *= 1 + 0.15 * (totalHoursDecimal - 4);

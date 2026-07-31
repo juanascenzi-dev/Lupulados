@@ -34,4 +34,22 @@ describe("estimateBeerLiters", () => {
   it("combina intensidad, duración extendida y verano", () => {
     expect(estimateBeerLiters({ guests: 200, intensity: "festival", totalHoursDecimal: 6.5, isSummer: true })).toBe(619);
   });
+
+  it("litersPerPerson pisa el multiplicador de intensidad cuando se provee", () => {
+    expect(
+      estimateBeerLiters({ guests: 100, intensity: "tranqui", totalHoursDecimal: 4, isSummer: false, litersPerPerson: 1.5 }),
+    ).toBe(150);
+  });
+
+  it("litersPerPerson se sigue combinando con el ajuste por duración y verano", () => {
+    expect(
+      estimateBeerLiters({ guests: 50, intensity: "normal", totalHoursDecimal: 6, isSummer: true, litersPerPerson: 1 }),
+    ).toBe(82);
+  });
+
+  it("sin litersPerPerson el comportamiento no cambia respecto al multiplicador de intensidad", () => {
+    expect(
+      estimateBeerLiters({ guests: 100, intensity: "intensa", totalHoursDecimal: 4, isSummer: false }),
+    ).toBe(130);
+  });
 });

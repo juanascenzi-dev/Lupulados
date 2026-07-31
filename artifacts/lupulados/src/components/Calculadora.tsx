@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calculator, Sun, Users, Clock, Beer, Check } from "lucide-react";
+import { Calculator, Sun, Users, Clock, Beer, Check, SlidersHorizontal } from "lucide-react";
 import { calculateBarrelRecommendation, type BarrelRecommendation } from "@/domain/barrelCalculator";
-import { estimateBeerLiters, type EventIntensity } from "@/domain/beerConsumptionEstimate";
+import { estimateBeerLiters, EVENT_INTENSITY_MULTIPLIERS, type EventIntensity } from "@/domain/beerConsumptionEstimate";
 import { formatDurationLabel } from "@/domain/eventDuration";
 import { formatPrice } from "@/domain/format";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
@@ -59,6 +59,8 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
   const [type, setType] = useState<EventTypeId>("normal");
   const [isSummer, setIsSummer] = useState(false);
   const [selectedBeerId, setSelectedBeerId] = useState<string | null>(null);
+  const [showLitersOverride, setShowLitersOverride] = useState(false);
+  const [customLitersPerPerson, setCustomLitersPerPerson] = useState<number | null>(null);
   const selectedBeer = beerCatalog.find((beer) => beer.id === selectedBeerId) ?? null;
 
   const [totalLiters, setTotalLiters] = useState(0);
@@ -77,6 +79,14 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
   const handleMinutesChange = (val: number) => {
     const stepped = Math.min(Math.max(Math.round(val / 15) * 15, 0), 45);
     setMinutes(stepped);
+  };
+
+  const LITERS_PER_PERSON_MIN = 0.2;
+  const LITERS_PER_PERSON_MAX = 3;
+
+  const handleLitersOverrideChange = (val: number) => {
+    const rounded = Math.round(val * 10) / 10;
+    setCustomLitersPerPerson(Math.min(Math.max(rounded, LITERS_PER_PERSON_MIN), LITERS_PER_PERSON_MAX));
   };
 
   const parseNumericInput = (raw: string): number | null => {
@@ -103,17 +113,43 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     if (value !== null) setMinutes(Math.min(Math.max(value, 0), 59));
   };
 
+  const handleLitersOverrideInputChange = (raw: string) => {
+    const value = parseNumericInput(raw);
+    if (value !== null) {
+      setCustomLitersPerPerson(Math.min(Math.max(value, 0), LITERS_PER_PERSON_MAX));
+    }
+  };
+
+  const standardLitersPerPerson = EVENT_INTENSITY_MULTIPLIERS[type];
+  const effectiveLitersPerPerson = customLitersPerPerson ?? standardLitersPerPerson;
+
+  const handleExpandLitersOverride = () => {
+    setCustomLitersPerPerson((current) => current ?? standardLitersPerPerson);
+    setShowLitersOverride(true);
+  };
+
+  const handleResetLitersOverride = () => {
+    setCustomLitersPerPerson(null);
+    setShowLitersOverride(false);
+  };
+
   const totalHoursDecimal = hours + minutes / 60;
 
   const durationLabel = formatDurationLabel(hours, minutes);
 
   useEffect(() => {
-    const finalLiters = estimateBeerLiters({ guests, intensity: type, totalHoursDecimal, isSummer });
+    const finalLiters = estimateBeerLiters({
+      guests,
+      intensity: type,
+      totalHoursDecimal,
+      isSummer,
+      litersPerPerson: customLitersPerPerson ?? undefined,
+    });
     setTotalLiters(finalLiters);
 
     const barrelRecommendation = calculateBarrelRecommendation(finalLiters, selectedBeer, beerCatalog);
     setBarrelPlan(barrelRecommendation);
-  }, [guests, hours, minutes, type, isSummer, totalHoursDecimal, selectedBeer, beerCatalog]);
+  }, [guests, hours, minutes, type, isSummer, totalHoursDecimal, selectedBeer, beerCatalog, customLitersPerPerson]);
 
   const isChipActive = (chip: { hours: number; minutes: number }) =>
     hours === chip.hours && minutes === chip.minutes;
@@ -323,6 +359,77 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Liters per person override — advanced/optional */}
+              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
+                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+                  <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
+                    <SlidersHorizontal className="w-4 h-4 text-primary" aria-hidden="true" /> Litros por persona
+                  </label>
+                  <span className="text-sm text-primary font-mono font-semibold">{effectiveLitersPerPerson.toFixed(1)} L</span>
+                </div>
+
+                {!showLitersOverride ? (
+                  <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
+                    <p className="text-xs text-muted-foreground">
+                      Usamos el estándar de "{EVENT_TYPES.find((t) => t.id === type)?.label}". Cambialo solo si conocés el consumo real de tu evento.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleExpandLitersOverride}
+                      className="shrink-0 px-3 py-1.5 rounded-lg border text-sm font-bold bg-white/5 text-muted-foreground border-white/10 hover:border-white/30 transition-all"
+                    >
+                      Personalizar
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-2.5">
+                    <div className="flex items-center gap-2 mb-2.5">
+                      <button
+                        type="button"
+                        aria-label="Restar 0.1 litros por persona"
+                        onClick={() => handleLitersOverrideChange(effectiveLitersPerPerson - 0.1)}
+                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
+                      >−</button>
+                      <input
+                        id="calculator-liters-per-person"
+                        type="number"
+                        value={effectiveLitersPerPerson}
+                        onChange={(e) => handleLitersOverrideInputChange(e.target.value)}
+                        onBlur={() => handleLitersOverrideChange(effectiveLitersPerPerson)}
+                        className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
+                        min={LITERS_PER_PERSON_MIN}
+                        max={LITERS_PER_PERSON_MAX}
+                        step="0.1"
+                        inputMode="decimal"
+                      />
+                      <button
+                        type="button"
+                        aria-label="Sumar 0.1 litros por persona"
+                        onClick={() => handleLitersOverrideChange(effectiveLitersPerPerson + 0.1)}
+                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
+                      >+</button>
+                      <input
+                        aria-label="Litros por persona"
+                        type="range"
+                        min={LITERS_PER_PERSON_MIN}
+                        max={LITERS_PER_PERSON_MAX}
+                        step="0.1"
+                        value={effectiveLitersPerPerson}
+                        onChange={(e) => handleLitersOverrideChange(Number(e.target.value))}
+                        className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleResetLitersOverride}
+                      className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
+                    >
+                      Restablecer al estándar ({standardLitersPerPerson.toFixed(1)} L)
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Summer toggle */}
