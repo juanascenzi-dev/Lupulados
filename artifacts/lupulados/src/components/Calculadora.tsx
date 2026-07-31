@@ -2,43 +2,40 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calculator, Sun, Users, Clock, Beer, Check } from "lucide-react";
 import { calculateBarrelRecommendation, type BarrelRecommendation } from "@/domain/barrelCalculator";
+import { estimateBeerLiters, type EventIntensity } from "@/domain/beerConsumptionEstimate";
 import { formatDurationLabel } from "@/domain/eventDuration";
 import { formatPrice } from "@/domain/format";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { cn } from "@/lib/utils";
 
-const EVENT_TYPES = [
+const EVENT_TYPES: { id: EventIntensity; emoji: string; label: string; desc: string }[] = [
   {
     id: "tranqui",
     emoji: "🍽️",
     label: "Tranqui / Almuerzo",
     desc: "Consumo moderado",
-    multiplier: 0.6,
   },
   {
     id: "normal",
     emoji: "🎉",
     label: "Fiesta Normal",
     desc: "Cumple o juntada",
-    multiplier: 1.0,
   },
   {
     id: "intensa",
     emoji: "🔥",
     label: "Fiesta Intensa",
     desc: "Más consumo por persona",
-    multiplier: 1.4,
   },
   {
     id: "festival",
     emoji: "🎪",
     label: "Festival",
     desc: "Evento largo y activo",
-    multiplier: 1.8,
   },
-] as const;
+];
 
-type EventTypeId = (typeof EVENT_TYPES)[number]["id"];
+type EventTypeId = EventIntensity;
 
 interface CalculadoraProps {
   onUseRecommendation: (recommendation: BarrelRecommendation) => void;
@@ -80,29 +77,33 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     setMinutes(stepped);
   };
 
+  const parseNumericInput = (raw: string): number | null => {
+    if (raw.trim() === "") return null;
+    const value = Number(raw);
+    return Number.isFinite(value) ? value : null;
+  };
+
+  const handleGuestsInputChange = (raw: string) => {
+    const value = parseNumericInput(raw);
+    if (value !== null) handleGuestsChange(value);
+  };
+
+  const handleHoursInputChange = (raw: string) => {
+    const value = parseNumericInput(raw);
+    if (value !== null) handleHoursChange(value);
+  };
+
+  const handleMinutesInputChange = (raw: string) => {
+    const value = parseNumericInput(raw);
+    if (value !== null) handleMinutesChange(value);
+  };
+
   const totalHoursDecimal = hours + minutes / 60;
 
   const durationLabel = formatDurationLabel(hours, minutes);
 
   useEffect(() => {
-    const typeMultipliers: Record<EventTypeId, number> = {
-      tranqui: 0.6,
-      normal: 1.0,
-      intensa: 1.4,
-      festival: 1.8,
-    };
-
-    let calculatedLiters = guests * typeMultipliers[type];
-
-    if (totalHoursDecimal > 4) {
-      calculatedLiters *= 1 + 0.15 * (totalHoursDecimal - 4);
-    } else if (totalHoursDecimal < 4) {
-      calculatedLiters *= 1 - 0.15 * (4 - totalHoursDecimal);
-    }
-
-    if (isSummer) calculatedLiters *= 1.2;
-
-    const finalLiters = Math.ceil(calculatedLiters);
+    const finalLiters = estimateBeerLiters({ guests, intensity: type, totalHoursDecimal, isSummer });
     setTotalLiters(finalLiters);
 
     const barrelRecommendation = calculateBarrelRecommendation(finalLiters);
@@ -151,7 +152,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                       id="calculator-guests"
                       type="number"
                       value={guests}
-                      onChange={(e) => handleGuestsChange(Number(e.target.value))}
+                      onChange={(e) => handleGuestsInputChange(e.target.value)}
                       className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                       min="10"
                       max="500"
@@ -211,7 +212,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         id="calculator-hours"
                         type="number"
                         value={hours}
-                        onChange={(e) => handleHoursChange(Number(e.target.value))}
+                        onChange={(e) => handleHoursInputChange(e.target.value)}
                         className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                         min="1"
                         max="12"
@@ -241,7 +242,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         id="calculator-minutes"
                         type="number"
                         value={minutes}
-                        onChange={(e) => handleMinutesChange(Number(e.target.value))}
+                        onChange={(e) => handleMinutesInputChange(e.target.value)}
                         className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
                         min="0"
                         max="45"
