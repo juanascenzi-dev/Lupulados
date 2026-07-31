@@ -1,4 +1,4 @@
-import { barrelPresentationIds, beerCatalog, type BeerPresentationId } from "./beerCatalog";
+import { barrelPresentationIds, beerCatalog, type Beer, type BeerPresentationId } from "./beerCatalog";
 
 export interface BarrelRecommendationPart {
   size: number;
@@ -16,18 +16,36 @@ export interface BarrelRecommendation {
   totalBarrels: number;
   parts: BarrelRecommendationPart[];
   label: string;
+  beerId: string | null;
 }
 
-const barrelOptions = barrelPresentationIds.map((presentationId) => {
-  const prices = beerCatalog.map((beer) => beer.precios[presentationId]);
-  return {
-    presentationId,
-    size: Number(presentationId.match(/\d+/)?.[0] ?? 0),
-    minPrice: Math.min(...prices),
-  };
-});
+function buildBarrelOptions(catalog: Beer[]) {
+  const barrelOptions = barrelPresentationIds.map((presentationId) => {
+    const prices = catalog.map((beer) => beer.precios[presentationId]);
+    return {
+      presentationId,
+      size: Number(presentationId.match(/\d+/)?.[0] ?? 0),
+      minPrice: Math.min(...prices),
+    };
+  });
 
-const emptyRecommendation = (requiredLiters: number): BarrelRecommendation => ({
+  const smallestBarrelIndex = barrelOptions.reduce(
+    (minIndex, option, index) => (option.size < barrelOptions[minIndex].size ? index : minIndex),
+    0,
+  );
+  const minimumBarrelSize = barrelOptions[smallestBarrelIndex].size;
+  const otherBarrelIndexes = barrelOptions
+    .map((_, index) => index)
+    .filter((index) => index !== smallestBarrelIndex);
+
+  return { barrelOptions, smallestBarrelIndex, minimumBarrelSize, otherBarrelIndexes };
+}
+
+const emptyRecommendation = (
+  requiredLiters: number,
+  beerId: string | null,
+  minimumBarrelSize: number,
+): BarrelRecommendation => ({
   requiredLiters,
   coveredLiters: 0,
   excessLiters: 0,
@@ -35,7 +53,8 @@ const emptyRecommendation = (requiredLiters: number): BarrelRecommendation => ({
   estimatedPrice: 0,
   totalBarrels: 0,
   parts: [],
-  label: "No llegamos a un barril de 20L, ¡mejor pedí packs o growlers!",
+  label: `No llegamos a un barril de ${minimumBarrelSize}L, ¡mejor pedí packs o growlers!`,
+  beerId,
 });
 
 function compareRecommendations(a: BarrelRecommendation, b: BarrelRecommendation) {
@@ -47,57 +66,82 @@ function compareRecommendations(a: BarrelRecommendation, b: BarrelRecommendation
   );
 }
 
-export function calculateBarrelRecommendation(requiredLiters: number): BarrelRecommendation {
+export function calculateBarrelRecommendation(
+  requiredLiters: number,
+  beer?: Beer | null,
+  catalog: Beer[] = beerCatalog,
+): BarrelRecommendation {
   if (!Number.isFinite(requiredLiters)) {
     throw new RangeError("requiredLiters must be a finite number");
   }
 
+  const { barrelOptions, smallestBarrelIndex, minimumBarrelSize, otherBarrelIndexes } = buildBarrelOptions(catalog);
+
+  const beerId = beer?.id ?? null;
   const normalizedRequired = Math.max(0, Math.ceil(requiredLiters));
   if (normalizedRequired <= 0) {
-    return emptyRecommendation(normalizedRequired);
+    return emptyRecommendation(normalizedRequired, beerId, minimumBarrelSize);
   }
 
-  const effectiveRequired = Math.max(20, normalizedRequired);
-  const maxCount = Math.ceil(effectiveRequired / 20) + 3;
+  const effectiveRequired = Math.max(minimumBarrelSize, normalizedRequired);
+  const maxCount = Math.ceil(effectiveRequired / minimumBarrelSize) + 3;
   let best: BarrelRecommendation | null = null;
 
-  for (let b20 = 0; b20 <= maxCount; b20 += 1) {
-    for (let b30 = 0; b30 <= maxCount; b30 += 1) {
-      for (let b50 = 0; b50 <= maxCount; b50 += 1) {
-        const counts = [b20, b30, b50];
-        const coveredLiters = counts.reduce((sum, count, index) => sum + count * barrelOptions[index].size, 0);
-        if (coveredLiters < effectiveRequired) continue;
+  // Para conteos fijos de los "otros" tamaños, los litros cubiertos crecen estrictamente
+  // con la cantidad del barril más chico, así que su excedente también crece estrictamente.
+  // compareRecommendations ordena primero por excedente, así que el único conteo del barril
+  // más chico que puede ganar es el mínimo necesario para cubrir el requerimiento: se calcula
+  // en forma cerrada en vez de recorrerlo con un tercer loop. Asume exactamente 3 presentaciones
+  // de barril (2 loops + 1 fórmula cerrada); un 4° tamaño requeriría un loop adicional.
+  for (let countA = 0; countA <= maxCount; countA += 1) {
+    for (let countB = 0; countB <= maxCount; countB += 1) {
+      const otherCounts = [countA, countB];
+      const otherCoveredLiters = otherCounts.reduce(
+        (sum, count, i) => sum + count * barrelOptions[otherBarrelIndexes[i]].size,
+        0,
+      );
 
-        const parts = counts
-          .map((count, index) => ({ count, option: barrelOptions[index] }))
-          .filter(({ count }) => count > 0)
-          .map(({ count, option }) => ({
-            size: option.size,
-            count,
-            price: option.minPrice,
-            presentationId: option.presentationId,
-          }))
-          .sort((a, b) => b.size - a.size);
+      const remaining = effectiveRequired - otherCoveredLiters;
+      const smallestCount = Math.max(0, Math.ceil(remaining / minimumBarrelSize));
 
-        const estimatedPrice = parts.reduce((sum, part) => sum + part.count * part.price, 0);
-        const totalBarrels = parts.reduce((sum, part) => sum + part.count, 0);
-        const candidate: BarrelRecommendation = {
-          requiredLiters: normalizedRequired,
-          coveredLiters,
-          excessLiters: coveredLiters - normalizedRequired,
-          totalPrice: estimatedPrice,
-          estimatedPrice,
-          totalBarrels,
-          parts,
-          label: parts.map((part) => `${part.count}x ${part.size}L`).join(" + "),
-        };
+      const counts = new Array(barrelOptions.length).fill(0) as number[];
+      counts[smallestBarrelIndex] = smallestCount;
+      otherBarrelIndexes.forEach((optionIndex, i) => {
+        counts[optionIndex] = otherCounts[i];
+      });
 
-        if (!best || compareRecommendations(candidate, best) < 0) {
-          best = candidate;
-        }
+      const coveredLiters = counts.reduce((sum, count, index) => sum + count * barrelOptions[index].size, 0);
+
+      const parts = counts
+        .map((count, index) => ({ count, option: barrelOptions[index] }))
+        .filter(({ count }) => count > 0)
+        .map(({ count, option }) => ({
+          size: option.size,
+          count,
+          price: beer ? beer.precios[option.presentationId] : option.minPrice,
+          presentationId: option.presentationId,
+        }))
+        .sort((a, b) => b.size - a.size);
+
+      const estimatedPrice = parts.reduce((sum, part) => sum + part.count * part.price, 0);
+      const totalBarrels = parts.reduce((sum, part) => sum + part.count, 0);
+      const candidate: BarrelRecommendation = {
+        requiredLiters: normalizedRequired,
+        coveredLiters,
+        excessLiters: coveredLiters - normalizedRequired,
+        totalPrice: estimatedPrice,
+        estimatedPrice,
+        totalBarrels,
+        parts,
+        label: parts.map((part) => `${part.count}x ${part.size}L`).join(" + "),
+        beerId,
+      };
+
+      if (!best || compareRecommendations(candidate, best) < 0) {
+        best = candidate;
       }
     }
   }
 
-  return best ?? emptyRecommendation(normalizedRequired);
+  return best ?? emptyRecommendation(normalizedRequired, beerId, minimumBarrelSize);
 }
