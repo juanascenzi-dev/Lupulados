@@ -739,6 +739,10 @@ export function ArmaTuPedido({
 
     setSelectedCategory("beer");
     setOrderType("barril");
+    if (pendingRecommendation.beerId) {
+      const recommendedBeer = BEERS.find((beer) => beer.id === pendingRecommendation.beerId);
+      if (recommendedBeer) setSelectedBeer(recommendedBeer);
+    }
     setStep(2);
     setDirection(1);
     setRecommendationStatus("idle");

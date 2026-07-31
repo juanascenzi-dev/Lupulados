@@ -52,12 +52,14 @@ const DURATION_CHIPS: { label: string; hours: number; minutes: number }[] = [
 ];
 
 export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
-  const { priceDisclaimer } = useCommercialDerivedData();
+  const { priceDisclaimer, beerCatalog } = useCommercialDerivedData();
   const [guests, setGuests] = useState(50);
   const [hours, setHours] = useState(4);
   const [minutes, setMinutes] = useState(0);
   const [type, setType] = useState<EventTypeId>("normal");
   const [isSummer, setIsSummer] = useState(false);
+  const [selectedBeerId, setSelectedBeerId] = useState<string | null>(null);
+  const selectedBeer = beerCatalog.find((beer) => beer.id === selectedBeerId) ?? null;
 
   const [totalLiters, setTotalLiters] = useState(0);
   const [barrelPlan, setBarrelPlan] = useState<BarrelRecommendation>(() =>
@@ -106,9 +108,9 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     const finalLiters = estimateBeerLiters({ guests, intensity: type, totalHoursDecimal, isSummer });
     setTotalLiters(finalLiters);
 
-    const barrelRecommendation = calculateBarrelRecommendation(finalLiters);
+    const barrelRecommendation = calculateBarrelRecommendation(finalLiters, selectedBeer);
     setBarrelPlan(barrelRecommendation);
-  }, [guests, hours, minutes, type, isSummer, totalHoursDecimal]);
+  }, [guests, hours, minutes, type, isSummer, totalHoursDecimal, selectedBeer]);
 
   const isChipActive = (chip: { hours: number; minutes: number }) =>
     hours === chip.hours && minutes === chip.minutes;
@@ -339,6 +341,44 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                 </div>
               </button>
 
+              {/* Beer style — optional, refines the price from "estimated minimum" to the real price */}
+              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
+                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-2.5">
+                  <Beer className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Ya sabés qué estilo? (opcional)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBeerId(null)}
+                    aria-pressed={selectedBeerId === null}
+                    className={cn(
+                      "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
+                      selectedBeerId === null
+                        ? "bg-primary text-black border-primary"
+                        : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/30"
+                    )}
+                  >
+                    Cualquiera
+                  </button>
+                  {beerCatalog.map((beer) => (
+                    <button
+                      key={beer.id}
+                      type="button"
+                      onClick={() => setSelectedBeerId(beer.id)}
+                      aria-pressed={selectedBeerId === beer.id}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
+                        selectedBeerId === beer.id
+                          ? "bg-primary text-black border-primary"
+                          : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/30"
+                      )}
+                    >
+                      {beer.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
             {/* Output */}
@@ -361,7 +401,9 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   </div>
 
                   <div className="calculator-result-price mb-4 lg:mb-5">
-                    <span className="text-white/40 text-xs block mb-1">Estimado desde</span>
+                    <span className="text-white/40 text-xs block mb-1">
+                      {selectedBeer ? `Precio para ${selectedBeer.name}` : "Estimado desde"}
+                    </span>
                     <span className="text-white font-bold text-2xl">{formatPrice(barrelPlan.estimatedPrice)}</span>
                     <span className="text-white/35 text-xs block mt-1.5">{priceDisclaimer}</span>
                   </div>

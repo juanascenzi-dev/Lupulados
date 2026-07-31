@@ -1,12 +1,19 @@
 import { describe, expect, it } from "vitest";
 import { calculateBarrelRecommendation } from "./barrelCalculator";
-import { barrelPresentationIds, beerCatalog, type BeerPresentationId } from "./beerCatalog";
+import { barrelPresentationIds, beerCatalog, type Beer, type BeerPresentationId } from "./beerCatalog";
 
 const barrelOptions = barrelPresentationIds.map((presentationId) => ({
   presentationId,
   size: Number(presentationId.match(/\d+/)?.[0] ?? 0),
   price: Math.min(...beerCatalog.map((beer) => beer.precios[presentationId])),
 }));
+
+const cheapestBeer = beerCatalog.reduce((cheapest, beer) =>
+  beer.precios.barril20L < cheapest.precios.barril20L ? beer : cheapest,
+);
+const priciestBeer = beerCatalog.reduce((priciest, beer) =>
+  beer.precios.barril20L > priciest.precios.barril20L ? beer : priciest,
+);
 
 interface ExpectedRecommendation {
   coveredLiters: number;
@@ -15,9 +22,17 @@ interface ExpectedRecommendation {
   totalBarrels: number;
   parts: { count: number; price: number; presentationId: BeerPresentationId; size: number }[];
   label: string;
+  beerId: string | null;
 }
 
-function expectedRecommendation(requiredLiters: number) {
+function priceFor(presentationId: BeerPresentationId, beer?: Beer | null) {
+  return beer
+    ? beer.precios[presentationId]
+    : barrelOptions.find((option) => option.presentationId === presentationId)!.price;
+}
+
+function expectedRecommendation(requiredLiters: number, beer?: Beer | null) {
+  const beerId = beer?.id ?? null;
   const normalizedRequired = Math.max(0, Math.ceil(requiredLiters));
   if (normalizedRequired <= 0) {
     return {
@@ -27,6 +42,7 @@ function expectedRecommendation(requiredLiters: number) {
       totalBarrels: 0,
       parts: [] as { count: number; price: number; presentationId: BeerPresentationId; size: number }[],
       label: "No llegamos a un barril de 20L, ¡mejor pedí packs o growlers!",
+      beerId,
     };
   }
 
@@ -46,7 +62,7 @@ function expectedRecommendation(requiredLiters: number) {
           .filter(({ count }) => count > 0)
           .map(({ count, option }) => ({
             count,
-            price: option.price,
+            price: priceFor(option.presentationId, beer),
             presentationId: option.presentationId,
             size: option.size,
           }))
@@ -63,6 +79,7 @@ function expectedRecommendation(requiredLiters: number) {
           totalBarrels,
           parts,
           label,
+          beerId,
         });
       }
     }
@@ -134,4 +151,37 @@ describe("calculateBarrelRecommendation", () => {
       expect(() => calculateBarrelRecommendation(liters)).toThrow("requiredLiters must be a finite number");
     },
   );
+
+  describe("with a specific beer style", () => {
+    it("defaults beerId to null when no beer is given", () => {
+      expect(calculateBarrelRecommendation(60).beerId).toBeNull();
+      expect(calculateBarrelRecommendation(0).beerId).toBeNull();
+    });
+
+    it("sets beerId to the given beer's id, including for empty recommendations", () => {
+      expect(calculateBarrelRecommendation(60, cheapestBeer).beerId).toBe(cheapestBeer.id);
+      expect(calculateBarrelRecommendation(0, cheapestBeer).beerId).toBe(cheapestBeer.id);
+    });
+
+    it.each([21, 60, 90, 250])(
+      "prices the recommendation using the selected beer's real prices for %i liters",
+      (liters) => {
+        const result = calculateBarrelRecommendation(liters, priciestBeer);
+        const expected = expectedRecommendation(liters, priciestBeer);
+
+        expect(result.excessLiters).toBe(expected.excessLiters);
+        expect(result.totalPrice).toBe(expected.totalPrice);
+        expect(result.parts).toEqual(expected.parts);
+        expect(result.label).toBe(expected.label);
+      },
+    );
+
+    it("quotes a higher price for a pricier beer than the catalog minimum on the same liters", () => {
+      const generic = calculateBarrelRecommendation(90);
+      const priced = calculateBarrelRecommendation(90, priciestBeer);
+
+      expect(priciestBeer.precios.barril20L).toBeGreaterThan(cheapestBeer.precios.barril20L);
+      expect(priced.estimatedPrice).toBeGreaterThanOrEqual(generic.estimatedPrice);
+    });
+  });
 });

@@ -1,4 +1,4 @@
-import { barrelPresentationIds, beerCatalog, type BeerPresentationId } from "./beerCatalog";
+import { barrelPresentationIds, beerCatalog, type Beer, type BeerPresentationId } from "./beerCatalog";
 
 export interface BarrelRecommendationPart {
   size: number;
@@ -16,6 +16,7 @@ export interface BarrelRecommendation {
   totalBarrels: number;
   parts: BarrelRecommendationPart[];
   label: string;
+  beerId: string | null;
 }
 
 const barrelOptions = barrelPresentationIds.map((presentationId) => {
@@ -34,7 +35,7 @@ const smallestBarrelIndex = barrelOptions.reduce(
 const minimumBarrelSize = barrelOptions[smallestBarrelIndex].size;
 const otherBarrelIndexes = barrelOptions.map((_, index) => index).filter((index) => index !== smallestBarrelIndex);
 
-const emptyRecommendation = (requiredLiters: number): BarrelRecommendation => ({
+const emptyRecommendation = (requiredLiters: number, beerId: string | null): BarrelRecommendation => ({
   requiredLiters,
   coveredLiters: 0,
   excessLiters: 0,
@@ -43,6 +44,7 @@ const emptyRecommendation = (requiredLiters: number): BarrelRecommendation => ({
   totalBarrels: 0,
   parts: [],
   label: `No llegamos a un barril de ${minimumBarrelSize}L, ¡mejor pedí packs o growlers!`,
+  beerId,
 });
 
 function compareRecommendations(a: BarrelRecommendation, b: BarrelRecommendation) {
@@ -54,14 +56,15 @@ function compareRecommendations(a: BarrelRecommendation, b: BarrelRecommendation
   );
 }
 
-export function calculateBarrelRecommendation(requiredLiters: number): BarrelRecommendation {
+export function calculateBarrelRecommendation(requiredLiters: number, beer?: Beer | null): BarrelRecommendation {
   if (!Number.isFinite(requiredLiters)) {
     throw new RangeError("requiredLiters must be a finite number");
   }
 
+  const beerId = beer?.id ?? null;
   const normalizedRequired = Math.max(0, Math.ceil(requiredLiters));
   if (normalizedRequired <= 0) {
-    return emptyRecommendation(normalizedRequired);
+    return emptyRecommendation(normalizedRequired, beerId);
   }
 
   const effectiveRequired = Math.max(minimumBarrelSize, normalizedRequired);
@@ -99,7 +102,7 @@ export function calculateBarrelRecommendation(requiredLiters: number): BarrelRec
         .map(({ count, option }) => ({
           size: option.size,
           count,
-          price: option.minPrice,
+          price: beer ? beer.precios[option.presentationId] : option.minPrice,
           presentationId: option.presentationId,
         }))
         .sort((a, b) => b.size - a.size);
@@ -115,6 +118,7 @@ export function calculateBarrelRecommendation(requiredLiters: number): BarrelRec
         totalBarrels,
         parts,
         label: parts.map((part) => `${part.count}x ${part.size}L`).join(" + "),
+        beerId,
       };
 
       if (!best || compareRecommendations(candidate, best) < 0) {
@@ -123,5 +127,5 @@ export function calculateBarrelRecommendation(requiredLiters: number): BarrelRec
     }
   }
 
-  return best ?? emptyRecommendation(normalizedRequired);
+  return best ?? emptyRecommendation(normalizedRequired, beerId);
 }
