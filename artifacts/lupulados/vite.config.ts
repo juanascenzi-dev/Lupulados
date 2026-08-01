@@ -8,6 +8,17 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const port = Number(process.env.PORT || 5173);
 const basePath = process.env.BASE_PATH || "/";
 const projectDir = fileURLToPath(new URL(".", import.meta.url));
+const exposeDevServerToLan = process.env.LUPULADOS_DEV_LAN === "true";
+const devServerHost = exposeDevServerToLan ? "0.0.0.0" : "localhost";
+const configuredAllowedHosts = process.env.LUPULADOS_DEV_ALLOWED_HOSTS?.split(",")
+  .map((host) => host.trim())
+  .filter(Boolean);
+const allowedDevHosts =
+  configuredAllowedHosts && configuredAllowedHosts.length > 0
+    ? configuredAllowedHosts
+    : exposeDevServerToLan
+      ? undefined
+      : ["localhost", "127.0.0.1", "::1"];
 
 export default defineConfig({
   base: basePath,
@@ -79,9 +90,9 @@ export default defineConfig({
 
   server: {
     port,
-    host: "0.0.0.0",
+    host: devServerHost,
 
-    allowedHosts: true,
+    allowedHosts: allowedDevHosts,
 
     fs: {
       strict: true,
@@ -91,7 +102,7 @@ export default defineConfig({
 
   preview: {
     port,
-    host: "0.0.0.0",
-    allowedHosts: true,
+    host: devServerHost,
+    allowedHosts: allowedDevHosts,
   },
 });
