@@ -8,9 +8,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 
 - Opción para editar manualmente la cantidad de litros de cerveza por persona en la calculadora de barriles.
 
+### Changed
+
+- Se extrajo un componente `QuantityStepper` reutilizable (botón − / cantidad / botón +) y se unificaron los bloques de barril y growler en "Armá tu pedido" en un único `BeerPresentationLineCard`, reemplazando ocho implementaciones inline casi idénticas repartidas entre el wizard y el pack configurable de porrones.
+
 ### Fixed
 
 - En "Armá tu pedido", el banner de recomendación calculada ahora es más compacto y se oculta al llegar al paso de agregar productos al carrito, y se corrigió el grid del wizard (filas implícitas sin alto acotado) que causaba saltos de layout al ir sumando ítems.
+- En "Armá tu pedido" (desktop), la grilla de estilos y el panel "Tu pedido" ya no quedan acotados a la altura de un viewport con scroll interno propio: ahora la sección crece con el contenido y es la página la que scrollea, sin necesidad de scrollear dentro de esas cajas para ver todo.
+- En "Armá tu pedido" (mobile), el contador de pasos ya no salta de "Paso 1 de 5" a "Paso 3 de 5" al elegir pack degustación o porrón configurable: ahora muestra la fase real ("Paso X de 3"), igual que la versión desktop.
+- En "Armá tu pedido", el botón "Agregar otro producto" para barril y growler ya no resetea el tipo de pedido elegido: vuelve directo a la selección de estilo, sin obligar a re-elegir "Barril"/"Growler" para pedidos con varios estilos.
 
 ## Historial previo (migrado desde `docs/*.md`)
 

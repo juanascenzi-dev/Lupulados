@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from "react";
-import { Check, Copy, Minus, Plus, RotateCcw, ShoppingCart } from "lucide-react";
+import { Check, Copy, RotateCcw, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { formatPrice } from "@/domain/format";
 import type { Beer } from "@/domain/beerCatalog";
 import type { StoredCartItem } from "@/domain/cartStorage";
@@ -54,7 +55,10 @@ export function ConfigurableBeerPackBuilder({
   layout = "default",
 }: ConfigurableBeerPackBuilderProps) {
   const products = useMemo(() => listPackAvailableProducts(beers), [beers]);
-  const validProductIds = useMemo(() => new Set(products.map((product) => product.productId)), [products]);
+  const validProductIds = useMemo(
+    () => new Set(products.map((product) => product.productId)),
+    [products],
+  );
   const [drafts, setDrafts] = useState<PackDraft[]>(() => [createEmptyPackDraft()]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [pendingConfirmation, setPendingConfirmation] = useState<PendingConfirmation>(null);
@@ -67,7 +71,9 @@ export function ConfigurableBeerPackBuilder({
   const allComplete = drafts.length > 0 && completeCount === drafts.length;
   const activeDraft = drafts[activeIndex] ?? drafts[0];
   const selectedCount = activeDraft ? getPackSelectedCount(activeDraft) : 0;
-  const remainingCount = activeDraft ? getPackRemainingCount(activeDraft) : CONFIGURABLE_BEER_PACK_CAPACITY;
+  const remainingCount = activeDraft
+    ? getPackRemainingCount(activeDraft)
+    : CONFIGURABLE_BEER_PACK_CAPACITY;
   const activePrice = activeDraft ? calculatePackPrice(activeDraft, products) : 0;
 
   const setPackCount = (nextCount: number) => {
@@ -84,7 +90,9 @@ export function ConfigurableBeerPackBuilder({
   const updateActiveSelection = (productId: string, quantity: number) => {
     setDrafts((current) =>
       current.map((draft, index) =>
-        index === activeIndex ? updatePackSelection(draft, productId, quantity, validProductIds) : draft,
+        index === activeIndex
+          ? updatePackSelection(draft, productId, quantity, validProductIds)
+          : draft,
       ),
     );
   };
@@ -99,7 +107,9 @@ export function ConfigurableBeerPackBuilder({
   };
 
   const applyToAll = () => {
-    const hasOtherConfigured = drafts.some((draft, index) => index !== activeIndex && getPackSelectedCount(draft) > 0);
+    const hasOtherConfigured = drafts.some(
+      (draft, index) => index !== activeIndex && getPackSelectedCount(draft) > 0,
+    );
     if (hasOtherConfigured) {
       setPendingConfirmation({ type: "apply-all", sourceIndex: activeIndex });
       return;
@@ -108,13 +118,17 @@ export function ConfigurableBeerPackBuilder({
   };
 
   const clearActive = () => {
-    setDrafts((current) => current.map((draft, index) => (index === activeIndex ? createEmptyPackDraft(index) : draft)));
+    setDrafts((current) =>
+      current.map((draft, index) => (index === activeIndex ? createEmptyPackDraft(index) : draft)),
+    );
   };
 
   const confirmPending = () => {
     if (!pendingConfirmation) return;
     if (pendingConfirmation.type === "reduce") {
-      const resized = resizePackDrafts(drafts, pendingConfirmation.count, { allowDiscardConfigured: true });
+      const resized = resizePackDrafts(drafts, pendingConfirmation.count, {
+        allowDiscardConfigured: true,
+      });
       setDrafts(resized.drafts);
       setActiveIndex((index) => Math.min(index, resized.drafts.length - 1));
     }
@@ -139,15 +153,25 @@ export function ConfigurableBeerPackBuilder({
 
   if (products.length === 0) {
     return (
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center" role="alert">
+      <section
+        className="rounded-2xl border border-white/10 bg-white/5 p-5 text-center"
+        role="alert"
+      >
         <h3 className="text-lg font-bold text-white">Pack de porrones no disponible</h3>
-        <p className="mt-2 text-sm text-white/55">No hay estilos activos con porrón 500 ml y precio válido.</p>
+        <p className="mt-2 text-sm text-white/55">
+          No hay estilos activos con porrón 500 ml y precio válido.
+        </p>
       </section>
     );
   }
 
   return (
-    <section className={cn("h-full min-h-0 rounded-2xl border border-white/10 bg-white/[0.045] p-3 md:p-4", compact ? "" : "")}>
+    <section
+      className={cn(
+        "h-full min-h-0 rounded-2xl border border-white/10 bg-white/[0.045] p-3 md:p-4",
+        compact ? "" : "",
+      )}
+    >
       <div
         className={cn(
           "flex h-full min-h-0 flex-col gap-3 lg:grid lg:items-stretch",
@@ -159,51 +183,44 @@ export function ConfigurableBeerPackBuilder({
         <div className="grid min-h-0 min-w-0 grid-rows-[auto_auto_minmax(0,1fr)] gap-3">
           <header className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
             <div className="min-w-0">
-            <p className="text-xs font-bold uppercase tracking-widest text-primary">Pack de porrones</p>
-            <h3 className="mt-1 text-xl font-black text-white md:text-2xl">Pack configurable x6</h3>
-            <p className="mt-1 text-sm leading-relaxed text-white/60">
-              Cada pack contiene 6 porrones. Elegi los estilos y completa cada combinacion.
-            </p>
+              <p className="text-xs font-bold uppercase tracking-widest text-primary">
+                Pack de porrones
+              </p>
+              <h3 className="mt-1 text-xl font-black text-white md:text-2xl">
+                Pack configurable x6
+              </h3>
+              <p className="mt-1 text-sm leading-relaxed text-white/60">
+                Cada pack contiene 6 porrones. Elegi los estilos y completa cada combinacion.
+              </p>
             </div>
             <div className="flex flex-col gap-2 rounded-xl border border-white/10 bg-black/25 p-2.5 sm:min-w-[260px] sm:flex-row sm:items-center sm:justify-between">
               <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-white/55">Cantidad de packs</p>
-              <p className="text-xs text-white/40">Maximo {CONFIGURABLE_BEER_PACK_MAX_PACKS} packs por configuracion.</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-white/55">
+                  Cantidad de packs
+                </p>
+                <p className="text-xs text-white/40">
+                  Maximo {CONFIGURABLE_BEER_PACK_MAX_PACKS} packs por configuracion.
+                </p>
               </div>
-              <div className="flex items-center rounded-xl bg-white/10 p-1">
-              <button
-                ref={activeButtonRef}
-                type="button"
-                aria-label="Restar cantidad de packs"
-                disabled={drafts.length <= 1}
-                onClick={() => setPackCount(drafts.length - 1)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 disabled:opacity-35"
-              >
-                <Minus className="h-4 w-4" aria-hidden="true" />
-              </button>
-              <input
-                aria-label="Cantidad de packs"
-                type="number"
+              <QuantityStepper
+                value={drafts.length}
+                onChange={setPackCount}
                 min={1}
                 max={CONFIGURABLE_BEER_PACK_MAX_PACKS}
-                value={drafts.length}
-                onChange={(event) => setPackCount(Number(event.target.value))}
-                className="h-10 w-14 rounded-lg bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary"
+                disableAtBounds
+                decreaseAriaLabel="Restar cantidad de packs"
+                increaseAriaLabel="Sumar cantidad de packs"
+                valueAriaLabel="Cantidad de packs"
+                decreaseButtonRef={activeButtonRef}
               />
-              <button
-                type="button"
-                aria-label="Sumar cantidad de packs"
-                disabled={drafts.length >= CONFIGURABLE_BEER_PACK_MAX_PACKS}
-                onClick={() => setPackCount(drafts.length + 1)}
-                className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 disabled:opacity-35"
-              >
-                <Plus className="h-4 w-4" aria-hidden="true" />
-              </button>
-              </div>
             </div>
           </header>
 
-          <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Packs configurables">
+          <div
+            className="flex gap-2 overflow-x-auto pb-1"
+            role="tablist"
+            aria-label="Packs configurables"
+          >
             {drafts.map((draft, index) => {
               const selected = index === activeIndex;
               const complete = isPackComplete(draft);
@@ -216,11 +233,17 @@ export function ConfigurableBeerPackBuilder({
                   onClick={() => setActiveIndex(index)}
                   className={cn(
                     "min-w-[112px] rounded-xl border px-3 py-2 text-left text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                    selected ? "border-primary bg-primary text-black" : "border-white/10 bg-white/5 text-white/65 hover:border-primary/50",
+                    selected
+                      ? "border-primary bg-primary text-black"
+                      : "border-white/10 bg-white/5 text-white/65 hover:border-primary/50",
                   )}
                 >
-                  <span className="block">Pack {index + 1} de {drafts.length}</span>
-                  <span className="block font-normal">{complete ? "Completo" : `${getPackSelectedCount(draft)} de 6`}</span>
+                  <span className="block">
+                    Pack {index + 1} de {drafts.length}
+                  </span>
+                  <span className="block font-normal">
+                    {complete ? "Completo" : `${getPackSelectedCount(draft)} de 6`}
+                  </span>
                 </button>
               );
             })}
@@ -237,16 +260,34 @@ export function ConfigurableBeerPackBuilder({
                         ? "Este pack supera el maximo permitido."
                         : `Faltan ${remainingCount} porrones para completar este pack.`}
                   </p>
-                  <p className="mt-1 text-xs text-white/45">Precio estimado: {formatPrice(activePrice)}</p>
+                  <p className="mt-1 text-xs text-white/45">
+                    Precio estimado: {formatPrice(activePrice)}
+                  </p>
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                  <button type="button" aria-label={`Copiar composicion del Pack ${activeIndex} al Pack ${activeIndex + 1}`} disabled={activeIndex === 0} onClick={copyPrevious} className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                  <button
+                    type="button"
+                    aria-label={`Copiar composicion del Pack ${activeIndex} al Pack ${activeIndex + 1}`}
+                    disabled={activeIndex === 0}
+                    onClick={copyPrevious}
+                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
                     <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copiar anterior
                   </button>
-                  <button type="button" aria-label={`Usar composicion del Pack ${activeIndex + 1} en todos los packs`} onClick={applyToAll} className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                  <button
+                    type="button"
+                    aria-label={`Usar composicion del Pack ${activeIndex + 1} en todos los packs`}
+                    onClick={applyToAll}
+                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
                     <Check className="h-3.5 w-3.5" aria-hidden="true" /> Usar en todos
                   </button>
-                  <button type="button" aria-label={`Vaciar composicion del Pack ${activeIndex + 1}`} onClick={clearActive} className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                  <button
+                    type="button"
+                    aria-label={`Vaciar composicion del Pack ${activeIndex + 1}`}
+                    onClick={clearActive}
+                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
                     <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Vaciar
                   </button>
                 </div>
@@ -254,31 +295,36 @@ export function ConfigurableBeerPackBuilder({
 
               <div className="grid min-h-0 gap-2 overflow-visible lg:overflow-y-auto lg:overscroll-contain lg:pr-1">
                 {products.map((product) => {
-                  const quantity = activeDraft.selections.find((selection) => selection.productId === product.productId)?.quantity ?? 0;
+                  const quantity =
+                    activeDraft.selections.find(
+                      (selection) => selection.productId === product.productId,
+                    )?.quantity ?? 0;
                   const canAdd = selectedCount < CONFIGURABLE_BEER_PACK_CAPACITY;
                   return (
-                    <div key={product.productId} className="grid grid-cols-[minmax(0,1fr)_136px] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5">
+                    <div
+                      key={product.productId}
+                      className="grid grid-cols-[minmax(0,1fr)_136px] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5"
+                    >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-white">{product.name}</p>
-                        <p className="font-mono text-xs text-primary">{formatPrice(product.price)} c/u</p>
+                        <p className="font-mono text-xs text-primary">
+                          {formatPrice(product.price)} c/u
+                        </p>
                       </div>
-                      <div className="grid grid-cols-[40px_1fr_40px] items-center rounded-xl bg-white/10 p-1">
-                        <button type="button" aria-label={`Restar ${product.name} del Pack ${activeIndex + 1}`} disabled={quantity <= 0} onClick={() => updateActiveSelection(product.productId, quantity - 1)} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                          <Minus className="h-4 w-4" aria-hidden="true" />
-                        </button>
-                        <input
-                          aria-label={`Cantidad de ${product.name} en Pack ${activeIndex + 1}`}
-                          type="number"
-                          min={0}
-                          max={CONFIGURABLE_BEER_PACK_CAPACITY}
-                          value={quantity}
-                          onChange={(event) => updateActiveSelection(product.productId, Number(event.target.value))}
-                          className="h-10 w-full rounded-lg bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary"
-                        />
-                        <button type="button" aria-label={`Sumar ${product.name} al Pack ${activeIndex + 1}`} disabled={!canAdd} onClick={() => updateActiveSelection(product.productId, quantity + 1)} className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                          <Plus className="h-4 w-4" aria-hidden="true" />
-                        </button>
-                      </div>
+                      <QuantityStepper
+                        value={quantity}
+                        onChange={(next) => updateActiveSelection(product.productId, next)}
+                        min={0}
+                        max={CONFIGURABLE_BEER_PACK_CAPACITY}
+                        disableDecrease={quantity <= 0}
+                        disableIncrease={!canAdd}
+                        decreaseAriaLabel={`Restar ${product.name} del Pack ${activeIndex + 1}`}
+                        increaseAriaLabel={`Sumar ${product.name} al Pack ${activeIndex + 1}`}
+                        valueAriaLabel={`Cantidad de ${product.name} en Pack ${activeIndex + 1}`}
+                        wrapperClassName="grid grid-cols-[40px_1fr_40px] items-center rounded-xl bg-white/10 p-1"
+                        buttonClassName="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        valueClassName="w-full"
+                      />
                     </div>
                   );
                 })}
@@ -293,10 +339,22 @@ export function ConfigurableBeerPackBuilder({
             <p className="font-mono text-lg font-black text-primary">{formatPrice(totalPrice)}</p>
           </div>
           <div className="mt-2 grid grid-cols-4 gap-1.5 text-center text-xs">
-            <p className="rounded-lg bg-black/20 p-2"><span className="block text-white/45">Packs</span><span className="font-bold text-white">{drafts.length}</span></p>
-            <p className="rounded-lg bg-black/20 p-2"><span className="block text-white/45">Porrones</span><span className="font-bold text-white">{totalBottles}</span></p>
-            <p className="rounded-lg bg-black/20 p-2"><span className="block text-white/45">Ok</span><span className="font-bold text-white">{completeCount}</span></p>
-            <p className="rounded-lg bg-black/20 p-2"><span className="block text-white/45">Faltan</span><span className="font-bold text-white">{drafts.length - completeCount}</span></p>
+            <p className="rounded-lg bg-black/20 p-2">
+              <span className="block text-white/45">Packs</span>
+              <span className="font-bold text-white">{drafts.length}</span>
+            </p>
+            <p className="rounded-lg bg-black/20 p-2">
+              <span className="block text-white/45">Porrones</span>
+              <span className="font-bold text-white">{totalBottles}</span>
+            </p>
+            <p className="rounded-lg bg-black/20 p-2">
+              <span className="block text-white/45">Ok</span>
+              <span className="font-bold text-white">{completeCount}</span>
+            </p>
+            <p className="rounded-lg bg-black/20 p-2">
+              <span className="block text-white/45">Faltan</span>
+              <span className="font-bold text-white">{drafts.length - completeCount}</span>
+            </p>
           </div>
           <div className="mt-3 min-h-0 space-y-1.5 overflow-y-auto pr-1">
             {drafts.map((draft, index) => {
@@ -305,22 +363,34 @@ export function ConfigurableBeerPackBuilder({
               const label = draft.selections.length
                 ? draft.selections
                     .map((selection) => {
-                      const product = products.find((candidate) => candidate.productId === selection.productId);
+                      const product = products.find(
+                        (candidate) => candidate.productId === selection.productId,
+                      );
                       return `${selection.quantity} ${product?.name ?? "Estilo"}`;
                     })
                     .join(", ")
                 : "Sin seleccion";
               return (
-                <div key={draft.id} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-white/10 bg-black/25 px-2 py-1.5 text-xs">
+                <div
+                  key={draft.id}
+                  className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-lg border border-white/10 bg-black/25 px-2 py-1.5 text-xs"
+                >
                   <p className="font-bold text-white">Pack {index + 1}</p>
-                  <p className={cn("truncate", complete ? "text-green-200" : "text-amber-100")}>{complete ? label : `${count}/6`}</p>
-                  <p className="font-mono text-primary">{complete ? formatPrice(calculatePackPrice(draft, products)) : `${count}/6`}</p>
+                  <p className={cn("truncate", complete ? "text-green-200" : "text-amber-100")}>
+                    {complete ? label : `${count}/6`}
+                  </p>
+                  <p className="font-mono text-primary">
+                    {complete ? formatPrice(calculatePackPrice(draft, products)) : `${count}/6`}
+                  </p>
                 </div>
               );
             })}
           </div>
           {!allComplete && (
-            <p className="mt-3 rounded-xl border border-amber-300/20 bg-black/20 p-2.5 text-xs text-amber-100" role="alert">
+            <p
+              className="mt-3 rounded-xl border border-amber-300/20 bg-black/20 p-2.5 text-xs text-amber-100"
+              role="alert"
+            >
               Completa todos los packs para agregarlos al carrito.
             </p>
           )}
@@ -336,7 +406,10 @@ export function ConfigurableBeerPackBuilder({
         </aside>
       </div>
 
-      <AlertDialog open={pendingConfirmation !== null} onOpenChange={(open) => !open && setPendingConfirmation(null)}>
+      <AlertDialog
+        open={pendingConfirmation !== null}
+        onOpenChange={(open) => !open && setPendingConfirmation(null)}
+      >
         <AlertDialogContent className="border-white/10 bg-[#15110d] text-white">
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar cambio</AlertDialogTitle>
@@ -347,8 +420,15 @@ export function ConfigurableBeerPackBuilder({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-white/10 bg-white/5 text-white hover:bg-white/10">Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPending} className="bg-primary text-black hover:bg-amber-300">Confirmar</AlertDialogAction>
+            <AlertDialogCancel className="border-white/10 bg-white/5 text-white hover:bg-white/10">
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmPending}
+              className="bg-primary text-black hover:bg-amber-300"
+            >
+              Confirmar
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -16,8 +16,6 @@ import {
   ChevronLeft,
   ShoppingCart,
   Trash2,
-  Plus,
-  Minus,
   Calendar,
   MapPin,
   User,
@@ -44,6 +42,7 @@ import {
   type Beer as CatalogBeer,
 } from "@/domain/beerCatalog";
 import { formatPrice } from "@/domain/format";
+import type { StoredCartItem } from "@/domain/cartStorage";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import {
@@ -63,6 +62,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { getDefaultWhatsAppChannelId, listOrderWhatsAppChannels } from "@/domain/checkout";
 import {
   createCommercialCartItem,
@@ -83,7 +83,6 @@ interface ArmaTuPedidoProps {
 }
 
 const PHASE_LABELS = ["Productos", "Datos", "Confirmacion"];
-const STEP_LABELS = ["Productos", "Productos", "Productos", "Datos", "Confirmacion"];
 const WHATSAPP_ACTIVATION_GUARD_MS = 1500;
 const QUICK_ORDER_CATEGORIES: ProductCategory[] = [
   "beer",
@@ -220,7 +219,7 @@ function BeerGlassStepper({ step }: { step: Step }) {
           <span className="text-2xl">{["🛢️", "🍺", "📏", "✨", "🎟️"][step - 1]}</span>
           <div>
             <p className="text-white font-bold text-sm">
-              Paso {step} de 5 — {STEP_LABELS[step - 1]}
+              Paso {phase} de 3 — {PHASE_LABELS[phase - 1]}
             </p>
           </div>
         </div>
@@ -512,6 +511,72 @@ function PresentationSelector({
   );
 }
 
+function BeerPresentationLineCard({
+  beer,
+  presentationId,
+  showDescription,
+  items,
+  getDraftQuantity,
+  setDraftQuantity,
+  updateQty,
+  onAdd,
+}: {
+  beer: CatalogBeer;
+  presentationId: string;
+  showDescription: boolean;
+  items: StoredCartItem[];
+  getDraftQuantity: (id: string) => number;
+  setDraftQuantity: (id: string, qty: number) => void;
+  updateQty: (id: string, qty: number) => void;
+  onAdd: (cartDraft: Omit<StoredCartItem, "qty">, qty: number) => void;
+}) {
+  const size = getBeerPresentation(beer, presentationId);
+  if (!size) return null;
+  const cartDraft = createBeerCartItem(beer, presentationId);
+  const itemId = cartDraft.id;
+  const cartItem = items.find((item) => item.id === itemId);
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className={showDescription ? "flex-1" : undefined}>
+        <h4 className="text-lg font-bold text-white">{size.label}</h4>
+        {showDescription && <p className="text-xs text-muted-foreground">{size.description}</p>}
+        <p className="text-primary font-mono font-bold mt-1">{formatPrice(size.price)}</p>
+      </div>
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+        {cartItem ? (
+          <QuantityStepper
+            size="sm"
+            editable={false}
+            value={cartItem.qty}
+            onChange={(next) => updateQty(itemId, next)}
+            decreaseAriaLabel={`Restar una unidad de ${cartDraft.name}`}
+            increaseAriaLabel={`Sumar una unidad de ${cartDraft.name}`}
+            valueAriaLabel={`Cantidad actual ${cartItem.qty}`}
+            valueClassName="w-9"
+          />
+        ) : (
+          <QuantityStepper
+            size="sm"
+            value={getDraftQuantity(itemId)}
+            onChange={(next) => setDraftQuantity(itemId, next)}
+            decreaseAriaLabel={`Restar cantidad a agregar de ${cartDraft.name}`}
+            increaseAriaLabel={`Sumar cantidad a agregar de ${cartDraft.name}`}
+            valueAriaLabel={`Cantidad de ${cartDraft.name}`}
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => onAdd(cartDraft, cartItem ? 1 : getDraftQuantity(itemId))}
+          className="px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
+        >
+          Agregar al pedido
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function LiveOrderSummary({
   onClose,
   asDrawer = false,
@@ -555,7 +620,8 @@ function LiveOrderSummary({
 
       <div
         className={cn(
-          "min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1",
+          "min-h-0 flex-1 overscroll-contain pr-1",
+          asDrawer ? "overflow-y-auto" : "overflow-visible",
           items.length > 0 ? "space-y-2" : "",
         )}
       >
@@ -608,33 +674,15 @@ function LiveOrderSummary({
                         ))}
                       </div>
                     )}
-                    <div className="mt-1 flex items-center gap-1.5">
-                      <button
-                        type="button"
-                        aria-label={`Restar una unidad de ${item.name}`}
-                        onClick={() => updateQty(item.id, item.qty - 1)}
-                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-primary hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      >
-                        <Minus className="w-3 h-3" aria-hidden="true" />
-                      </button>
-                      <input
-                        aria-label={`Cantidad de ${item.name}`}
-                        type="number"
-                        min={1}
-                        max={999}
-                        step={1}
+                    <div className="mt-1">
+                      <QuantityStepper
+                        size="cart"
                         value={item.qty}
-                        onChange={(event) => updateQty(item.id, Number(event.target.value))}
-                        className="h-10 w-11 rounded-lg bg-transparent text-center text-sm font-bold text-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                        onChange={(next) => updateQty(item.id, next)}
+                        decreaseAriaLabel={`Restar una unidad de ${item.name}`}
+                        increaseAriaLabel={`Sumar una unidad de ${item.name}`}
+                        valueAriaLabel={`Cantidad de ${item.name}`}
                       />
-                      <button
-                        type="button"
-                        aria-label={`Sumar una unidad de ${item.name}`}
-                        onClick={() => updateQty(item.id, item.qty + 1)}
-                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 transition-colors hover:bg-primary hover:text-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                      >
-                        <Plus className="w-3 h-3" aria-hidden="true" />
-                      </button>
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-2">
@@ -1281,7 +1329,7 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
         tabIndex={-1}
         style={wizardViewportStyle}
         className={cn(
-          "relative z-10 mx-auto flex min-h-[min(760px,calc(100dvh-var(--site-sticky-offset)-1rem-var(--wizard-action-bottom-inset)))] flex-col px-4 focus:outline-none sm:px-6 lg:grid lg:h-[var(--wizard-viewport-height)] lg:min-h-[min(620px,var(--wizard-viewport-height))] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:px-8",
+          "relative z-10 mx-auto flex min-h-[min(760px,calc(100dvh-var(--site-sticky-offset)-1rem-var(--wizard-action-bottom-inset)))] flex-col px-4 focus:outline-none sm:px-6 lg:grid lg:min-h-[min(620px,var(--wizard-viewport-height))] lg:grid-rows-[auto_auto_auto] lg:px-8",
           isConfigurablePackStep ? "max-w-7xl" : "max-w-6xl",
         )}
       >
@@ -1381,12 +1429,12 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
             <div
               data-section-secondary
               className={cn(
-                "min-h-0 flex-1 overflow-hidden pb-[calc(6rem+max(0.75rem,env(safe-area-inset-bottom)))] lg:grid lg:gap-5 lg:pb-[calc(5.5rem+max(0.75rem,env(safe-area-inset-bottom)))]",
+                "min-h-0 flex-1 overflow-x-hidden pb-[calc(6rem+max(0.75rem,env(safe-area-inset-bottom)))] lg:grid lg:gap-5 lg:pb-[calc(5.5rem+max(0.75rem,env(safe-area-inset-bottom)))]",
                 isConfigurablePackStep ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_320px]",
               )}
             >
               {/* Wizard */}
-              <div className="relative min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0 lg:pr-1">
+              <div className="relative min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0 lg:overflow-visible lg:pr-1">
                 <AnimatePresence mode="wait" custom={direction}>
                   {/* STEP 1: TIPO */}
                   {step === 1 && (
@@ -1692,46 +1740,13 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
                                   </p>
                                 </div>
                                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-                                  <div className="flex items-center bg-white/10 rounded-xl p-1">
-                                    <button
-                                      type="button"
-                                      aria-label="Restar cantidad de Pack Degustación"
-                                      onClick={() =>
-                                        setDraftQuantity(
-                                          tastingPack.id,
-                                          getDraftQuantity(tastingPack.id) - 1,
-                                        )
-                                      }
-                                      className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                    >
-                                      <Minus className="w-4 h-4 text-white" aria-hidden="true" />
-                                    </button>
-                                    <input
-                                      aria-label="Cantidad de Pack Degustación"
-                                      type="number"
-                                      min={1}
-                                      max={999}
-                                      step={1}
-                                      value={getDraftQuantity(tastingPack.id)}
-                                      onChange={(event) =>
-                                        setDraftQuantity(tastingPack.id, Number(event.target.value))
-                                      }
-                                      className="w-14 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
-                                    />
-                                    <button
-                                      type="button"
-                                      aria-label="Sumar cantidad de Pack Degustación"
-                                      onClick={() =>
-                                        setDraftQuantity(
-                                          tastingPack.id,
-                                          getDraftQuantity(tastingPack.id) + 1,
-                                        )
-                                      }
-                                      className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                    >
-                                      <Plus className="w-4 h-4 text-white" aria-hidden="true" />
-                                    </button>
-                                  </div>
+                                  <QuantityStepper
+                                    value={getDraftQuantity(tastingPack.id)}
+                                    onChange={(next) => setDraftQuantity(tastingPack.id, next)}
+                                    decreaseAriaLabel="Restar cantidad de Pack Degustación"
+                                    increaseAriaLabel="Sumar cantidad de Pack Degustación"
+                                    valueAriaLabel="Cantidad de Pack Degustación"
+                                  />
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -1748,227 +1763,36 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
                               </div>
                             )}
                             {orderType === "barril" &&
-                              barrelPresentationIds.map((presentationId) => {
-                                if (!selectedBeer) return null;
-                                const size = getBeerPresentation(selectedBeer, presentationId);
-                                if (!size) return null;
-                                const cartDraft = createBeerCartItem(selectedBeer, presentationId);
-                                const itemId = cartDraft.id;
-                                const cartItem = items.find((i) => i.id === itemId);
-                                return (
-                                  <div
-                                    key={size.id}
-                                    className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-                                  >
-                                    <div className="flex-1">
-                                      <h4 className="text-lg font-bold text-white">{size.label}</h4>
-                                      <p className="text-xs text-muted-foreground">
-                                        {size.description}
-                                      </p>
-                                      <p className="text-primary font-mono font-bold mt-1">
-                                        {formatPrice(size.price)}
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
-                                      {cartItem ? (
-                                        <div className="flex items-center bg-white/10 rounded-xl p-1">
-                                          <button
-                                            type="button"
-                                            aria-label={`Restar una unidad de ${cartDraft.name}`}
-                                            onClick={() => updateQty(itemId, cartItem.qty - 1)}
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Minus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                          <span
-                                            className="w-9 text-center font-bold text-white"
-                                            aria-label={`Cantidad actual ${cartItem.qty}`}
-                                          >
-                                            {cartItem.qty}
-                                          </span>
-                                          <button
-                                            type="button"
-                                            aria-label={`Sumar una unidad de ${cartDraft.name}`}
-                                            onClick={() => updateQty(itemId, cartItem.qty + 1)}
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Plus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div className="flex items-center bg-white/10 rounded-xl p-1">
-                                          <button
-                                            type="button"
-                                            aria-label={`Restar cantidad a agregar de ${cartDraft.name}`}
-                                            onClick={() =>
-                                              setDraftQuantity(itemId, getDraftQuantity(itemId) - 1)
-                                            }
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Minus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                          <input
-                                            aria-label={`Cantidad de ${cartDraft.name}`}
-                                            type="number"
-                                            min={1}
-                                            max={999}
-                                            step={1}
-                                            value={getDraftQuantity(itemId)}
-                                            onChange={(event) =>
-                                              setDraftQuantity(itemId, Number(event.target.value))
-                                            }
-                                            className="w-12 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
-                                          />
-                                          <button
-                                            type="button"
-                                            aria-label={`Sumar cantidad a agregar de ${cartDraft.name}`}
-                                            onClick={() =>
-                                              setDraftQuantity(itemId, getDraftQuantity(itemId) + 1)
-                                            }
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Plus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                        </div>
-                                      )}
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          addDraftToOrder(
-                                            cartDraft,
-                                            cartItem ? 1 : getDraftQuantity(itemId),
-                                          )
-                                        }
-                                        className="px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
-                                      >
-                                        Agregar al pedido
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                              selectedBeer &&
+                              barrelPresentationIds.map((presentationId) => (
+                                <BeerPresentationLineCard
+                                  key={presentationId}
+                                  beer={selectedBeer}
+                                  presentationId={presentationId}
+                                  showDescription
+                                  items={items}
+                                  getDraftQuantity={getDraftQuantity}
+                                  setDraftQuantity={setDraftQuantity}
+                                  updateQty={updateQty}
+                                  onAdd={addDraftToOrder}
+                                />
+                              ))}
 
                             {orderType === "growler" &&
-                              growlerPresentationIds.map((presentationId) => {
-                                if (!selectedBeer) return null;
-                                const size = getBeerPresentation(selectedBeer, presentationId);
-                                if (!size) return null;
-                                const cartDraft = createBeerCartItem(selectedBeer, presentationId);
-                                const itemId = cartDraft.id;
-                                const cartItem = items.find((i) => i.id === itemId);
-                                return (
-                                  <div
-                                    key={size.id}
-                                    className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
-                                  >
-                                    <div>
-                                      <h4 className="text-lg font-bold text-white">{size.label}</h4>
-                                      <p className="text-primary font-mono font-bold mt-1">
-                                        {formatPrice(size.price)}
-                                      </p>
-                                    </div>
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
-                                      {cartItem ? (
-                                        <div className="flex items-center bg-white/10 rounded-xl p-1">
-                                          <button
-                                            type="button"
-                                            aria-label={`Restar una unidad de ${cartDraft.name}`}
-                                            onClick={() => updateQty(itemId, cartItem.qty - 1)}
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Minus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                          <span
-                                            className="w-9 text-center font-bold text-white"
-                                            aria-label={`Cantidad actual ${cartItem.qty}`}
-                                          >
-                                            {cartItem.qty}
-                                          </span>
-                                          <button
-                                            type="button"
-                                            aria-label={`Sumar una unidad de ${cartDraft.name}`}
-                                            onClick={() => updateQty(itemId, cartItem.qty + 1)}
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Plus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <div className="flex items-center bg-white/10 rounded-xl p-1">
-                                          <button
-                                            type="button"
-                                            aria-label={`Restar cantidad a agregar de ${cartDraft.name}`}
-                                            onClick={() =>
-                                              setDraftQuantity(itemId, getDraftQuantity(itemId) - 1)
-                                            }
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Minus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                          <input
-                                            aria-label={`Cantidad de ${cartDraft.name}`}
-                                            type="number"
-                                            min={1}
-                                            max={999}
-                                            step={1}
-                                            value={getDraftQuantity(itemId)}
-                                            onChange={(event) =>
-                                              setDraftQuantity(itemId, Number(event.target.value))
-                                            }
-                                            className="w-12 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
-                                          />
-                                          <button
-                                            type="button"
-                                            aria-label={`Sumar cantidad a agregar de ${cartDraft.name}`}
-                                            onClick={() =>
-                                              setDraftQuantity(itemId, getDraftQuantity(itemId) + 1)
-                                            }
-                                            className="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                          >
-                                            <Plus
-                                              className="w-4 h-4 text-white"
-                                              aria-hidden="true"
-                                            />
-                                          </button>
-                                        </div>
-                                      )}
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          addDraftToOrder(
-                                            cartDraft,
-                                            cartItem ? 1 : getDraftQuantity(itemId),
-                                          )
-                                        }
-                                        className="px-5 py-2.5 bg-primary text-black font-bold rounded-xl hover:bg-amber-400 transition-colors"
-                                      >
-                                        Agregar al pedido
-                                      </button>
-                                    </div>
-                                  </div>
-                                );
-                              })}
+                              selectedBeer &&
+                              growlerPresentationIds.map((presentationId) => (
+                                <BeerPresentationLineCard
+                                  key={presentationId}
+                                  beer={selectedBeer}
+                                  presentationId={presentationId}
+                                  showDescription={false}
+                                  items={items}
+                                  getDraftQuantity={getDraftQuantity}
+                                  setDraftQuantity={setDraftQuantity}
+                                  updateQty={updateQty}
+                                  onAdd={addDraftToOrder}
+                                />
+                              ))}
 
                             {orderType === "porrón" && (
                               <ConfigurableBeerPackBuilder
@@ -2029,8 +1853,12 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
                                 type="button"
                                 onClick={() => {
                                   setDirection(-1);
-                                  setStep(1);
-                                  setOrderType(null);
+                                  if (orderType === "barril" || orderType === "growler") {
+                                    setStep(2);
+                                  } else {
+                                    setStep(1);
+                                    setOrderType(null);
+                                  }
                                   setSelectedBeer(null);
                                   setLastAddedMessage("");
                                 }}
@@ -2080,36 +1908,13 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
                               </p>
                             </div>
                             <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
-                              <div className="flex items-center bg-white/10 rounded-xl p-1">
-                                <button
-                                  type="button"
-                                  aria-label={`Restar cantidad a agregar de ${genericCartDraft.name}`}
-                                  onClick={() => setNormalizedGenericQuantity(genericQuantity - 1)}
-                                  className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                >
-                                  <Minus className="w-4 h-4 text-white" aria-hidden="true" />
-                                </button>
-                                <input
-                                  aria-label={`Cantidad de ${genericCartDraft.name}`}
-                                  type="number"
-                                  min={1}
-                                  max={999}
-                                  step={1}
-                                  value={genericQuantity}
-                                  onChange={(event) =>
-                                    setNormalizedGenericQuantity(Number(event.target.value))
-                                  }
-                                  className="w-14 bg-transparent text-center font-bold text-white focus:outline-none focus:ring-1 focus:ring-primary rounded-lg"
-                                />
-                                <button
-                                  type="button"
-                                  aria-label={`Sumar cantidad a agregar de ${genericCartDraft.name}`}
-                                  onClick={() => setNormalizedGenericQuantity(genericQuantity + 1)}
-                                  className="w-10 h-10 flex items-center justify-center hover:bg-white/10 rounded-lg"
-                                >
-                                  <Plus className="w-4 h-4 text-white" aria-hidden="true" />
-                                </button>
-                              </div>
+                              <QuantityStepper
+                                value={genericQuantity}
+                                onChange={setNormalizedGenericQuantity}
+                                decreaseAriaLabel={`Restar cantidad a agregar de ${genericCartDraft.name}`}
+                                increaseAriaLabel={`Sumar cantidad a agregar de ${genericCartDraft.name}`}
+                                valueAriaLabel={`Cantidad de ${genericCartDraft.name}`}
+                              />
                               <button
                                 type="button"
                                 onClick={addGenericDraftToOrder}
