@@ -7,15 +7,20 @@ import {
   type Beer,
   type BeerPresentationId,
 } from "./beerCatalog";
+import type { BeverageMixItemEstimate } from "./beverageMix";
 import type { StoredCartItem } from "./cartStorage";
+import { commercialSnapshot } from "./commercialData";
 import {
   buildRecommendedBarrelItems,
+  buildRecommendedBeverageMixItems,
   hasCurrentSelectionInCart,
   hasTastingPack,
   preparePendingBarrelRecommendation,
 } from "./orderFlow";
 
-function planFromParts(parts: { presentationId: BeerPresentationId; size: number; count: number; price: number }[]): BarrelRecommendation {
+function planFromParts(
+  parts: { presentationId: BeerPresentationId; size: number; count: number; price: number }[],
+): BarrelRecommendation {
   const coveredLiters = parts.reduce((sum, part) => sum + part.size * part.count, 0);
   return {
     requiredLiters: coveredLiters,
@@ -49,9 +54,7 @@ describe("orderFlow", () => {
 
   it("builds one 30L cart item with quantity 2 for a 2x30 plan", () => {
     const ipa = beerCatalog[2];
-    const plan = planFromParts([
-      { presentationId: "barril30L", size: 30, count: 2, price: 54000 },
-    ]);
+    const plan = planFromParts([{ presentationId: "barril30L", size: 30, count: 2, price: 54000 }]);
 
     expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
       {
@@ -92,9 +95,7 @@ describe("orderFlow", () => {
 
   it("uses the real price for the selected beer style", () => {
     const ipa = beerCatalog[2];
-    const plan = planFromParts([
-      { presentationId: "barril30L", size: 30, count: 1, price: 54000 },
-    ]);
+    const plan = planFromParts([{ presentationId: "barril30L", size: 30, count: 1, price: 54000 }]);
 
     expect(buildRecommendedBarrelItems(ipa, plan)[0].price).toBe(ipa.precios.barril30L);
   });
@@ -105,7 +106,11 @@ describe("orderFlow", () => {
 
     expect(plan.estimatedPrice).toBe(108000);
     expect(buildRecommendedBarrelItems(ipa, plan)).toMatchObject([
-      expect.objectContaining({ id: "category=beer|product=ipa|presentation=ipa:barril30L|variant=IPA", price: 66000, qty: 2 }),
+      expect.objectContaining({
+        id: "category=beer|product=ipa|presentation=ipa:barril30L|variant=IPA",
+        price: 66000,
+        qty: 2,
+      }),
     ]);
   });
 
@@ -130,11 +135,15 @@ describe("orderFlow", () => {
   });
 
   it("keeps navigation/preparation separate from explicit application", () => {
-    const existingItems: StoredCartItem[] = [{ ...createBeerCartItem(beerCatalog[0], "porron500ml"), qty: 6 }];
+    const existingItems: StoredCartItem[] = [
+      { ...createBeerCartItem(beerCatalog[0], "porron500ml"), qty: 6 },
+    ];
     const pending = preparePendingBarrelRecommendation(calculateBarrelRecommendation(90));
 
     expect(pending.parts).toHaveLength(2);
-    expect(existingItems).toMatchObject([{ ...createBeerCartItem(beerCatalog[0], "porron500ml"), qty: 6 }]);
+    expect(existingItems).toMatchObject([
+      { ...createBeerCartItem(beerCatalog[0], "porron500ml"), qty: 6 },
+    ]);
   });
 
   it("generates the exact items for explicit recommendation application", () => {
@@ -142,19 +151,27 @@ describe("orderFlow", () => {
     const plan = calculateBarrelRecommendation(90);
 
     expect(buildRecommendedBarrelItems(blonde, plan)).toMatchObject([
-      expect.objectContaining({ id: "category=beer|product=blonde-ale|presentation=blonde-ale:barril50L|variant=Blonde Ale", price: 85000, qty: 1 }),
-      expect.objectContaining({ id: "category=beer|product=blonde-ale|presentation=blonde-ale:barril20L|variant=Blonde Ale", price: 38000, qty: 2 }),
+      expect.objectContaining({
+        id: "category=beer|product=blonde-ale|presentation=blonde-ale:barril50L|variant=Blonde Ale",
+        price: 85000,
+        qty: 1,
+      }),
+      expect.objectContaining({
+        id: "category=beer|product=blonde-ale|presentation=blonde-ale:barril20L|variant=Blonde Ale",
+        price: 38000,
+        qty: 2,
+      }),
     ]);
   });
 
   it("throws a clear error when the selected beer lacks a required barrel presentation", () => {
     const beerWithout30L: Beer = {
       ...beerCatalog[0],
-      presentations: beerCatalog[0].presentations.filter((presentation) => presentation.id !== "barril30L"),
+      presentations: beerCatalog[0].presentations.filter(
+        (presentation) => presentation.id !== "barril30L",
+      ),
     };
-    const plan = planFromParts([
-      { presentationId: "barril30L", size: 30, count: 1, price: 54000 },
-    ]);
+    const plan = planFromParts([{ presentationId: "barril30L", size: 30, count: 1, price: 54000 }]);
 
     expect(() => buildRecommendedBarrelItems(beerWithout30L, plan)).toThrow(
       "Beer blonde-ale does not have required barrel presentation barril30L",
@@ -171,5 +188,36 @@ describe("orderFlow", () => {
 
     expect(JSON.stringify(ipa)).toBe(beerBefore);
     expect(JSON.stringify(plan)).toBe(planBefore);
+  });
+});
+
+describe("buildRecommendedBeverageMixItems", () => {
+  it("ignores the beer entry and zero-percentage entries, and sizes qty from the real bottle volume", () => {
+    const mixResult: BeverageMixItemEstimate[] = [
+      { type: "beer", percentage: 60, liters: 50, approxBottles: null },
+      { type: "fernet", percentage: 40, liters: 12, approxBottles: 16 },
+      { type: "whisky", percentage: 0, liters: 0, approxBottles: 0 },
+    ];
+
+    const { items, skipped } = buildRecommendedBeverageMixItems(mixResult, commercialSnapshot);
+
+    expect(skipped).toEqual([]);
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ productCategory: "fernet", qty: 16 });
+  });
+
+  it("skips a beverage type with no active product in the catalog instead of throwing", () => {
+    const snapshotWithoutTequila = {
+      ...commercialSnapshot,
+      products: commercialSnapshot.products.filter((product) => product.category !== "tequila"),
+    };
+    const mixResult: BeverageMixItemEstimate[] = [
+      { type: "tequila", percentage: 30, liters: 8, approxBottles: 12 },
+    ];
+
+    const { items, skipped } = buildRecommendedBeverageMixItems(mixResult, snapshotWithoutTequila);
+
+    expect(items).toEqual([]);
+    expect(skipped).toEqual(["tequila"]);
   });
 });

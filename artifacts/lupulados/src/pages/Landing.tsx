@@ -10,15 +10,28 @@ import { CartFloating } from "@/components/CartFloating";
 import { RouteFallback } from "@/components/RouteFallback";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
+import type { BeverageMixItemEstimate } from "@/domain/beverageMix";
 import { getSectionIdFromHash, scrollToSection } from "@/lib/sectionNavigation";
 
-const Calculadora = lazy(() => import("@/components/Calculadora").then((module) => ({ default: module.Calculadora })));
-const ArmaTuPedido = lazy(() => import("@/components/ArmaTuPedido").then((module) => ({ default: module.ArmaTuPedido })));
-const ComoFunciona = lazy(() => import("@/components/ComoFunciona").then((module) => ({ default: module.ComoFunciona })));
-const Eventos = lazy(() => import("@/components/Eventos").then((module) => ({ default: module.Eventos })));
-const Testimonios = lazy(() => import("@/components/Testimonios").then((module) => ({ default: module.Testimonios })));
+const Calculadora = lazy(() =>
+  import("@/components/Calculadora").then((module) => ({ default: module.Calculadora })),
+);
+const ArmaTuPedido = lazy(() =>
+  import("@/components/ArmaTuPedido").then((module) => ({ default: module.ArmaTuPedido })),
+);
+const ComoFunciona = lazy(() =>
+  import("@/components/ComoFunciona").then((module) => ({ default: module.ComoFunciona })),
+);
+const Eventos = lazy(() =>
+  import("@/components/Eventos").then((module) => ({ default: module.Eventos })),
+);
+const Testimonios = lazy(() =>
+  import("@/components/Testimonios").then((module) => ({ default: module.Testimonios })),
+);
 const FAQ = lazy(() => import("@/components/FAQ").then((module) => ({ default: module.FAQ })));
-const Ubicacion = lazy(() => import("@/components/Ubicacion").then((module) => ({ default: module.Ubicacion })));
+const Ubicacion = lazy(() =>
+  import("@/components/Ubicacion").then((module) => ({ default: module.Ubicacion })),
+);
 
 function isPromoBannerClosed(storageKey: string) {
   try {
@@ -44,8 +57,12 @@ export default function Landing() {
   const [showBanner, setShowBanner] = useState(() => {
     return !isPromoBannerClosed(promotionConfig.bannerClosedStorageKey);
   });
-  const [pendingRecommendation, setPendingRecommendation] =
-    useState<BarrelRecommendation | null>(null);
+  const [pendingRecommendation, setPendingRecommendation] = useState<BarrelRecommendation | null>(
+    null,
+  );
+  const [pendingBeverageMix, setPendingBeverageMix] = useState<BeverageMixItemEstimate[] | null>(
+    null,
+  );
 
   const closeBanner = () => {
     setShowBanner(false);
@@ -74,11 +91,15 @@ export default function Landing() {
     };
   }, [promoBannerElement]);
 
-  const useRecommendation = (recommendation: BarrelRecommendation) => {
+  const useRecommendation = (
+    recommendation: BarrelRecommendation,
+    mixResult: BeverageMixItemEstimate[],
+  ) => {
     setPendingRecommendation({
       ...recommendation,
       parts: recommendation.parts.map((part) => ({ ...part })),
     });
+    setPendingBeverageMix(mixResult.map((item) => ({ ...item })));
     scrollToSection("arma-tu-pedido", { updateHash: true });
   };
 
@@ -121,7 +142,15 @@ export default function Landing() {
         <Hero />
         <Services />
         <Cervezas />
-        <Suspense fallback={<RouteFallback id="calculadora" label="Cargando calculadora..." minHeightClassName="min-h-[420px]" />}>
+        <Suspense
+          fallback={
+            <RouteFallback
+              id="calculadora"
+              label="Cargando calculadora..."
+              minHeightClassName="min-h-[420px]"
+            />
+          }
+        >
           <Calculadora onUseRecommendation={useRecommendation} />
         </Suspense>
         <Suspense
@@ -136,22 +165,59 @@ export default function Landing() {
         >
           <ArmaTuPedido
             pendingRecommendation={pendingRecommendation}
+            pendingBeverageMix={pendingBeverageMix}
             sectionRef={orderSectionRef}
           />
         </Suspense>
-        <Suspense fallback={<RouteFallback id="eventos" label="Cargando eventos..." minHeightClassName="min-h-[560px]" />}>
+        <Suspense
+          fallback={
+            <RouteFallback
+              id="eventos"
+              label="Cargando eventos..."
+              minHeightClassName="min-h-[560px]"
+            />
+          }
+        >
           <Eventos />
         </Suspense>
-        <Suspense fallback={<RouteFallback id="como-funciona" label="Cargando contenido..." minHeightClassName="min-h-[360px]" />}>
+        <Suspense
+          fallback={
+            <RouteFallback
+              id="como-funciona"
+              label="Cargando contenido..."
+              minHeightClassName="min-h-[360px]"
+            />
+          }
+        >
           <ComoFunciona />
         </Suspense>
-        <Suspense fallback={<RouteFallback label="Cargando testimonios..." minHeightClassName="min-h-[320px]" />}>
+        <Suspense
+          fallback={
+            <RouteFallback label="Cargando testimonios..." minHeightClassName="min-h-[320px]" />
+          }
+        >
           <Testimonios />
         </Suspense>
-        <Suspense fallback={<RouteFallback id="faq" label="Cargando preguntas frecuentes..." minHeightClassName="min-h-[360px]" />}>
+        <Suspense
+          fallback={
+            <RouteFallback
+              id="faq"
+              label="Cargando preguntas frecuentes..."
+              minHeightClassName="min-h-[360px]"
+            />
+          }
+        >
           <FAQ />
         </Suspense>
-        <Suspense fallback={<RouteFallback id="ubicacion" label="Cargando ubicacion..." minHeightClassName="min-h-[520px]" />}>
+        <Suspense
+          fallback={
+            <RouteFallback
+              id="ubicacion"
+              label="Cargando ubicacion..."
+              minHeightClassName="min-h-[520px]"
+            />
+          }
+        >
           <Ubicacion />
         </Suspense>
       </main>

@@ -6,7 +6,7 @@ import { ResultPanel } from "@/components/calculadora/ResultPanel";
 import { SummerToggle } from "@/components/calculadora/SummerToggle";
 import { NumericStepperField } from "@/components/ui/numeric-stepper-field";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
-import { BEVERAGE_LABELS } from "@/domain/beverageMix";
+import { BEVERAGE_LABELS, type BeverageMixItemEstimate } from "@/domain/beverageMix";
 import { EVENT_TYPES, NON_BEER_TYPES } from "@/domain/calculadoraConstants";
 import {
   LITERS_PER_PERSON_MAX,
@@ -16,7 +16,10 @@ import {
 import { cn } from "@/lib/utils";
 
 interface CalculadoraProps {
-  onUseRecommendation: (recommendation: BarrelRecommendation) => void;
+  onUseRecommendation: (
+    recommendation: BarrelRecommendation,
+    mixResult: BeverageMixItemEstimate[],
+  ) => void;
 }
 
 // Shared − / input / + classes for the men/women/hours/minutes steppers (flex-1 width).
@@ -412,7 +415,6 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
               selectedBeer={derived.selectedBeer}
               priceDisclaimer={priceDisclaimer}
               mixResult={state.mixResult}
-              beerSharePercentage={derived.beerSharePercentage}
               onUseRecommendation={onUseRecommendation}
             />
           </div>

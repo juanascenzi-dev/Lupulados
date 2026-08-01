@@ -45,11 +45,13 @@ import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whats
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import {
   buildRecommendedBarrelItems,
+  buildRecommendedBeverageMixItems,
   hasCurrentSelectionInCart,
   type OrderType,
 } from "@/domain/orderFlow";
 import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
+import { BEVERAGE_LABELS, type BeverageMixItemEstimate } from "@/domain/beverageMix";
 import { getGuardedActivationState } from "@/domain/activationGuard";
 import { WhatsAppChannelSelector } from "@/components/commercial/WhatsAppChannelSelector";
 import { ConfigurableBeerPackBuilder } from "@/components/ConfigurableBeerPackBuilder";
@@ -85,6 +87,7 @@ import { PresentationSelector } from "@/components/order-wizard/PresentationSele
 
 interface ArmaTuPedidoProps {
   pendingRecommendation: BarrelRecommendation | null;
+  pendingBeverageMix: BeverageMixItemEstimate[] | null;
   sectionRef: RefObject<HTMLElement | null>;
 }
 
@@ -251,7 +254,11 @@ function LiveOrderSummary({
   );
 }
 
-export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedidoProps) {
+export function ArmaTuPedido({
+  pendingRecommendation,
+  pendingBeverageMix,
+  sectionRef,
+}: ArmaTuPedidoProps) {
   const { items, addItem, updateQty, totalItems, totalPrice, orderSummary, extras, setExtras } =
     useCart();
   const {
@@ -337,12 +344,15 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
       const recommendedBeer = BEERS.find((beer) => beer.id === pendingRecommendation.beerId);
       if (recommendedBeer) setSelectedBeer(recommendedBeer);
     }
-    setStep(2);
+    // Si la recomendación no incluye cerveza (mezcla 100% espirituosas), no tiene sentido
+    // forzar al usuario a elegir una cerveza para poder avanzar: se salta directo al paso
+    // donde está el botón de aplicar la recomendación.
+    setStep(pendingRecommendation.parts.length > 0 ? 2 : 3);
     setDirection(1);
     setRecommendationStatus("idle");
     setRecommendationError("");
     appliedRecommendationKeyRef.current = "";
-  }, [pendingRecommendation]);
+  }, [pendingRecommendation, pendingBeverageMix]);
 
   useEffect(() => {
     if (visibleCategories.length === 0) {
@@ -535,29 +545,62 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
   };
 
   const applyPendingRecommendation = () => {
-    if (!pendingRecommendation || !selectedBeer) return;
+    if (!pendingRecommendation) return;
+    const hasBeerPart = pendingRecommendation.parts.length > 0;
+    if (hasBeerPart && !selectedBeer) return;
 
     const recommendationKey = [
-      selectedBeer.id,
+      selectedBeer?.id ?? "",
       pendingRecommendation.requiredLiters,
       pendingRecommendation.coveredLiters,
       pendingRecommendation.label,
       ...pendingRecommendation.parts.map((part) => `${part.presentationId}:${part.count}`),
+      ...(pendingBeverageMix ?? []).map((item) => `${item.type}:${item.percentage}:${item.liters}`),
     ].join("|");
     if (appliedRecommendationKeyRef.current === recommendationKey) return;
 
     try {
       appliedRecommendationKeyRef.current = recommendationKey;
-      const recommendedItems = buildRecommendedBarrelItems(selectedBeer, pendingRecommendation);
-      recommendedItems.forEach((item) => {
-        const { qty, ...cartDraft } = item;
-        for (let index = 0; index < qty; index += 1) {
-          addItem(cartDraft);
+      const addedGroups: string[] = [];
+
+      if (hasBeerPart && selectedBeer) {
+        const recommendedItems = buildRecommendedBarrelItems(selectedBeer, pendingRecommendation);
+        recommendedItems.forEach((item) => {
+          const { qty, ...cartDraft } = item;
+          for (let index = 0; index < qty; index += 1) {
+            addItem(cartDraft);
+          }
+        });
+        addedGroups.push("cerveza");
+      }
+
+      if (pendingBeverageMix) {
+        const { items: mixItems, skipped } = buildRecommendedBeverageMixItems(
+          pendingBeverageMix,
+          snapshot,
+        );
+        mixItems.forEach((item) => {
+          const { qty, ...cartDraft } = item;
+          addItem(cartDraft, qty);
+        });
+        if (mixItems.length > 0) addedGroups.push("espirituosas");
+        if (skipped.length > 0) {
+          setRecommendationError(
+            `No se pudo agregar: ${skipped.map((type) => BEVERAGE_LABELS[type]).join(", ")} (sin productos disponibles en el catálogo).`,
+          );
+        } else {
+          setRecommendationError("");
         }
-      });
+      } else {
+        setRecommendationError("");
+      }
+
       setRecommendationStatus("added");
-      setLastAddedMessage("Recomendación agregada al pedido.");
-      setRecommendationError("");
+      setLastAddedMessage(
+        addedGroups.length > 0
+          ? `Recomendación agregada al pedido (${addedGroups.join(" + ")}).`
+          : "Recomendación agregada al pedido.",
+      );
     } catch (error) {
       appliedRecommendationKeyRef.current = "";
       setRecommendationStatus("error");
@@ -1317,46 +1360,50 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
                             )}
                           </div>
 
-                          {pendingRecommendation && selectedBeer && orderType === "barril" && (
-                            <div className="mt-5 rounded-2xl border border-primary/20 bg-black/30 p-4">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div>
-                                  <p className="text-white font-bold">
-                                    Aplicar recomendación a {selectedBeer.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Podés ajustar cantidades o sumar otros estilos después.
-                                  </p>
+                          {pendingRecommendation &&
+                            orderType === "barril" &&
+                            (selectedBeer || pendingRecommendation.parts.length === 0) && (
+                              <div className="mt-5 rounded-2xl border border-primary/20 bg-black/30 p-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                  <div>
+                                    <p className="text-white font-bold">
+                                      {selectedBeer
+                                        ? `Aplicar recomendación a ${selectedBeer.name}`
+                                        : "Aplicar recomendación de bebidas"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Podés ajustar cantidades o sumar otros estilos después.
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={applyPendingRecommendation}
+                                    disabled={recommendationStatus === "added"}
+                                    className={cn(
+                                      "shrink-0 px-5 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
+                                      recommendationStatus === "added"
+                                        ? "bg-green-500/20 text-green-300 border border-green-500/30 cursor-default"
+                                        : "bg-primary text-black hover:bg-amber-400",
+                                    )}
+                                  >
+                                    {recommendationStatus === "added" ? (
+                                      <>
+                                        <Check className="w-4 h-4" /> Agregada al pedido
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ShoppingCart className="w-4 h-4" /> Agregar recomendación
+                                        al pedido
+                                      </>
+                                    )}
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={applyPendingRecommendation}
-                                  disabled={recommendationStatus === "added"}
-                                  className={cn(
-                                    "shrink-0 px-5 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
-                                    recommendationStatus === "added"
-                                      ? "bg-green-500/20 text-green-300 border border-green-500/30 cursor-default"
-                                      : "bg-primary text-black hover:bg-amber-400",
-                                  )}
-                                >
-                                  {recommendationStatus === "added" ? (
-                                    <>
-                                      <Check className="w-4 h-4" /> Agregada al pedido
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ShoppingCart className="w-4 h-4" /> Agregar recomendación al
-                                      pedido
-                                    </>
-                                  )}
-                                </button>
+                                {recommendationStatus === "error" && (
+                                  <p className="text-red-400 text-xs font-bold mt-3">
+                                    {recommendationError}
+                                  </p>
+                                )}
                               </div>
-                              {recommendationStatus === "error" && (
-                                <p className="text-red-400 text-xs font-bold mt-3">
-                                  {recommendationError}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                            )}
 
                           {totalItems > 0 && (
                             <div className="mt-5 flex justify-center">

@@ -1,5 +1,6 @@
 import type { ProductCategory } from "./commercialTypes";
 import {
+  EVENT_INTENSITY_MULTIPLIERS,
   GENDER_LITERS_MULTIPLIER,
   applyDurationAndSummerAdjustment,
   estimateBeerLiters,
@@ -37,20 +38,29 @@ export const BEVERAGE_LABELS: Record<BeverageType, string> = {
 };
 
 /**
- * PLACEHOLDER — litros/persona estimados a ojo, sin contrastar contra benchmarks reales.
- * Pendiente de una pasada de calibración como la que tuvo la cerveza (ver docs/barrel-calculator-consumption-calibration.md).
+ * Litros/persona para un evento de referencia "normal" (intensidad `normal`, 4hs, sin ajuste
+ * de verano) — mismo punto de referencia que usa `EVENT_INTENSITY_MULTIPLIERS` en
+ * beerConsumptionEstimate.ts. Calibrado con guías generales de bartending para eventos
+ * (tamaño de trago estándar × tragos promedio por persona), no con un dataset propio:
+ * fernet ~750ml cada 6-8 personas; vino ~150ml/copa × 3 copas; gin/vodka/ron/whisky ~50ml/trago
+ * × 3 tragos; tequila ~35ml/trago (tragos más cortos y menos repetidos). Al igual que la cerveza,
+ * este valor se escala por intensidad del evento (ver `estimateNonBeerLiters`) y por
+ * duración/verano (`applyDurationAndSummerAdjustment`).
  */
 export const BEVERAGE_LITERS_PER_PERSON: Record<NonBeerBeverageType, number> = {
-  fernet: 0.35,
-  wine: 0.4,
-  gin: 0.2,
-  vodka: 0.2,
-  rum: 0.2,
+  fernet: 0.2,
+  wine: 0.45,
+  gin: 0.15,
+  vodka: 0.15,
+  rum: 0.15,
   whisky: 0.15,
-  tequila: 0.15,
+  tequila: 0.12,
 };
 
-/** PLACEHOLDER — tamaño de botella genérico para aproximar cantidad, no un SKU real del catálogo. */
+/**
+ * Tamaño de botella genérico para aproximar cantidad de botellas en el panel de resultados,
+ * antes de resolver un producto real del catálogo (eso sí usa el volumen real del SKU elegido).
+ */
 export const BEVERAGE_BOTTLE_SIZE_LITERS: Record<NonBeerBeverageType, number> = {
   fernet: 0.75,
   wine: 0.75,
@@ -157,8 +167,10 @@ function estimateNonBeerLiters(
   fraction: number,
   input: BeverageMixCalculationInput,
 ): number {
-  const { guests, genderComposition, totalHoursDecimal, isSummer } = input;
-  const rate = BEVERAGE_LITERS_PER_PERSON[type];
+  const { guests, genderComposition, intensity, totalHoursDecimal, isSummer } = input;
+  const intensityFactor =
+    EVENT_INTENSITY_MULTIPLIERS[intensity] / EVENT_INTENSITY_MULTIPLIERS.normal;
+  const rate = BEVERAGE_LITERS_PER_PERSON[type] * intensityFactor;
 
   const rawLiters = genderComposition
     ? genderComposition.men * fraction * rate * GENDER_LITERS_MULTIPLIER.men +

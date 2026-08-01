@@ -119,7 +119,7 @@ describe("calculateBeverageMixEstimate", () => {
 
     expect(result).toEqual([
       { type: "beer", percentage: 70, liters: 56, approxBottles: null },
-      { type: "fernet", percentage: 30, liters: 11, approxBottles: 15 },
+      { type: "fernet", percentage: 30, liters: 6, approxBottles: 8 },
     ]);
   });
 
@@ -135,7 +135,7 @@ describe("calculateBeverageMixEstimate", () => {
     const beer = result.find((item) => item.type === "beer");
     const fernet = result.find((item) => item.type === "fernet");
     expect(beer?.liters).toBe(65);
-    expect(fernet?.liters).toBe(29);
+    expect(fernet?.liters).toBe(17);
   });
 
   it("propaga genderComposition a las bebidas no-cerveza con el mismo multiplicador", () => {
@@ -162,7 +162,7 @@ describe("calculateBeverageMixEstimate", () => {
       isSummer: false,
       shares: [{ type: "vodka", percentage: 40 }],
     });
-    expect(vodkaResult.find((item) => item.type === "vodka")?.approxBottles).toBe(12);
+    expect(vodkaResult.find((item) => item.type === "vodka")?.approxBottles).toBe(9);
   });
 
   it("approxBottles de cerveza siempre es null", () => {
@@ -176,6 +176,26 @@ describe("calculateBeverageMixEstimate", () => {
     expect(result.find((item) => item.type === "beer")?.approxBottles).toBeNull();
   });
 
+  it("escala la porción no-cerveza por intensidad del evento, igual que la cerveza", () => {
+    const base = {
+      guests: 100,
+      totalHoursDecimal: 4,
+      isSummer: false,
+      shares: [{ type: "gin" as const, percentage: 50 }],
+    };
+
+    const tranqui = calculateBeverageMixEstimate({ ...base, intensity: "tranqui" });
+    const normal = calculateBeverageMixEstimate({ ...base, intensity: "normal" });
+    const festival = calculateBeverageMixEstimate({ ...base, intensity: "festival" });
+
+    const ginLiters = (result: ReturnType<typeof calculateBeverageMixEstimate>) =>
+      result.find((item) => item.type === "gin")?.liters;
+
+    expect(ginLiters(tranqui)).toBe(5);
+    expect(ginLiters(normal)).toBe(8);
+    expect(ginLiters(festival)).toBe(17);
+  });
+
   it("caso límite: 100% en una sola bebida no-cerveza deja la cerveza en 0%", () => {
     const result = calculateBeverageMixEstimate({
       guests: 100,
@@ -187,7 +207,7 @@ describe("calculateBeverageMixEstimate", () => {
 
     expect(result).toEqual([
       { type: "beer", percentage: 0, liters: 0, approxBottles: null },
-      { type: "fernet", percentage: 100, liters: 35, approxBottles: 47 },
+      { type: "fernet", percentage: 100, liters: 20, approxBottles: 27 },
     ]);
   });
 });

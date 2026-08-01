@@ -14,8 +14,10 @@ interface ResultPanelProps {
   selectedBeer: Beer | null;
   priceDisclaimer: string;
   mixResult: BeverageMixItemEstimate[];
-  beerSharePercentage: number;
-  onUseRecommendation: (recommendation: BarrelRecommendation) => void;
+  onUseRecommendation: (
+    recommendation: BarrelRecommendation,
+    mixResult: BeverageMixItemEstimate[],
+  ) => void;
 }
 
 export function ResultPanel({
@@ -25,7 +27,6 @@ export function ResultPanel({
   selectedBeer,
   priceDisclaimer,
   mixResult,
-  beerSharePercentage,
   onUseRecommendation,
 }: ResultPanelProps) {
   return (
@@ -104,16 +105,12 @@ export function ResultPanel({
             </div>
           )}
 
-          {beerSharePercentage === 0 && !mixIsDefault && (
-            <p className="text-xs text-amber-400/90 mb-2.5">
-              Esta función todavía no arma pedidos de bebidas espirituosas — agregá cerveza a la
-              mezcla para poder usar la recomendación.
-            </p>
-          )}
-
           <button
-            onClick={() => onUseRecommendation(barrelPlan)}
-            disabled={barrelPlan.parts.length === 0}
+            onClick={() => onUseRecommendation(barrelPlan, mixResult)}
+            disabled={
+              barrelPlan.parts.length === 0 &&
+              mixResult.every((item) => item.type === "beer" || item.percentage <= 0)
+            }
             className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-base md:text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
           >
             Usar esta recomendación
