@@ -1,269 +1,38 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Calculator, Sun, Users, Clock, Beer, Check, SlidersHorizontal, Wine } from "lucide-react";
+import { Calculator, Clock, SlidersHorizontal, Users, Wine } from "lucide-react";
+import { BeerStylePicker } from "@/components/calculadora/BeerStylePicker";
+import { DurationChips } from "@/components/calculadora/DurationChips";
+import { EventTypeCards } from "@/components/calculadora/EventTypeCards";
+import { ResultPanel } from "@/components/calculadora/ResultPanel";
+import { SummerToggle } from "@/components/calculadora/SummerToggle";
+import { NumericStepperField } from "@/components/ui/numeric-stepper-field";
+import type { BarrelRecommendation } from "@/domain/barrelCalculator";
+import { BEVERAGE_LABELS, type BeverageMixItemEstimate } from "@/domain/beverageMix";
+import { EVENT_TYPES, NON_BEER_TYPES } from "@/domain/calculadoraConstants";
 import {
-  calculateBarrelRecommendation,
-  type BarrelRecommendation,
-} from "@/domain/barrelCalculator";
-import {
-  estimateBeerLiters,
-  EVENT_INTENSITY_MULTIPLIERS,
-  type EventIntensity,
-} from "@/domain/beerConsumptionEstimate";
-import {
-  calculateBeverageMixEstimate,
-  getBeerSharePercentage,
-  isDefaultBeverageMix,
-  updateBeverageMixShare,
-  BEVERAGE_LABELS,
-  BEVERAGE_TYPE_ORDER,
-  type BeverageMixItemEstimate,
-  type BeverageMixShare,
-  type NonBeerBeverageType,
-} from "@/domain/beverageMix";
-import { formatDurationLabel } from "@/domain/eventDuration";
-import { formatPrice } from "@/domain/format";
-import { useCommercialDerivedData } from "@/context/CommercialDataContext";
+  LITERS_PER_PERSON_MAX,
+  LITERS_PER_PERSON_MIN,
+  useCalculadoraState,
+} from "@/hooks/useCalculadoraState";
 import { cn } from "@/lib/utils";
 
-const NON_BEER_TYPES: NonBeerBeverageType[] = [
-  "fernet",
-  "whisky",
-  "wine",
-  "gin",
-  "vodka",
-  "rum",
-  "tequila",
-];
-
-const EVENT_TYPES: { id: EventIntensity; emoji: string; label: string; desc: string }[] = [
-  {
-    id: "tranqui",
-    emoji: "🍽️",
-    label: "Tranqui / Almuerzo",
-    desc: "Consumo moderado",
-  },
-  {
-    id: "normal",
-    emoji: "🎉",
-    label: "Fiesta Normal",
-    desc: "Cumple o juntada",
-  },
-  {
-    id: "intensa",
-    emoji: "🔥",
-    label: "Fiesta Intensa",
-    desc: "Más consumo por persona",
-  },
-  {
-    id: "festival",
-    emoji: "🎪",
-    label: "Festival",
-    desc: "Evento largo y activo",
-  },
-];
-
-type EventTypeId = EventIntensity;
-
 interface CalculadoraProps {
-  onUseRecommendation: (recommendation: BarrelRecommendation) => void;
+  onUseRecommendation: (
+    recommendation: BarrelRecommendation,
+    mixResult: BeverageMixItemEstimate[],
+  ) => void;
 }
 
-const DURATION_CHIPS: { label: string; hours: number; minutes: number }[] = [
-  { label: "2hs", hours: 2, minutes: 0 },
-  { label: "2:30", hours: 2, minutes: 30 },
-  { label: "3hs", hours: 3, minutes: 0 },
-  { label: "3:30", hours: 3, minutes: 30 },
-  { label: "4hs", hours: 4, minutes: 0 },
-  { label: "5hs", hours: 5, minutes: 0 },
-  { label: "6hs", hours: 6, minutes: 0 },
-];
+// Shared − / input / + classes for the men/women/hours/minutes steppers (flex-1 width).
+const FLEX_STEPPER_FIELD_CLASSES = {
+  wrapperClassName: "flex items-center gap-2",
+  buttonClassName:
+    "w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0",
+  inputClassName:
+    "flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors",
+};
 
 export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
-  const { priceDisclaimer, beerCatalog } = useCommercialDerivedData();
-  const [guests, setGuests] = useState(50);
-  const [hours, setHours] = useState(4);
-  const [minutes, setMinutes] = useState(0);
-  const [type, setType] = useState<EventTypeId>("normal");
-  const [isSummer, setIsSummer] = useState(false);
-  const [selectedBeerId, setSelectedBeerId] = useState<string | null>(null);
-  const [showLitersOverride, setShowLitersOverride] = useState(false);
-  const [customLitersPerPerson, setCustomLitersPerPerson] = useState<number | null>(null);
-  const [genderModeEnabled, setGenderModeEnabled] = useState(false);
-  const [men, setMen] = useState(25);
-  const [women, setWomen] = useState(25);
-  const [showBeverageMix, setShowBeverageMix] = useState(false);
-  const [beverageMixShares, setBeverageMixShares] = useState<BeverageMixShare[]>([]);
-  const selectedBeer = beerCatalog.find((beer) => beer.id === selectedBeerId) ?? null;
-
-  const [totalLiters, setTotalLiters] = useState(0);
-  const [barrelPlan, setBarrelPlan] = useState<BarrelRecommendation>(() =>
-    calculateBarrelRecommendation(0),
-  );
-  const [mixResult, setMixResult] = useState<BeverageMixItemEstimate[]>([]);
-
-  const handleGuestsChange = (val: number) => {
-    setGuests(Math.min(Math.max(val, 10), 500));
-  };
-
-  const handleMenChange = (val: number) => setMen(Math.min(Math.max(val, 0), 500));
-  const handleWomenChange = (val: number) => setWomen(Math.min(Math.max(val, 0), 500));
-
-  const handleToggleGenderMode = () => {
-    if (genderModeEnabled) {
-      setGuests(Math.min(Math.max(men + women, 10), 500));
-      setGenderModeEnabled(false);
-    } else {
-      setMen(Math.ceil(guests / 2));
-      setWomen(Math.floor(guests / 2));
-      setGenderModeEnabled(true);
-    }
-  };
-
-  const handleHoursChange = (val: number) => {
-    setHours(Math.min(Math.max(val, 1), 12));
-  };
-
-  const handleMinutesChange = (val: number) => {
-    const stepped = Math.min(Math.max(Math.round(val / 15) * 15, 0), 45);
-    setMinutes(stepped);
-  };
-
-  const LITERS_PER_PERSON_MIN = 0.2;
-  const LITERS_PER_PERSON_MAX = 3;
-
-  const handleLitersOverrideChange = (val: number) => {
-    const rounded = Math.round(val * 10) / 10;
-    setCustomLitersPerPerson(
-      Math.min(Math.max(rounded, LITERS_PER_PERSON_MIN), LITERS_PER_PERSON_MAX),
-    );
-  };
-
-  const parseNumericInput = (raw: string): number | null => {
-    if (raw.trim() === "") return null;
-    const value = Number(raw);
-    return Number.isFinite(value) ? value : null;
-  };
-
-  // Mientras se tipea solo se acota el techo (para no romper el cálculo con un número absurdo);
-  // el piso y el redondeo a pasos de 15 (minutos) se aplican recién al salir del campo (onBlur),
-  // así escribir "15" dígito por dígito no salta a "10" apenas se tipea el primer "1".
-  const handleGuestsInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setGuests(Math.min(Math.max(value, 0), 500));
-  };
-
-  const handleMenInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setMen(Math.min(Math.max(value, 0), 500));
-  };
-
-  const handleWomenInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setWomen(Math.min(Math.max(value, 0), 500));
-  };
-
-  const handleHoursInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setHours(Math.min(Math.max(value, 0), 12));
-  };
-
-  const handleMinutesInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setMinutes(Math.min(Math.max(value, 0), 59));
-  };
-
-  const handleLitersOverrideInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) {
-      setCustomLitersPerPerson(Math.min(Math.max(value, 0), LITERS_PER_PERSON_MAX));
-    }
-  };
-
-  const standardLitersPerPerson = EVENT_INTENSITY_MULTIPLIERS[type];
-  const effectiveLitersPerPerson = customLitersPerPerson ?? standardLitersPerPerson;
-  const effectiveGuestsTotal = genderModeEnabled ? men + women : guests;
-
-  const activeBeverageTypes = new Set(
-    beverageMixShares.filter((s) => s.percentage > 0).map((s) => s.type),
-  );
-  const beerSharePercentage = getBeerSharePercentage(beverageMixShares);
-  const mixIsDefault = isDefaultBeverageMix(beverageMixShares);
-
-  const handleToggleBeverageType = (bevType: NonBeerBeverageType) => {
-    if (activeBeverageTypes.has(bevType)) {
-      setBeverageMixShares((current) => updateBeverageMixShare(current, bevType, 0));
-      return;
-    }
-    const remaining = 100 - beverageMixShares.reduce((sum, s) => sum + s.percentage, 0);
-    setBeverageMixShares((current) =>
-      updateBeverageMixShare(current, bevType, Math.min(10, Math.max(remaining, 0))),
-    );
-  };
-
-  const handleBeverageShareChange = (bevType: NonBeerBeverageType, value: number) =>
-    setBeverageMixShares((current) => updateBeverageMixShare(current, bevType, Math.round(value)));
-
-  const handleResetBeverageMix = () => {
-    setBeverageMixShares([]);
-    setShowBeverageMix(false);
-  };
-
-  const handleExpandLitersOverride = () => {
-    setCustomLitersPerPerson((current) => current ?? standardLitersPerPerson);
-    setShowLitersOverride(true);
-  };
-
-  const handleResetLitersOverride = () => {
-    setCustomLitersPerPerson(null);
-    setShowLitersOverride(false);
-  };
-
-  const totalHoursDecimal = hours + minutes / 60;
-
-  const durationLabel = formatDurationLabel(hours, minutes);
-
-  useEffect(() => {
-    const genderComposition = genderModeEnabled ? { men, women } : undefined;
-
-    const mixEstimate = calculateBeverageMixEstimate({
-      guests: effectiveGuestsTotal,
-      genderComposition,
-      intensity: type,
-      litersPerPerson: customLitersPerPerson ?? undefined,
-      totalHoursDecimal,
-      isSummer,
-      shares: beverageMixShares,
-    });
-    setMixResult(mixEstimate);
-
-    const beerLiters = mixEstimate.find((item) => item.type === "beer")?.liters ?? 0;
-    setTotalLiters(beerLiters);
-
-    const barrelRecommendation = calculateBarrelRecommendation(
-      beerLiters,
-      selectedBeer,
-      beerCatalog,
-    );
-    setBarrelPlan(barrelRecommendation);
-  }, [
-    effectiveGuestsTotal,
-    genderModeEnabled,
-    men,
-    women,
-    hours,
-    minutes,
-    type,
-    isSummer,
-    totalHoursDecimal,
-    selectedBeer,
-    beerCatalog,
-    customLitersPerPerson,
-    beverageMixShares,
-  ]);
-
-  const isChipActive = (chip: { hours: number; minutes: number }) =>
-    hours === chip.hours && minutes === chip.minutes;
+  const { priceDisclaimer, beerCatalog, state, derived, handlers } = useCalculadoraState();
 
   return (
     <section
@@ -302,47 +71,33 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   </label>
                   <button
                     type="button"
-                    aria-pressed={genderModeEnabled}
-                    onClick={handleToggleGenderMode}
+                    aria-pressed={state.genderModeEnabled}
+                    onClick={handlers.handleToggleGenderMode}
                     className="shrink-0 px-3 py-1.5 rounded-lg border text-sm font-bold bg-white/5 text-muted-foreground border-white/10 hover:border-white/30 transition-all"
                   >
-                    {genderModeEnabled ? "Modo simple" : "Personalizar por género"}
+                    {state.genderModeEnabled ? "Modo simple" : "Personalizar por género"}
                   </button>
                 </div>
 
-                {!genderModeEnabled ? (
+                {!state.genderModeEnabled ? (
                   <>
-                    <div className="flex justify-end items-center gap-2 mb-2.5">
-                      <button
-                        type="button"
-                        aria-label="Restar 5 invitados"
-                        onClick={() => handleGuestsChange(guests - 5)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold"
-                      >
-                        −
-                      </button>
-                      <input
-                        id="calculator-guests"
-                        type="number"
-                        value={guests}
-                        onChange={(e) => handleGuestsInputChange(e.target.value)}
-                        onBlur={() => handleGuestsChange(guests)}
-                        className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                        min="10"
-                        max="500"
-                        required
-                        inputMode="numeric"
-                        aria-describedby="calculator-guests-help"
-                      />
-                      <button
-                        type="button"
-                        aria-label="Sumar 5 invitados"
-                        onClick={() => handleGuestsChange(guests + 5)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold"
-                      >
-                        +
-                      </button>
-                    </div>
+                    <NumericStepperField
+                      id="calculator-guests"
+                      value={state.guests}
+                      step={5}
+                      min={10}
+                      max={500}
+                      onChange={handlers.handleGuestsChange}
+                      onInputChange={handlers.handleGuestsInputChange}
+                      decreaseAriaLabel="Restar 5 invitados"
+                      increaseAriaLabel="Sumar 5 invitados"
+                      required
+                      inputMode="numeric"
+                      inputAriaDescribedBy="calculator-guests-help"
+                      wrapperClassName="flex justify-end items-center gap-2 mb-2.5"
+                      buttonClassName="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold"
+                      inputClassName="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
+                    />
                     <input
                       aria-label="Cantidad de invitados"
                       aria-describedby="calculator-guests-help"
@@ -350,8 +105,8 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                       min="10"
                       max="500"
                       step="5"
-                      value={guests}
-                      onChange={(e) => handleGuestsChange(Number(e.target.value))}
+                      value={state.guests}
+                      onChange={(e) => handlers.handleGuestsChange(Number(e.target.value))}
                       className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                     />
                     <div className="flex justify-between mt-1.5 text-xs text-muted-foreground font-mono">
@@ -372,35 +127,19 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         >
                           Hombres
                         </label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            aria-label="Restar un hombre"
-                            onClick={() => handleMenChange(men - 1)}
-                            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                          >
-                            −
-                          </button>
-                          <input
-                            id="calculator-men"
-                            type="number"
-                            value={men}
-                            onChange={(e) => handleMenInputChange(e.target.value)}
-                            onBlur={() => handleMenChange(men)}
-                            className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                            min="0"
-                            max="500"
-                            inputMode="numeric"
-                          />
-                          <button
-                            type="button"
-                            aria-label="Sumar un hombre"
-                            onClick={() => handleMenChange(men + 1)}
-                            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                          >
-                            +
-                          </button>
-                        </div>
+                        <NumericStepperField
+                          id="calculator-men"
+                          value={state.men}
+                          step={1}
+                          min={0}
+                          max={500}
+                          onChange={handlers.handleMenChange}
+                          onInputChange={handlers.handleMenInputChange}
+                          decreaseAriaLabel="Restar un hombre"
+                          increaseAriaLabel="Sumar un hombre"
+                          inputMode="numeric"
+                          {...FLEX_STEPPER_FIELD_CLASSES}
+                        />
                       </div>
                       <div>
                         <label
@@ -409,40 +148,26 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                         >
                           Mujeres
                         </label>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            aria-label="Restar una mujer"
-                            onClick={() => handleWomenChange(women - 1)}
-                            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                          >
-                            −
-                          </button>
-                          <input
-                            id="calculator-women"
-                            type="number"
-                            value={women}
-                            onChange={(e) => handleWomenInputChange(e.target.value)}
-                            onBlur={() => handleWomenChange(women)}
-                            className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                            min="0"
-                            max="500"
-                            inputMode="numeric"
-                          />
-                          <button
-                            type="button"
-                            aria-label="Sumar una mujer"
-                            onClick={() => handleWomenChange(women + 1)}
-                            className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                          >
-                            +
-                          </button>
-                        </div>
+                        <NumericStepperField
+                          id="calculator-women"
+                          value={state.women}
+                          step={1}
+                          min={0}
+                          max={500}
+                          onChange={handlers.handleWomenChange}
+                          onInputChange={handlers.handleWomenInputChange}
+                          decreaseAriaLabel="Restar una mujer"
+                          increaseAriaLabel="Sumar una mujer"
+                          inputMode="numeric"
+                          {...FLEX_STEPPER_FIELD_CLASSES}
+                        />
                       </div>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Total:{" "}
-                      <span className="text-primary font-mono font-semibold">{men + women}</span>{" "}
+                      <span className="text-primary font-mono font-semibold">
+                        {state.men + state.women}
+                      </span>{" "}
                       invitados
                     </p>
                   </div>
@@ -457,7 +182,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                     evento?
                   </label>
                   <span className="text-sm text-primary font-mono font-semibold">
-                    {durationLabel}
+                    {derived.durationLabel}
                   </span>
                 </div>
 
@@ -470,36 +195,20 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                     >
                       Horas
                     </label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label="Restar una hora"
-                        onClick={() => handleHoursChange(hours - 1)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                      >
-                        −
-                      </button>
-                      <input
-                        id="calculator-hours"
-                        type="number"
-                        value={hours}
-                        onChange={(e) => handleHoursInputChange(e.target.value)}
-                        onBlur={() => handleHoursChange(hours)}
-                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                        min="1"
-                        max="12"
-                        required
-                        inputMode="numeric"
-                      />
-                      <button
-                        type="button"
-                        aria-label="Sumar una hora"
-                        onClick={() => handleHoursChange(hours + 1)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                      >
-                        +
-                      </button>
-                    </div>
+                    <NumericStepperField
+                      id="calculator-hours"
+                      value={state.hours}
+                      step={1}
+                      min={1}
+                      max={12}
+                      onChange={handlers.handleHoursChange}
+                      onInputChange={handlers.handleHoursInputChange}
+                      decreaseAriaLabel="Restar una hora"
+                      increaseAriaLabel="Sumar una hora"
+                      required
+                      inputMode="numeric"
+                      {...FLEX_STEPPER_FIELD_CLASSES}
+                    />
                   </div>
 
                   {/* Minutes input */}
@@ -510,110 +219,33 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                     >
                       Minutos
                     </label>
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label="Restar 15 minutos"
-                        onClick={() => handleMinutesChange(minutes - 15)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                      >
-                        −
-                      </button>
-                      <input
-                        id="calculator-minutes"
-                        type="number"
-                        value={minutes}
-                        onChange={(e) => handleMinutesInputChange(e.target.value)}
-                        onBlur={() => handleMinutesChange(minutes)}
-                        className="flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                        min="0"
-                        max="45"
-                        step="15"
-                        required
-                        inputMode="numeric"
-                      />
-                      <button
-                        type="button"
-                        aria-label="Sumar 15 minutos"
-                        onClick={() => handleMinutesChange(minutes + 15)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                      >
-                        +
-                      </button>
-                    </div>
+                    <NumericStepperField
+                      id="calculator-minutes"
+                      value={state.minutes}
+                      step={15}
+                      inputStep={15}
+                      min={0}
+                      max={45}
+                      onChange={handlers.handleMinutesChange}
+                      onInputChange={handlers.handleMinutesInputChange}
+                      decreaseAriaLabel="Restar 15 minutos"
+                      increaseAriaLabel="Sumar 15 minutos"
+                      required
+                      inputMode="numeric"
+                      {...FLEX_STEPPER_FIELD_CLASSES}
+                    />
                   </div>
                 </div>
 
                 {/* Quick chips */}
-                <div className="flex flex-wrap gap-2">
-                  {DURATION_CHIPS.map((chip) => (
-                    <button
-                      key={chip.label}
-                      type="button"
-                      onClick={() => {
-                        setHours(chip.hours);
-                        setMinutes(chip.minutes);
-                      }}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
-                        isChipActive(chip)
-                          ? "bg-primary text-black border-primary"
-                          : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/30",
-                      )}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
+                <DurationChips
+                  isChipActive={derived.isChipActive}
+                  onSelect={handlers.handleSelectDurationChip}
+                />
               </div>
 
               {/* Event Type — 4 large cards */}
-              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
-                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-2.5">
-                  <Beer className="w-4 h-4 text-primary" aria-hidden="true" /> Estilo de fiesta
-                </label>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                  {EVENT_TYPES.map((t) => {
-                    const selected = type === t.id;
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => setType(t.id)}
-                        aria-pressed={selected}
-                        className={cn(
-                          "calculator-event-option relative flex flex-col items-center justify-start text-center p-2.5 rounded-xl border transition-all duration-200 min-h-24 h-full",
-                          selected
-                            ? "bg-amber-500/10 border-amber-500 shadow-[0_0_15px_rgba(217,119,6,0.2)]"
-                            : "bg-white/5 border-white/10 hover:border-white/30",
-                        )}
-                      >
-                        {selected && (
-                          <span className="absolute top-2 right-2 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
-                            <Check
-                              className="w-3 h-3 text-black"
-                              strokeWidth={3}
-                              aria-hidden="true"
-                            />
-                          </span>
-                        )}
-                        <span className="text-xl mb-1">{t.emoji}</span>
-                        <span
-                          className={cn(
-                            "font-bold text-sm leading-tight mb-1",
-                            selected ? "text-amber-400" : "text-white",
-                          )}
-                        >
-                          {t.label}
-                        </span>
-                        <span className="text-xs text-muted-foreground leading-tight line-clamp-2">
-                          "{t.desc}"
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <EventTypeCards type={state.type} onSelect={handlers.setType} />
 
               {/* Liters per person override — advanced/optional */}
               <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
@@ -623,19 +255,19 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                     por persona
                   </label>
                   <span className="text-sm text-primary font-mono font-semibold">
-                    {effectiveLitersPerPerson.toFixed(1)} L
+                    {derived.effectiveLitersPerPerson.toFixed(1)} L
                   </span>
                 </div>
 
-                {!showLitersOverride ? (
+                {!state.showLitersOverride ? (
                   <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
                     <p className="text-xs text-muted-foreground">
-                      Usamos el estándar de "{EVENT_TYPES.find((t) => t.id === type)?.label}".
+                      Usamos el estándar de "{EVENT_TYPES.find((t) => t.id === state.type)?.label}".
                       Cambialo solo si conocés el consumo real de tu evento.
                     </p>
                     <button
                       type="button"
-                      onClick={handleExpandLitersOverride}
+                      onClick={handlers.handleExpandLitersOverride}
                       className="shrink-0 px-3 py-1.5 rounded-lg border text-sm font-bold bg-white/5 text-muted-foreground border-white/10 hover:border-white/30 transition-all"
                     >
                       Personalizar
@@ -643,139 +275,51 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   </div>
                 ) : (
                   <div className="mt-2.5">
-                    <div className="flex items-center gap-2 mb-2.5">
-                      <button
-                        type="button"
-                        aria-label="Restar 0.1 litros por persona"
-                        onClick={() => handleLitersOverrideChange(effectiveLitersPerPerson - 0.1)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                      >
-                        −
-                      </button>
-                      <input
-                        id="calculator-liters-per-person"
-                        type="number"
-                        value={effectiveLitersPerPerson}
-                        onChange={(e) => handleLitersOverrideInputChange(e.target.value)}
-                        onBlur={() => handleLitersOverrideChange(effectiveLitersPerPerson)}
-                        className="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                        min={LITERS_PER_PERSON_MIN}
-                        max={LITERS_PER_PERSON_MAX}
-                        step="0.1"
-                        inputMode="decimal"
-                      />
-                      <button
-                        type="button"
-                        aria-label="Sumar 0.1 litros por persona"
-                        onClick={() => handleLitersOverrideChange(effectiveLitersPerPerson + 0.1)}
-                        className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                      >
-                        +
-                      </button>
-                      <input
-                        aria-label="Litros por persona"
-                        type="range"
-                        min={LITERS_PER_PERSON_MIN}
-                        max={LITERS_PER_PERSON_MAX}
-                        step="0.1"
-                        value={effectiveLitersPerPerson}
-                        onChange={(e) => handleLitersOverrideChange(Number(e.target.value))}
-                        className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                      />
-                    </div>
+                    <NumericStepperField
+                      id="calculator-liters-per-person"
+                      value={derived.effectiveLitersPerPerson}
+                      step={0.1}
+                      inputStep={0.1}
+                      min={LITERS_PER_PERSON_MIN}
+                      max={LITERS_PER_PERSON_MAX}
+                      onChange={handlers.handleLitersOverrideChange}
+                      onInputChange={handlers.handleLitersOverrideInputChange}
+                      inputMode="decimal"
+                      wrapperClassName="flex items-center gap-2 mb-2.5"
+                      buttonClassName="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
+                      inputClassName="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
+                      decreaseAriaLabel="Restar 0.1 litros por persona"
+                      increaseAriaLabel="Sumar 0.1 litros por persona"
+                      rangeSlider={{
+                        ariaLabel: "Litros por persona",
+                        step: 0.1,
+                        className:
+                          "flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary",
+                      }}
+                    />
                     <button
                       type="button"
-                      onClick={handleResetLitersOverride}
+                      onClick={handlers.handleResetLitersOverride}
                       className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
                     >
-                      Restablecer al estándar ({standardLitersPerPerson.toFixed(1)} L)
+                      Restablecer al estándar ({derived.standardLitersPerPerson.toFixed(1)} L)
                     </button>
                   </div>
                 )}
               </div>
 
               {/* Summer toggle */}
-              <button
-                type="button"
-                onClick={() => setIsSummer(!isSummer)}
-                aria-pressed={isSummer}
-                className={cn(
-                  "calculator-card w-full p-3.5 lg:p-4 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between gap-3",
-                  isSummer
-                    ? "bg-amber-500/10 border-amber-500/30"
-                    : "bg-white/5 border-white/10 hover:border-white/30",
-                )}
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  <Sun
-                    className={cn(
-                      "w-6 h-6 shrink-0",
-                      isSummer ? "text-amber-500" : "text-muted-foreground",
-                    )}
-                    aria-hidden="true"
-                  />
-                  <div className="text-left">
-                    <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-0.5">
-                      ¿Es verano?
-                    </span>
-                    <span className="text-xs text-muted-foreground">
-                      La gente toma más con calor (+25%)
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className={cn(
-                    "w-12 h-6 rounded-full p-1 transition-colors shrink-0",
-                    isSummer ? "bg-amber-500" : "bg-secondary",
-                  )}
-                >
-                  <div
-                    className={cn(
-                      "w-4 h-4 rounded-full bg-white transition-transform",
-                      isSummer ? "translate-x-6" : "translate-x-0",
-                    )}
-                  />
-                </div>
-              </button>
+              <SummerToggle
+                isSummer={state.isSummer}
+                onToggle={() => handlers.setIsSummer(!state.isSummer)}
+              />
 
               {/* Beer style — optional, refines the price from "estimated minimum" to the real price */}
-              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
-                <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2 mb-2.5">
-                  <Beer className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Ya sabés qué estilo?
-                  (opcional)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedBeerId(null)}
-                    aria-pressed={selectedBeerId === null}
-                    className={cn(
-                      "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
-                      selectedBeerId === null
-                        ? "bg-primary text-black border-primary"
-                        : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/30",
-                    )}
-                  >
-                    Cualquiera
-                  </button>
-                  {beerCatalog.map((beer) => (
-                    <button
-                      key={beer.id}
-                      type="button"
-                      onClick={() => setSelectedBeerId(beer.id)}
-                      aria-pressed={selectedBeerId === beer.id}
-                      className={cn(
-                        "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
-                        selectedBeerId === beer.id
-                          ? "bg-primary text-black border-primary"
-                          : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/30",
-                      )}
-                    >
-                      {beer.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <BeerStylePicker
+                beerCatalog={beerCatalog}
+                selectedBeerId={state.selectedBeerId}
+                onSelect={handlers.setSelectedBeerId}
+              />
 
               {/* Beverage mix — optional, splits consumption across beer + other drinks by % of guests */}
               <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
@@ -785,14 +329,14 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                   </label>
                 </div>
 
-                {!showBeverageMix ? (
+                {!state.showBeverageMix ? (
                   <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
                     <p className="text-xs text-muted-foreground">
                       100% cerveza (comportamiento estándar).
                     </p>
                     <button
                       type="button"
-                      onClick={() => setShowBeverageMix(true)}
+                      onClick={() => handlers.setShowBeverageMix(true)}
                       className="shrink-0 px-3 py-1.5 rounded-lg border text-sm font-bold bg-white/5 text-muted-foreground border-white/10 hover:border-white/30 transition-all"
                     >
                       Personalizar mezcla
@@ -801,17 +345,17 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                 ) : (
                   <div className="mt-2.5 space-y-2.5">
                     <div className="bg-primary/10 text-primary border border-primary/20 rounded-lg px-3 py-1.5 text-sm font-bold inline-flex">
-                      Cerveza: {beerSharePercentage}% (resto)
+                      Cerveza: {derived.beerSharePercentage}% (resto)
                     </div>
 
                     <div className="flex flex-wrap gap-2">
                       {NON_BEER_TYPES.map((bevType) => {
-                        const active = activeBeverageTypes.has(bevType);
+                        const active = derived.activeBeverageTypes.has(bevType);
                         return (
                           <button
                             key={bevType}
                             type="button"
-                            onClick={() => handleToggleBeverageType(bevType)}
+                            onClick={() => handlers.handleToggleBeverageType(bevType)}
                             aria-pressed={active}
                             className={cn(
                               "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
@@ -826,7 +370,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                       })}
                     </div>
 
-                    {beverageMixShares
+                    {state.beverageMixShares
                       .filter((s) => s.percentage > 0)
                       .map((share) => (
                         <div key={share.type} className="flex items-center gap-2">
@@ -841,7 +385,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                             step={5}
                             value={share.percentage}
                             onChange={(e) =>
-                              handleBeverageShareChange(share.type, Number(e.target.value))
+                              handlers.handleBeverageShareChange(share.type, Number(e.target.value))
                             }
                             className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                           />
@@ -853,7 +397,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
 
                     <button
                       type="button"
-                      onClick={handleResetBeverageMix}
+                      onClick={handlers.handleResetBeverageMix}
                       className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
                     >
                       Volver a solo cerveza
@@ -864,105 +408,15 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
             </div>
 
             {/* Output */}
-            <div className="lg:col-span-5">
-              <div className="calculator-result-card bg-black/40 rounded-3xl p-4 lg:p-5 xl:p-6 border border-primary/20 flex flex-col items-center justify-start text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 left-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl" />
-
-                <div
-                  className="relative z-10 w-full"
-                  role="status"
-                  aria-live="polite"
-                  aria-atomic="true"
-                >
-                  {mixIsDefault ? (
-                    <>
-                      <span className="text-white/60 text-xs md:text-sm uppercase tracking-widest font-semibold mb-1.5 block">
-                        Vas a necesitar
-                      </span>
-                      <div className="text-[clamp(3rem,6vw,4.75rem)] leading-none font-display font-bold text-white mb-1 tracking-tighter">
-                        {totalLiters}
-                        <span className="text-2xl md:text-3xl text-primary ml-1">L</span>
-                      </div>
-
-                      <div className="calculator-result-divider h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent my-3 lg:my-4" />
-
-                      <span className="text-white/60 text-xs md:text-sm uppercase tracking-widest font-semibold mb-2 block">
-                        Sugerencia de barriles
-                      </span>
-                      <div className="bg-primary/10 text-primary border border-primary/20 rounded-xl px-4 py-2.5 mb-3 lg:mb-4 font-mono font-bold text-base md:text-lg w-full">
-                        {barrelPlan.label}
-                      </div>
-
-                      <div className="calculator-result-price mb-4 lg:mb-5">
-                        <span className="text-white/40 text-xs block mb-1">
-                          {selectedBeer ? `Precio para ${selectedBeer.name}` : "Estimado desde"}
-                        </span>
-                        <span className="text-white font-bold text-2xl">
-                          {formatPrice(barrelPlan.estimatedPrice)}
-                        </span>
-                        <span className="text-white/35 text-xs block mt-1.5">
-                          {priceDisclaimer}
-                        </span>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="mb-4 lg:mb-5 text-left space-y-2.5">
-                      <span className="text-white/60 text-xs md:text-sm uppercase tracking-widest font-semibold mb-1 block text-center">
-                        Desglose por bebida
-                      </span>
-                      {BEVERAGE_TYPE_ORDER.filter((bevType) =>
-                        mixResult.some((item) => item.type === bevType && item.percentage > 0),
-                      ).map((bevType) => {
-                        const item = mixResult.find((i) => i.type === bevType);
-                        if (!item) return null;
-                        return (
-                          <div
-                            key={bevType}
-                            className="bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5"
-                          >
-                            <div className="flex items-center justify-between gap-2 mb-0.5">
-                              <span className="text-white font-bold text-sm">
-                                {BEVERAGE_LABELS[bevType]} ({item.percentage}%)
-                              </span>
-                              <span className="text-primary font-mono font-bold text-sm">
-                                {item.liters} L
-                              </span>
-                            </div>
-                            {bevType === "beer" ? (
-                              <div className="flex items-center justify-between gap-2 text-xs text-white/60">
-                                <span className="font-mono">{barrelPlan.label}</span>
-                                <span>{formatPrice(barrelPlan.estimatedPrice)}</span>
-                              </div>
-                            ) : (
-                              <span className="text-xs text-white/60">
-                                ≈ {item.approxBottles} botellas (estimación aproximada)
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                      <span className="text-white/35 text-xs block">{priceDisclaimer}</span>
-                    </div>
-                  )}
-
-                  {beerSharePercentage === 0 && !mixIsDefault && (
-                    <p className="text-xs text-amber-400/90 mb-2.5">
-                      Esta función todavía no arma pedidos de bebidas espirituosas — agregá cerveza
-                      a la mezcla para poder usar la recomendación.
-                    </p>
-                  )}
-
-                  <button
-                    onClick={() => onUseRecommendation(barrelPlan)}
-                    disabled={barrelPlan.parts.length === 0}
-                    className="w-full py-3 rounded-xl bg-gradient-to-r from-primary to-amber-500 text-black font-bold text-base md:text-lg shadow-[0_0_20px_rgba(217,119,6,0.3)] hover:shadow-[0_0_30px_rgba(217,119,6,0.5)] hover:-translate-y-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Usar esta recomendación
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ResultPanel
+              mixIsDefault={derived.mixIsDefault}
+              totalLiters={state.totalLiters}
+              barrelPlan={state.barrelPlan}
+              selectedBeer={derived.selectedBeer}
+              priceDisclaimer={priceDisclaimer}
+              mixResult={state.mixResult}
+              onUseRecommendation={onUseRecommendation}
+            />
           </div>
         </div>
       </div>

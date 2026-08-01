@@ -40,15 +40,18 @@ import {
   type Beer as CatalogBeer,
 } from "@/domain/beerCatalog";
 import { formatPrice } from "@/domain/format";
+import { getCartLineTitle, getCompactCartLineDescription } from "@/domain/cartLineFormatting";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import {
   buildRecommendedBarrelItems,
+  buildRecommendedBeverageMixItems,
   hasCurrentSelectionInCart,
   type OrderType,
 } from "@/domain/orderFlow";
 import { getOrderWizardValidationMessage } from "@/domain/orderWizardValidation";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
+import { BEVERAGE_LABELS, type BeverageMixItemEstimate } from "@/domain/beverageMix";
 import { getGuardedActivationState } from "@/domain/activationGuard";
 import { WhatsAppChannelSelector } from "@/components/commercial/WhatsAppChannelSelector";
 import { ConfigurableBeerPackBuilder } from "@/components/ConfigurableBeerPackBuilder";
@@ -67,446 +70,25 @@ import {
   listCatalogProductsByCategory,
   listVisibleCatalogCategories,
   normalizeCatalogQuantity,
-  PRODUCT_CATEGORY_LABELS,
-  shouldShowCategorySelector,
-  type CatalogProductOption,
 } from "@/domain/productCatalog";
-import type { ProductCategory, ProductPresentation } from "@/domain/commercialTypes";
-
-type Step = 1 | 2 | 3 | 4 | 5;
+import type { ProductCategory } from "@/domain/commercialTypes";
+import {
+  QUICK_ORDER_CATEGORIES,
+  CONFIGURABLE_PACK_ORDER_TYPE,
+  WHATSAPP_ACTIVATION_GUARD_MS,
+  BUBBLES,
+  type Step,
+} from "@/domain/orderWizardConstants";
+import { OrderTypeVisual } from "@/components/order-wizard/OrderTypeVisual";
+import { BeerGlassStepper } from "@/components/order-wizard/BeerGlassStepper";
+import { CategorySelector } from "@/components/order-wizard/CategorySelector";
+import { ProductSelector } from "@/components/order-wizard/ProductSelector";
+import { PresentationSelector } from "@/components/order-wizard/PresentationSelector";
 
 interface ArmaTuPedidoProps {
   pendingRecommendation: BarrelRecommendation | null;
+  pendingBeverageMix: BeverageMixItemEstimate[] | null;
   sectionRef: RefObject<HTMLElement | null>;
-}
-
-const PHASE_LABELS = ["Productos", "Datos", "Confirmacion"];
-const WHATSAPP_ACTIVATION_GUARD_MS = 1500;
-const QUICK_ORDER_CATEGORIES: ProductCategory[] = [
-  "beer",
-  "wine",
-  "fernet",
-  "gin",
-  "whisky",
-  "mixer",
-  "soft-drink",
-  "pack",
-  "accessory",
-];
-const CONFIGURABLE_PACK_ORDER_TYPE: Exclude<OrderType, null> = "porr\u00f3n";
-
-function OrderTypeVisual({
-  option,
-  selected,
-}: {
-  option: { img: string; title: string; emoji: string };
-  selected: boolean;
-}) {
-  const [failed, setFailed] = useState(false);
-
-  return (
-    <div className="relative h-28 md:h-32 overflow-hidden bg-[radial-gradient(circle_at_30%_20%,rgba(245,158,11,0.22),transparent_36%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]">
-      {!failed && option.img ? (
-        <img
-          src={option.img}
-          alt={`Imagen de ${option.title}`}
-          className={cn(
-            "w-full h-full object-cover transition-all duration-500",
-            selected ? "brightness-75" : "brightness-50 group-hover:brightness-[0.65]",
-          )}
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <div className="flex h-full w-full items-center justify-center text-4xl" aria-hidden="true">
-          {option.emoji}
-        </div>
-      )}
-      <div className={cn("absolute inset-0", selected ? "bg-amber-500/10" : "bg-black/20")} />
-    </div>
-  );
-}
-
-const BUBBLES = Array.from({ length: 12 }, (_, i) => ({
-  id: i,
-  size: 8 + Math.random() * 18,
-  left: 5 + Math.random() * 90,
-  delay: Math.random() * 8,
-  duration: 5 + Math.random() * 6,
-}));
-
-function BeerGlass({ state, label }: { state: "done" | "active" | "future"; label: string }) {
-  const hasBeer = state !== "future";
-  const fillH = state === "done" ? "88%" : state === "active" ? "58%" : "0%";
-  const borderColor = hasBeer ? "border-amber-500" : "border-white/15";
-
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div
-        className={cn(
-          "relative w-8 h-12 border-2 rounded-b-md overflow-hidden bg-transparent transition-colors duration-500",
-          borderColor,
-        )}
-      >
-        <motion.div
-          className="absolute bottom-0 left-0 right-0 bg-amber-500"
-          initial={{ height: 0 }}
-          animate={{ height: fillH }}
-          transition={{ duration: 0.8, ease: "easeOut" }}
-        />
-        {hasBeer && (
-          <motion.div
-            className="absolute left-0 right-0 h-2.5 bg-white/90"
-            style={{ borderRadius: "50% 50% 0 0 / 80% 80% 0 0" }}
-            initial={{ opacity: 0, bottom: "0%" }}
-            animate={{ opacity: 1, bottom: state === "done" ? "84%" : "53%" }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
-          />
-        )}
-        {state === "done" && (
-          <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center">
-              <Check className="w-3 h-3 text-white" strokeWidth={3} />
-            </div>
-          </div>
-        )}
-        {state === "active" && (
-          <motion.div
-            className="absolute inset-0"
-            animate={{ opacity: [0.6, 1, 0.6] }}
-            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          />
-        )}
-      </div>
-      <span
-        className={cn(
-          "hidden md:block text-[9px] font-bold uppercase tracking-widest w-max text-center",
-          hasBeer ? "text-amber-400" : "text-white/25",
-        )}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
-function BeerGlassStepper({ step }: { step: Step }) {
-  const phase = step <= 3 ? 1 : step === 4 ? 2 : 3;
-  const progress = ((phase - 1) / 2) * 100;
-  return (
-    <div className="w-full">
-      <div className="hidden md:flex justify-between items-end relative mx-auto max-w-md lg:max-w-sm xl:max-w-md">
-        <div className="absolute left-4 right-4 h-0.5 bg-white/10 bottom-7 z-0" />
-        <motion.div
-          className="absolute left-4 h-0.5 bg-gradient-to-r from-amber-500 to-amber-400 bottom-7 z-0"
-          initial={{ width: 0 }}
-          animate={{ width: `calc(${progress}% - 0px)` }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-        />
-        {([1, 2, 3] as const).map((i) => (
-          <div key={i} className="relative z-10">
-            <BeerGlass
-              state={phase > i ? "done" : phase === i ? "active" : "future"}
-              label={PHASE_LABELS[i - 1]}
-            />
-          </div>
-        ))}
-      </div>
-
-      <div className="md:hidden">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-2xl">{["🛢️", "🍺", "📏", "✨", "🎟️"][step - 1]}</span>
-          <div>
-            <p className="text-white font-bold text-sm">
-              Paso {phase} de 3 — {PHASE_LABELS[phase - 1]}
-            </p>
-          </div>
-        </div>
-        <div className="relative h-2.5 bg-white/10 rounded-full overflow-hidden">
-          <motion.div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-500 to-amber-400 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function getCartLineTitle(item: {
-  category: string;
-  productName?: string;
-  beerName?: string;
-  name: string;
-}) {
-  if (item.category === "pack") return item.productName ?? item.name;
-  return item.productName ?? item.beerName ?? item.name;
-}
-
-function getCartLineBeer(item: {
-  category: string;
-  productCategory?: string;
-  beerName?: string;
-  productName?: string;
-  variantLabel?: string;
-  name: string;
-}) {
-  if (
-    item.productCategory &&
-    item.productCategory !== "beer" &&
-    item.productCategory in PRODUCT_CATEGORY_LABELS
-  ) {
-    return item.variantLabel && item.variantLabel !== item.productName
-      ? item.variantLabel
-      : PRODUCT_CATEGORY_LABELS[item.productCategory as keyof typeof PRODUCT_CATEGORY_LABELS];
-  }
-  if (item.category === "pack") return null;
-  return item.beerName ?? item.productName ?? item.name.split("—")[0]?.trim() ?? item.name;
-}
-
-function getCartLinePresentation(item: { presentationLabel?: string; name: string }) {
-  return item.presentationLabel ?? item.name.split("—")[1]?.trim() ?? null;
-}
-
-function getCompactCartLineDescription(item: {
-  category: string;
-  productCategory?: string;
-  pack?: { type: string; capacity: number; composition: Array<{ productId: string }> };
-  presentationLabel?: string;
-  variantLabel?: string;
-  qty: number;
-  name: string;
-}) {
-  if (item.pack?.type === "configurable-beer-pack") {
-    const styleCount = new Set(item.pack.composition.map((selection) => selection.productId)).size;
-    return `${item.qty * item.pack.capacity} porrones · ${styleCount} ${styleCount === 1 ? "estilo" : "estilos"}`;
-  }
-  if (item.category === "pack") return "6 estilos surtidos";
-  if (item.presentationLabel) return item.presentationLabel;
-  if (item.variantLabel) return item.variantLabel;
-  return getCartLinePresentation(item) ?? item.category;
-}
-
-function ProductImageFallback({ className = "w-full h-full" }: { className?: string }) {
-  return (
-    <div className={cn(className, "bg-primary/15 flex items-center justify-center")}>
-      <Beer className="w-7 h-7 text-primary" aria-hidden="true" />
-    </div>
-  );
-}
-
-function getPresentationDetails(presentation: ProductPresentation) {
-  return [
-    presentation.description,
-    presentation.volumeLiters > 0 ? `${presentation.volumeLiters} L` : null,
-    presentation.presentationType && presentation.presentationType !== presentation.label
-      ? presentation.presentationType
-      : null,
-  ].filter((part): part is string => Boolean(part));
-}
-
-function CategorySelector({
-  categories,
-  selectedCategory,
-  onSelect,
-}: {
-  categories: ReturnType<typeof listVisibleCatalogCategories>;
-  selectedCategory: ProductCategory;
-  onSelect: (category: ProductCategory) => void;
-}) {
-  if (!shouldShowCategorySelector(categories)) return null;
-
-  const selectedIndex = Math.max(
-    0,
-    categories.findIndex((category) => category.id === selectedCategory),
-  );
-
-  const focusTab = (index: number) => {
-    const tab = document.getElementById(`order-category-${categories[index]?.id}`);
-    tab?.focus();
-  };
-
-  return (
-    <div className="mb-6" role="tablist" aria-label="Categorias de productos">
-      <div className="flex flex-wrap gap-2 justify-center">
-        {categories.map((category) => {
-          const selected = category.id === selectedCategory;
-          return (
-            <button
-              key={category.id}
-              id={`order-category-${category.id}`}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              tabIndex={selected ? 0 : -1}
-              onClick={() => onSelect(category.id)}
-              onKeyDown={(event) => {
-                if (
-                  event.key !== "ArrowRight" &&
-                  event.key !== "ArrowLeft" &&
-                  event.key !== "Home" &&
-                  event.key !== "End"
-                )
-                  return;
-                event.preventDefault();
-                const nextIndex =
-                  event.key === "Home"
-                    ? 0
-                    : event.key === "End"
-                      ? categories.length - 1
-                      : event.key === "ArrowRight"
-                        ? (selectedIndex + 1) % categories.length
-                        : (selectedIndex - 1 + categories.length) % categories.length;
-                onSelect(categories[nextIndex].id);
-                window.requestAnimationFrame(() => focusTab(nextIndex));
-              }}
-              className={cn(
-                "min-h-11 rounded-xl px-4 py-2 text-sm font-bold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                selected
-                  ? "bg-primary text-black border-primary"
-                  : "bg-white/5 text-white/75 border-white/10 hover:border-primary/60 hover:text-white",
-              )}
-            >
-              {category.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function ProductSelector({
-  products,
-  selectedProductId,
-  onSelect,
-}: {
-  products: CatalogProductOption[];
-  selectedProductId: string;
-  onSelect: (productId: string) => void;
-}) {
-  if (products.length === 0) {
-    return (
-      <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-        <p className="text-white font-bold">No hay productos disponibles</p>
-        <p className="text-sm text-muted-foreground mt-1">
-          Elegí otra categoría o intentá nuevamente más tarde.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-      {products.map(({ product, variantLabel, priceFrom }) => {
-        const selected = selectedProductId === product.id;
-        return (
-          <button
-            key={product.id}
-            type="button"
-            onClick={() => onSelect(product.id)}
-            aria-pressed={selected}
-            className={cn(
-              "group text-left rounded-2xl overflow-hidden border-2 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-18px_rgba(245,158,11,0.45)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:hover:translate-y-0",
-              selected
-                ? "border-amber-500 shadow-[0_0_20px_rgba(217,119,6,0.25)]"
-                : "border-transparent bg-white/5 hover:border-amber-500/40",
-            )}
-          >
-            <div className="relative h-28 overflow-hidden">
-              {product.image ? (
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  onError={(event) => {
-                    (event.currentTarget as HTMLImageElement).style.display = "none";
-                  }}
-                />
-              ) : (
-                <ProductImageFallback />
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-              {selected && (
-                <span className="absolute top-2 right-2 w-6 h-6 rounded-full bg-amber-500 flex items-center justify-center">
-                  <Check className="w-3.5 h-3.5 text-black" strokeWidth={3} aria-hidden="true" />
-                </span>
-              )}
-            </div>
-            <div
-              className={cn("p-3 transition-colors", selected ? "bg-amber-500/10" : "bg-white/5")}
-            >
-              <h4
-                className={cn(
-                  "font-bold text-sm mb-1 leading-tight",
-                  selected ? "text-amber-300" : "text-white",
-                )}
-              >
-                {product.name}
-              </h4>
-              {variantLabel && variantLabel !== product.name && (
-                <p className="text-xs text-white/65 mb-1">{variantLabel}</p>
-              )}
-              {product.description && (
-                <p className="text-xs text-muted-foreground leading-snug line-clamp-2 mb-2">
-                  {product.description}
-                </p>
-              )}
-              <p className="text-primary font-mono text-xs font-bold">
-                Desde {formatPrice(priceFrom)}
-              </p>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function PresentationSelector({
-  product,
-  selectedPresentationId,
-  onSelect,
-}: {
-  product: CatalogProductOption;
-  selectedPresentationId: string;
-  onSelect: (presentationId: string) => void;
-}) {
-  return (
-    <div className="grid gap-3">
-      {product.presentations.map((presentation) => {
-        const selected = selectedPresentationId === presentation.id;
-        const details = getPresentationDetails(presentation);
-        return (
-          <button
-            key={presentation.id}
-            type="button"
-            onClick={() => onSelect(presentation.id)}
-            aria-pressed={selected}
-            className={cn(
-              "w-full rounded-2xl border p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              selected
-                ? "border-primary bg-primary/10"
-                : "border-white/10 bg-white/5 hover:border-primary/60",
-            )}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-white font-bold">{presentation.label}</p>
-                {details.length > 0 && (
-                  <p className="text-xs text-muted-foreground mt-1">{details.join(" · ")}</p>
-                )}
-              </div>
-              <p className="text-primary font-mono font-bold shrink-0">
-                {formatPrice(presentation.unitPrice)}
-              </p>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
 }
 
 function LiveOrderSummary({
@@ -672,7 +254,11 @@ function LiveOrderSummary({
   );
 }
 
-export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedidoProps) {
+export function ArmaTuPedido({
+  pendingRecommendation,
+  pendingBeverageMix,
+  sectionRef,
+}: ArmaTuPedidoProps) {
   const { items, addItem, updateQty, totalItems, totalPrice, orderSummary, extras, setExtras } =
     useCart();
   const {
@@ -758,12 +344,15 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
       const recommendedBeer = BEERS.find((beer) => beer.id === pendingRecommendation.beerId);
       if (recommendedBeer) setSelectedBeer(recommendedBeer);
     }
-    setStep(2);
+    // Si la recomendación no incluye cerveza (mezcla 100% espirituosas), no tiene sentido
+    // forzar al usuario a elegir una cerveza para poder avanzar: se salta directo al paso
+    // donde está el botón de aplicar la recomendación.
+    setStep(pendingRecommendation.parts.length > 0 ? 2 : 3);
     setDirection(1);
     setRecommendationStatus("idle");
     setRecommendationError("");
     appliedRecommendationKeyRef.current = "";
-  }, [pendingRecommendation]);
+  }, [pendingRecommendation, pendingBeverageMix]);
 
   useEffect(() => {
     if (visibleCategories.length === 0) {
@@ -956,29 +545,62 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
   };
 
   const applyPendingRecommendation = () => {
-    if (!pendingRecommendation || !selectedBeer) return;
+    if (!pendingRecommendation) return;
+    const hasBeerPart = pendingRecommendation.parts.length > 0;
+    if (hasBeerPart && !selectedBeer) return;
 
     const recommendationKey = [
-      selectedBeer.id,
+      selectedBeer?.id ?? "",
       pendingRecommendation.requiredLiters,
       pendingRecommendation.coveredLiters,
       pendingRecommendation.label,
       ...pendingRecommendation.parts.map((part) => `${part.presentationId}:${part.count}`),
+      ...(pendingBeverageMix ?? []).map((item) => `${item.type}:${item.percentage}:${item.liters}`),
     ].join("|");
     if (appliedRecommendationKeyRef.current === recommendationKey) return;
 
     try {
       appliedRecommendationKeyRef.current = recommendationKey;
-      const recommendedItems = buildRecommendedBarrelItems(selectedBeer, pendingRecommendation);
-      recommendedItems.forEach((item) => {
-        const { qty, ...cartDraft } = item;
-        for (let index = 0; index < qty; index += 1) {
-          addItem(cartDraft);
+      const addedGroups: string[] = [];
+
+      if (hasBeerPart && selectedBeer) {
+        const recommendedItems = buildRecommendedBarrelItems(selectedBeer, pendingRecommendation);
+        recommendedItems.forEach((item) => {
+          const { qty, ...cartDraft } = item;
+          for (let index = 0; index < qty; index += 1) {
+            addItem(cartDraft);
+          }
+        });
+        addedGroups.push("cerveza");
+      }
+
+      if (pendingBeverageMix) {
+        const { items: mixItems, skipped } = buildRecommendedBeverageMixItems(
+          pendingBeverageMix,
+          snapshot,
+        );
+        mixItems.forEach((item) => {
+          const { qty, ...cartDraft } = item;
+          addItem(cartDraft, qty);
+        });
+        if (mixItems.length > 0) addedGroups.push("espirituosas");
+        if (skipped.length > 0) {
+          setRecommendationError(
+            `No se pudo agregar: ${skipped.map((type) => BEVERAGE_LABELS[type]).join(", ")} (sin productos disponibles en el catálogo).`,
+          );
+        } else {
+          setRecommendationError("");
         }
-      });
+      } else {
+        setRecommendationError("");
+      }
+
       setRecommendationStatus("added");
-      setLastAddedMessage("Recomendación agregada al pedido.");
-      setRecommendationError("");
+      setLastAddedMessage(
+        addedGroups.length > 0
+          ? `Recomendación agregada al pedido (${addedGroups.join(" + ")}).`
+          : "Recomendación agregada al pedido.",
+      );
     } catch (error) {
       appliedRecommendationKeyRef.current = "";
       setRecommendationStatus("error");
@@ -1738,46 +1360,50 @@ export function ArmaTuPedido({ pendingRecommendation, sectionRef }: ArmaTuPedido
                             )}
                           </div>
 
-                          {pendingRecommendation && selectedBeer && orderType === "barril" && (
-                            <div className="mt-5 rounded-2xl border border-primary/20 bg-black/30 p-4">
-                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                                <div>
-                                  <p className="text-white font-bold">
-                                    Aplicar recomendación a {selectedBeer.name}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Podés ajustar cantidades o sumar otros estilos después.
-                                  </p>
+                          {pendingRecommendation &&
+                            orderType === "barril" &&
+                            (selectedBeer || pendingRecommendation.parts.length === 0) && (
+                              <div className="mt-5 rounded-2xl border border-primary/20 bg-black/30 p-4">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                                  <div>
+                                    <p className="text-white font-bold">
+                                      {selectedBeer
+                                        ? `Aplicar recomendación a ${selectedBeer.name}`
+                                        : "Aplicar recomendación de bebidas"}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Podés ajustar cantidades o sumar otros estilos después.
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={applyPendingRecommendation}
+                                    disabled={recommendationStatus === "added"}
+                                    className={cn(
+                                      "shrink-0 px-5 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
+                                      recommendationStatus === "added"
+                                        ? "bg-green-500/20 text-green-300 border border-green-500/30 cursor-default"
+                                        : "bg-primary text-black hover:bg-amber-400",
+                                    )}
+                                  >
+                                    {recommendationStatus === "added" ? (
+                                      <>
+                                        <Check className="w-4 h-4" /> Agregada al pedido
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ShoppingCart className="w-4 h-4" /> Agregar recomendación
+                                        al pedido
+                                      </>
+                                    )}
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={applyPendingRecommendation}
-                                  disabled={recommendationStatus === "added"}
-                                  className={cn(
-                                    "shrink-0 px-5 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
-                                    recommendationStatus === "added"
-                                      ? "bg-green-500/20 text-green-300 border border-green-500/30 cursor-default"
-                                      : "bg-primary text-black hover:bg-amber-400",
-                                  )}
-                                >
-                                  {recommendationStatus === "added" ? (
-                                    <>
-                                      <Check className="w-4 h-4" /> Agregada al pedido
-                                    </>
-                                  ) : (
-                                    <>
-                                      <ShoppingCart className="w-4 h-4" /> Agregar recomendación al
-                                      pedido
-                                    </>
-                                  )}
-                                </button>
+                                {recommendationStatus === "error" && (
+                                  <p className="text-red-400 text-xs font-bold mt-3">
+                                    {recommendationError}
+                                  </p>
+                                )}
                               </div>
-                              {recommendationStatus === "error" && (
-                                <p className="text-red-400 text-xs font-bold mt-3">
-                                  {recommendationError}
-                                </p>
-                              )}
-                            </div>
-                          )}
+                            )}
 
                           {totalItems > 0 && (
                             <div className="mt-5 flex justify-center">

@@ -5,12 +5,7 @@
 Monorepo pnpm (workspaces en `pnpm-workspace.yaml`):
 
 - `artifacts/lupulados` — app principal (React 19 + Vite + Tailwind, calculadora de barriles, storefront, PWA).
-- `artifacts/api-server` — backend Express, usa `@workspace/db` y `@workspace/api-zod`.
 - `artifacts/mockup-sandbox` — sandbox de mockups (Vite), no productivo.
-- `lib/db` — capa de datos con Drizzle ORM + Postgres (`drizzle-kit push`).
-- `lib/api-client-react` — cliente API para el front.
-- `lib/api-zod` — schemas Zod compartidos entre API y front.
-- `lib/api-spec` — OpenAPI (`openapi.yaml`).
 - `scripts` — utilidades sueltas (tsx).
 - `docs/` — notas históricas de features/fixes puntuales (pre-CHANGELOG, ver abajo).
 - `supabase/` — config/migraciones de Supabase.

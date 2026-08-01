@@ -12,8 +12,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 
 ### Changed
 
+- Se recalibraron los litros/persona de la mezcla de bebidas espirituosas (`BEVERAGE_LITERS_PER_PERSON`), que hasta ahora eran un placeholder sin contrastar contra ninguna referencia, y ahora también escalan con la intensidad del evento (tranqui/normal/intensa/festival), igual que la cerveza.
 - Se extrajo un componente `QuantityStepper` reutilizable (botón − / cantidad / botón +) y se unificaron los bloques de barril y growler en "Armá tu pedido" en un único `BeerPresentationLineCard`, reemplazando ocho implementaciones inline casi idénticas repartidas entre el wizard y el pack configurable de porrones.
 - `BeerPresentationLineCard` se movió de `ArmaTuPedido.tsx` a su propio archivo (`components/BeerPresentationLineCard.tsx`), como componente exportado y reutilizable, reduciendo el tamaño del wizard. (La fila de producto del pack configurable de porrones no se unificó con este componente porque tiene semántica distinta: ahí la cantidad edita directamente la composición del pack, sin botón "Agregar al pedido" separado.)
+- Se refactorizaron los seis archivos más largos del proyecto (sin cambios de comportamiento), moviendo componentes presentacionales, constantes, helpers puros y orquestación de estado a módulos propios en `components/`, `domain/` y el nuevo `hooks/`: `ArmaTuPedido.tsx` (2383→1962 líneas; se extrajeron a `components/order-wizard/` los selectores de categoría/producto/presentación y los visuales del wizard, y a `domain/` los helpers de formateo de línea de carrito y las constantes del wizard — `LiveOrderSummary` quedó inline porque `storeCatalog.test.ts` verifica literales de su código fuente en ese archivo), `AdminDashboard.tsx` (1353→498; nuevas `components/admin/` y `components/admin/forms/` para las primitivas y los siete formularios por entidad, y `hooks/useAdminDashboardData.ts` para el estado y las mutaciones), `Calculadora.tsx` (971→397; nuevo `components/ui/numeric-stepper-field.tsx` que generaliza el patrón −/input/+ con slider y paso decimal, bloques presentacionales en `components/calculadora/` y `hooks/useCalculadoraState.ts` para el estado y los cálculos derivados), `commercialRepository.ts` (664→324; tipos de fila, mappers row↔dominio y helpers genéricos de Supabase separados en `domain/commercialRepositoryRows.ts`, `commercialRepositoryMappers.ts` y `supabaseRepositoryUtils.ts`), `demoStoreCatalog.ts` (522→80; datos semilla movidos a `domain/demoStoreCatalogData.ts`) y `StorePage.tsx` (604→465; filtro extraído a `components/store/StoreFilterBar.tsx`, constantes y formateo a `domain/storePageConstants.ts`/`storePageFormatting.ts`, y `hooks/useEscapeToClose.ts` reemplaza dos efectos duplicados — `ProductVisual`/`ProductCard`/`ConfigurablePackStoreCard` quedaron inline por la misma razón que `LiveOrderSummary`).
 
 ### Fixed
 
@@ -22,6 +24,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 - En "Armá tu pedido" (mobile), el contador de pasos ya no salta de "Paso 1 de 5" a "Paso 3 de 5" al elegir pack degustación o porrón configurable: ahora muestra la fase real ("Paso X de 3"), igual que la versión desktop.
 - En "Armá tu pedido", el botón "Agregar otro producto" para barril y growler ya no resetea el tipo de pedido elegido: vuelve directo a la selección de estilo, sin obligar a re-elegir "Barril"/"Growler" para pedidos con varios estilos.
 - `storeCatalog.test.ts` quedó desactualizado tras el refactor de `BeerPresentationLineCard`: seguía esperando la clase `lg:h-[var(--wizard-viewport-height)]` (removida al pasar el grid a `auto_auto_auto`) y `overflow-hidden` en vez del `overflow-x-hidden` actual. Se actualizaron las aserciones para reflejar el layout vigente.
+
+### Removed
+
+- Se eliminó el scaffold de backend propio que quedó sin usar desde el commit inicial (`artifacts/api-server`, `lib/db`, `lib/api-zod`, `lib/api-client-react`, `lib/api-spec`), ya que el proyecto persiste datos vía Supabase directamente desde el cliente y ese backend nunca llegó a tener rutas de negocio. También se quitó `replit.md`, que documentaba exclusivamente esa arquitectura descartada.
 
 ## Historial previo (migrado desde `docs/*.md`)
 
