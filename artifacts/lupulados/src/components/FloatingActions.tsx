@@ -5,8 +5,13 @@ import { buildWhatsAppUrlFromSnapshot } from "@/domain/commercialAdapters";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { getMotionAwareScrollBehavior } from "@/lib/reducedMotion";
 import { PwaInstall } from "@/components/PwaInstall";
+import { cn } from "@/lib/utils";
 
-export function FloatingActions() {
+interface FloatingActionsProps {
+  orderFlowActive?: boolean;
+}
+
+export function FloatingActions({ orderFlowActive = false }: FloatingActionsProps) {
   const [showTop, setShowTop] = useState(false);
   const { snapshot, primaryOrderWhatsAppChannel } = useCommercialDerivedData();
 
@@ -23,11 +28,18 @@ export function FloatingActions() {
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
+    <div
+      className={cn(
+        "fixed right-4 z-30 flex flex-col items-end gap-3 sm:right-6 sm:gap-4",
+        orderFlowActive
+          ? "bottom-[calc(6.5rem+max(0.75rem,env(safe-area-inset-bottom)))] sm:bottom-[calc(6rem+max(0.75rem,env(safe-area-inset-bottom)))]"
+          : "bottom-4 sm:bottom-6",
+      )}
+    >
       <PwaInstall />
 
       <AnimatePresence>
-        {showTop && (
+        {showTop && !orderFlowActive && (
           <motion.button
             initial={{ opacity: 0, scale: 0 }}
             animate={{ opacity: 1, scale: 1 }}

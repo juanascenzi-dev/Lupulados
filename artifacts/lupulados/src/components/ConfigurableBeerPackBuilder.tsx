@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Check, Copy, RotateCcw, ShoppingCart } from "lucide-react";
+import { Check, Copy, MoreHorizontal, RotateCcw, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { formatPrice } from "@/domain/format";
@@ -168,7 +168,7 @@ export function ConfigurableBeerPackBuilder({
   return (
     <section
       className={cn(
-        "h-full min-h-0 rounded-2xl border border-white/10 bg-white/[0.045] p-3 md:p-4",
+        "h-full min-h-0 rounded-2xl border border-white/10 bg-white/[0.045] p-2.5 md:p-4",
         compact ? "" : "",
       )}
     >
@@ -186,10 +186,10 @@ export function ConfigurableBeerPackBuilder({
               <p className="text-xs font-bold uppercase tracking-widest text-primary">
                 Pack de porrones
               </p>
-              <h3 className="mt-1 text-xl font-black text-white md:text-2xl">
+              <h3 className="mt-0.5 text-lg font-black text-white md:mt-1 md:text-2xl">
                 Pack configurable x6
               </h3>
-              <p className="mt-1 text-sm leading-relaxed text-white/60">
+              <p className="mt-1 hidden text-sm leading-relaxed text-white/60 sm:block">
                 Cada pack contiene 6 porrones. Elegi los estilos y completa cada combinacion.
               </p>
             </div>
@@ -217,7 +217,7 @@ export function ConfigurableBeerPackBuilder({
           </header>
 
           <div
-            className="flex gap-2 overflow-x-auto pb-1"
+            className="flex gap-2 overflow-x-auto pb-1 [touch-action:pan-x_pan-y]"
             role="tablist"
             aria-label="Packs configurables"
           >
@@ -232,7 +232,7 @@ export function ConfigurableBeerPackBuilder({
                   aria-selected={selected}
                   onClick={() => setActiveIndex(index)}
                   className={cn(
-                    "min-w-[112px] rounded-xl border px-3 py-2 text-left text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                    "min-w-[96px] rounded-xl border px-2.5 py-2 text-left text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:min-w-[112px] sm:px-3",
                     selected
                       ? "border-primary bg-primary text-black"
                       : "border-white/10 bg-white/5 text-white/65 hover:border-primary/50",
@@ -253,40 +253,80 @@ export function ConfigurableBeerPackBuilder({
             <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] rounded-2xl border border-white/10 bg-black/20 p-3">
               <div className="mb-3 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,360px)] lg:items-center">
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-white/70" role="status" aria-live="polite">
-                    {selectedCount === CONFIGURABLE_BEER_PACK_CAPACITY
-                      ? "Pack completo: 6 de 6."
-                      : selectedCount > CONFIGURABLE_BEER_PACK_CAPACITY
-                        ? "Este pack supera el maximo permitido."
-                        : `Faltan ${remainingCount} porrones para completar este pack.`}
-                  </p>
-                  <p className="mt-1 text-xs text-white/45">
-                    Precio estimado: {formatPrice(activePrice)}
-                  </p>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-black text-white">
+                        Pack {activeIndex + 1} de {drafts.length}
+                      </p>
+                      <p
+                        className="mt-0.5 text-xs font-bold text-white/65"
+                        role="status"
+                        aria-live="polite"
+                      >
+                        {selectedCount === CONFIGURABLE_BEER_PACK_CAPACITY
+                          ? "Completo"
+                          : selectedCount > CONFIGURABLE_BEER_PACK_CAPACITY
+                            ? "Supera el maximo"
+                            : `Faltan ${remainingCount}`}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="font-mono text-sm font-black text-primary">
+                        {formatPrice(activePrice)}
+                      </p>
+                      <p className="text-xs font-bold text-white/55">
+                        {selectedCount}/{CONFIGURABLE_BEER_PACK_CAPACITY}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10"
+                    aria-hidden="true"
+                  >
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-[width,background-color] duration-200",
+                        selectedCount === CONFIGURABLE_BEER_PACK_CAPACITY
+                          ? "bg-green-400"
+                          : "bg-primary",
+                      )}
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          (selectedCount / CONFIGURABLE_BEER_PACK_CAPACITY) * 100,
+                        )}%`,
+                      }}
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 lg:grid-cols-1 xl:grid-cols-3">
                   <button
                     type="button"
                     aria-label={`Copiar composicion del Pack ${activeIndex} al Pack ${activeIndex + 1}`}
                     disabled={activeIndex === 0}
                     onClick={copyPrevious}
-                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-2 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-3"
                   >
-                    <Copy className="h-3.5 w-3.5" aria-hidden="true" /> Copiar anterior
+                                        <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+                    <span className="hidden sm:inline">Copiar anterior</span>
+                    <span className="sm:hidden">Copiar</span>
                   </button>
                   <button
                     type="button"
                     aria-label={`Usar composicion del Pack ${activeIndex + 1} en todos los packs`}
                     onClick={applyToAll}
-                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-2 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-3"
                   >
-                    <Check className="h-3.5 w-3.5" aria-hidden="true" /> Usar en todos
+                    <MoreHorizontal className="h-3.5 w-3.5 sm:hidden" aria-hidden="true" />
+                    <Check className="hidden h-3.5 w-3.5 sm:block" aria-hidden="true" />
+                    <span className="hidden sm:inline">Usar en todos</span>
+                    <span className="sm:hidden">Todos</span>
                   </button>
                   <button
                     type="button"
                     aria-label={`Vaciar composicion del Pack ${activeIndex + 1}`}
                     onClick={clearActive}
-                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-center text-xs font-bold text-white/65 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    className="flex min-h-10 items-center justify-center gap-1 rounded-lg border border-red-400/30 px-2 py-2 text-center text-xs font-bold text-red-200 hover:bg-red-500/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 sm:px-3"
                   >
                     <RotateCcw className="h-3.5 w-3.5" aria-hidden="true" /> Vaciar
                   </button>
@@ -303,7 +343,7 @@ export function ConfigurableBeerPackBuilder({
                   return (
                     <div
                       key={product.productId}
-                      className="grid grid-cols-[minmax(0,1fr)_136px] items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-2.5"
+                      className="grid grid-cols-[minmax(0,1fr)_128px] items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] p-2 sm:grid-cols-[minmax(0,1fr)_136px] sm:gap-3 sm:p-2.5"
                     >
                       <div className="min-w-0">
                         <p className="truncate text-sm font-bold text-white">{product.name}</p>

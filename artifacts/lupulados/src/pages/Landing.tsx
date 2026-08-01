@@ -63,6 +63,10 @@ export default function Landing() {
   const [pendingBeverageMix, setPendingBeverageMix] = useState<BeverageMixItemEstimate[] | null>(
     null,
   );
+  const [orderSectionVisible, setOrderSectionVisible] = useState(false);
+  const [currentHash, setCurrentHash] = useState(() =>
+    typeof window === "undefined" ? "" : window.location.hash,
+  );
 
   const closeBanner = () => {
     setShowBanner(false);
@@ -129,6 +133,34 @@ export default function Landing() {
       window.removeEventListener("resize", scrollToCurrentHash);
     };
   }, [promoBannerHeight, showBanner]);
+
+  useEffect(() => {
+    const updateHash = () => setCurrentHash(window.location.hash);
+    updateHash();
+
+    window.addEventListener("hashchange", updateHash);
+    window.addEventListener("popstate", updateHash);
+
+    return () => {
+      window.removeEventListener("hashchange", updateHash);
+      window.removeEventListener("popstate", updateHash);
+    };
+  }, []);
+
+  useEffect(() => {
+    const section = orderSectionRef.current;
+    if (!section || typeof IntersectionObserver !== "function") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setOrderSectionVisible(entry.isIntersecting),
+      { rootMargin: "-20% 0px -45% 0px", threshold: 0 },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
+  const orderFlowActive = currentHash === "#arma-tu-pedido" || orderSectionVisible;
 
   return (
     <div className="relative w-full bg-background">
@@ -223,8 +255,8 @@ export default function Landing() {
       </main>
 
       <Footer />
-      <FloatingActions />
-      <CartFloating />
+      <FloatingActions orderFlowActive={orderFlowActive} />
+      <CartFloating orderFlowActive={orderFlowActive} />
     </div>
   );
 }

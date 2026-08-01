@@ -13,6 +13,7 @@ import {
   LITERS_PER_PERSON_MIN,
   useCalculadoraState,
 } from "@/hooks/useCalculadoraState";
+import { MAX_EVENT_GUESTS, MIN_EVENT_GUESTS } from "@/domain/eventGuestCount";
 import { cn } from "@/lib/utils";
 
 interface CalculadoraProps {
@@ -85,8 +86,9 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                       id="calculator-guests"
                       value={state.guests}
                       step={5}
-                      min={10}
-                      max={500}
+                      inputStep={1}
+                      min={MIN_EVENT_GUESTS}
+                      max={MAX_EVENT_GUESTS}
                       onChange={handlers.handleGuestsChange}
                       onInputChange={handlers.handleGuestsInputChange}
                       decreaseAriaLabel="Restar 5 invitados"
@@ -102,19 +104,19 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
                       aria-label="Cantidad de invitados"
                       aria-describedby="calculator-guests-help"
                       type="range"
-                      min="10"
-                      max="500"
-                      step="5"
+                      min={MIN_EVENT_GUESTS}
+                      max={MAX_EVENT_GUESTS}
+                      step="1"
                       value={state.guests}
                       onChange={(e) => handlers.handleGuestsChange(Number(e.target.value))}
                       className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
                     />
                     <div className="flex justify-between mt-1.5 text-xs text-muted-foreground font-mono">
-                      <span>10</span>
-                      <span>500+</span>
+                      <span>{MIN_EVENT_GUESTS}</span>
+                      <span>{MAX_EVENT_GUESTS}+</span>
                     </div>
                     <p id="calculator-guests-help" className="sr-only">
-                      Elegi una cantidad entre 10 y 500 invitados.
+                      Elegi una cantidad entera entre 1 y 500 invitados.
                     </p>
                   </>
                 ) : (

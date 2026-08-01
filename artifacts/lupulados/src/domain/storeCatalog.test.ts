@@ -256,7 +256,11 @@ describe("storeCatalog", () => {
     expect(orderWizard).toContain('detailed && item.pack?.type === "configurable-beer-pack"');
     expect(orderWizard).toContain("--wizard-action-bottom-inset");
     expect(orderWizard).toContain("lg:min-h-[min(620px,var(--wizard-viewport-height))]");
-    expect(orderWizard).toContain("min-h-0 flex-1 overflow-x-hidden");
+    expect(orderWizard).toContain("lg:h-[var(--wizard-viewport-height)]");
+    expect(orderWizard).toContain(
+      'isConfigurablePackStep ? "overflow-visible" : "overflow-hidden"',
+    );
+    expect(orderWizard).toContain('"overflow-y-auto overscroll-contain"');
     expect(orderWizard).not.toContain("hover:scale-[1.02]");
     expect(storePage).toContain("ConfigurableBeerPackBuilder");
     expect(storePage).toContain("Personalizar pack");

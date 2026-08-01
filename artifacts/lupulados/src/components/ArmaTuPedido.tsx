@@ -737,7 +737,7 @@ export function ArmaTuPedido({
                   }
                 : goPrev
             }
-            className="flex min-h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            className="flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 font-bold text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary sm:px-4"
           >
             <ChevronLeft className="h-5 w-5" aria-hidden="true" /> Anterior
           </button>
@@ -883,7 +883,10 @@ export function ArmaTuPedido({
         tabIndex={-1}
         style={wizardViewportStyle}
         className={cn(
-          "relative z-10 mx-auto flex min-h-[min(760px,calc(100dvh-var(--site-sticky-offset)-1rem-var(--wizard-action-bottom-inset)))] flex-col px-4 focus:outline-none sm:px-6 lg:grid lg:min-h-[min(620px,var(--wizard-viewport-height))] lg:grid-rows-[auto_auto_auto] lg:px-8",
+          "relative z-10 mx-auto flex flex-col px-4 focus:outline-none sm:px-6 lg:grid lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:px-8",
+          isConfigurablePackStep
+            ? "min-h-0"
+            : "min-h-[min(760px,calc(100dvh-var(--site-sticky-offset)-1rem-var(--wizard-action-bottom-inset)))] lg:h-[var(--wizard-viewport-height)] lg:min-h-[min(620px,var(--wizard-viewport-height))]",
           isConfigurablePackStep ? "max-w-7xl" : "max-w-6xl",
         )}
       >
@@ -983,12 +986,20 @@ export function ArmaTuPedido({
             <div
               data-section-secondary
               className={cn(
-                "min-h-0 flex-1 overflow-x-hidden pb-[calc(6rem+max(0.75rem,env(safe-area-inset-bottom)))] lg:grid lg:gap-5 lg:pb-[calc(5.5rem+max(0.75rem,env(safe-area-inset-bottom)))]",
+                "min-h-0 flex-1 pb-[calc(6rem+max(0.75rem,env(safe-area-inset-bottom)))] lg:grid lg:gap-5 lg:pb-[calc(5.5rem+max(0.75rem,env(safe-area-inset-bottom)))]",
+                isConfigurablePackStep ? "overflow-visible" : "overflow-hidden",
                 isConfigurablePackStep ? "lg:grid-cols-1" : "lg:grid-cols-[minmax(0,1fr)_320px]",
               )}
             >
               {/* Wizard */}
-              <div className="relative min-h-0 min-w-0 overflow-y-auto overscroll-contain pr-0 lg:overflow-visible lg:pr-1">
+                            <div
+                className={cn(
+                  "relative min-h-0 min-w-0 pr-0 lg:pr-1",
+                  isConfigurablePackStep
+                    ? "overflow-visible"
+                    : "overflow-y-auto overscroll-contain",
+                )}
+              >
                 <AnimatePresence mode="wait" custom={direction}>
                   {/* STEP 1: TIPO */}
                   {step === 1 && (

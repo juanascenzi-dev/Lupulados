@@ -15,6 +15,7 @@ import {
   type NonBeerBeverageType,
 } from "@/domain/beverageMix";
 import { formatDurationLabel } from "@/domain/eventDuration";
+import { clampEventGuestCount, parseEventGuestCount } from "@/domain/eventGuestCount";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { parseNumericInput } from "@/lib/utils";
 
@@ -46,7 +47,7 @@ export function useCalculadoraState() {
   const [mixResult, setMixResult] = useState<BeverageMixItemEstimate[]>([]);
 
   const handleGuestsChange = (val: number) => {
-    setGuests(Math.min(Math.max(val, 10), 500));
+    setGuests(clampEventGuestCount(val));
   };
 
   const handleMenChange = (val: number) => setMen(Math.min(Math.max(val, 0), 500));
@@ -54,7 +55,7 @@ export function useCalculadoraState() {
 
   const handleToggleGenderMode = () => {
     if (genderModeEnabled) {
-      setGuests(Math.min(Math.max(men + women, 10), 500));
+      setGuests(clampEventGuestCount(men + women));
       setGenderModeEnabled(false);
     } else {
       setMen(Math.ceil(guests / 2));
@@ -79,13 +80,7 @@ export function useCalculadoraState() {
     );
   };
 
-  // Mientras se tipea solo se acota el techo (para no romper el cálculo con un número absurdo);
-  // el piso y el redondeo a pasos de 15 (minutos) se aplican recién al salir del campo (onBlur),
-  // así escribir "15" dígito por dígito no salta a "10" apenas se tipea el primer "1".
-  const handleGuestsInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setGuests(Math.min(Math.max(value, 0), 500));
-  };
+  const handleGuestsInputChange = (raw: string) => {     const parsed = parseEventGuestCount(raw);     if (parsed !== null) setGuests(parsed);   };
 
   const handleMenInputChange = (raw: string) => {
     const value = parseNumericInput(raw);
