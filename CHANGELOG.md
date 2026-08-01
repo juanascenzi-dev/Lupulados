@@ -11,6 +11,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 ### Changed
 
 - Se extrajo un componente `QuantityStepper` reutilizable (botón − / cantidad / botón +) y se unificaron los bloques de barril y growler en "Armá tu pedido" en un único `BeerPresentationLineCard`, reemplazando ocho implementaciones inline casi idénticas repartidas entre el wizard y el pack configurable de porrones.
+- `BeerPresentationLineCard` se movió de `ArmaTuPedido.tsx` a su propio archivo (`components/BeerPresentationLineCard.tsx`), como componente exportado y reutilizable, reduciendo el tamaño del wizard. (La fila de producto del pack configurable de porrones no se unificó con este componente porque tiene semántica distinta: ahí la cantidad edita directamente la composición del pack, sin botón "Agregar al pedido" separado.)
 
 ### Fixed
 
