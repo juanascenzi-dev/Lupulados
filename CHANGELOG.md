@@ -21,6 +21,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 - En "Armá tu pedido", el botón "Agregar otro producto" para barril y growler ya no resetea el tipo de pedido elegido: vuelve directo a la selección de estilo, sin obligar a re-elegir "Barril"/"Growler" para pedidos con varios estilos.
 - `storeCatalog.test.ts` quedó desactualizado tras el refactor de `BeerPresentationLineCard`: seguía esperando la clase `lg:h-[var(--wizard-viewport-height)]` (removida al pasar el grid a `auto_auto_auto`) y `overflow-hidden` en vez del `overflow-x-hidden` actual. Se actualizaron las aserciones para reflejar el layout vigente.
 
+### Removed
+
+- Se eliminó el scaffold de backend propio que quedó sin usar desde el commit inicial (`artifacts/api-server`, `lib/db`, `lib/api-zod`, `lib/api-client-react`, `lib/api-spec`), ya que el proyecto persiste datos vía Supabase directamente desde el cliente y ese backend nunca llegó a tener rutas de negocio. También se quitó `replit.md`, que documentaba exclusivamente esa arquitectura descartada.
+
 ## Historial previo (migrado desde `docs/*.md`)
 
 Estas entradas resumen cambios ya hechos antes de adoptar este changelog. El detalle completo queda en los `docs/*.md` referenciados.
