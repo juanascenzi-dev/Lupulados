@@ -7,6 +7,8 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 ### Added
 
 - Opción para editar manualmente la cantidad de litros de cerveza por persona en la calculadora de barriles.
+- `lib/db/src/schema` ahora define en Drizzle las 9 tablas del esquema comercial/admin (antes vacío), espejando `supabase/migrations/20260725120000_commercial_admin_foundation.sql` (columnas, checks, únicos, FK). No se tocaron endpoints de `api-server`; el frontend sigue consultando Supabase directamente.
+- Se agregó infraestructura de tests (vitest) a `lib/db` y `artifacts/api-server`, antes sin ningún test: sanity checks del esquema recién portado y de sus `insertXSchema` (drizzle-zod), y un test del endpoint `GET /api/healthz` con `supertest`.
 
 ### Changed
 
