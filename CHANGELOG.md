@@ -19,6 +19,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 - En "Armá tu pedido" (desktop), la grilla de estilos y el panel "Tu pedido" ya no quedan acotados a la altura de un viewport con scroll interno propio: ahora la sección crece con el contenido y es la página la que scrollea, sin necesidad de scrollear dentro de esas cajas para ver todo.
 - En "Armá tu pedido" (mobile), el contador de pasos ya no salta de "Paso 1 de 5" a "Paso 3 de 5" al elegir pack degustación o porrón configurable: ahora muestra la fase real ("Paso X de 3"), igual que la versión desktop.
 - En "Armá tu pedido", el botón "Agregar otro producto" para barril y growler ya no resetea el tipo de pedido elegido: vuelve directo a la selección de estilo, sin obligar a re-elegir "Barril"/"Growler" para pedidos con varios estilos.
+- `storeCatalog.test.ts` quedó desactualizado tras el refactor de `BeerPresentationLineCard`: seguía esperando la clase `lg:h-[var(--wizard-viewport-height)]` (removida al pasar el grid a `auto_auto_auto`) y `overflow-hidden` en vez del `overflow-x-hidden` actual. Se actualizaron las aserciones para reflejar el layout vigente.
 
 ## Historial previo (migrado desde `docs/*.md`)
 
