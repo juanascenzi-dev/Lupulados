@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "NODE_ENV=development tsx ./src/index.ts",
     "build": "tsx ./build.ts",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@workspace/db": "workspace:*",
@@ -21,7 +22,10 @@
     "@types/express": "^5.0.6",
     "@types/cors": "^2.8.19",
     "@types/cookie-parser": "^1.4.10",
+    "@types/supertest": "^6.0.2",
     "esbuild": "^0.27.3",
-    "tsx": "catalog:"
+    "supertest": "^7.0.0",
+    "tsx": "catalog:",
+    "vitest": "^3.2.4"
   }
 }
