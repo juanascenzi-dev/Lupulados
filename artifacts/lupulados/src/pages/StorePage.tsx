@@ -1,25 +1,40 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { Link } from "wouter";
-import { ArrowDownAZ, Beer, BottleWine, Droplets, Gift, IceCreamBowl, Package, Search, ShoppingCart, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import {
+  Beer,
+  BottleWine,
+  Droplets,
+  Gift,
+  IceCreamBowl,
+  Package,
+  ShoppingCart,
+  X,
+} from "lucide-react";
 import { Footer } from "@/components/Footer";
 import { ConfigurableBeerPackBuilder } from "@/components/ConfigurableBeerPackBuilder";
 import { SharedCheckoutPanel } from "@/components/commercial/SharedCheckoutPanel";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { StoreFilterBar } from "@/components/store/StoreFilterBar";
 import { useCart } from "@/context/CartContext";
 import { useCommercialData } from "@/context/CommercialDataContext";
-import { cn } from "@/lib/utils";
+import { useEscapeToClose } from "@/hooks/useEscapeToClose";
 import { formatPrice } from "@/domain/format";
 import { buildBeerCatalog } from "@/domain/commercialAdapters";
-import { CONFIGURABLE_BEER_PACK_CAPACITY, listPackAvailableProducts } from "@/domain/configurableBeerPack";
+import {
+  CONFIGURABLE_BEER_PACK_CAPACITY,
+  listPackAvailableProducts,
+} from "@/domain/configurableBeerPack";
 import { createCommercialCartItem, normalizeCatalogQuantity } from "@/domain/productCatalog";
 import {
-  STORE_MAIN_CATEGORY_LABELS,
-  STORE_PRICE_RANGE_LABELS,
-  STORE_SORT_LABELS,
   buildStoreCatalogWithDemo,
   filterStoreCatalog,
   getActiveStoreFilterCount,
-  getStoreResultLabel,
   getHumanPresentationLabel,
   getStoreImageSource,
   listStorePresentationOptions,
@@ -30,32 +45,14 @@ import {
   type StorePriceRange,
   type StoreSortOption,
 } from "@/domain/storeCatalog";
-import { buildPresentationComparison, getProductMaxSavings, hasPromotion, hasVolumeSavings } from "@/domain/storePricing";
+import {
+  buildPresentationComparison,
+  getProductMaxSavings,
+  hasPromotion,
+  hasVolumeSavings,
+} from "@/domain/storePricing";
+import { getSavingsCopy } from "@/domain/storePageFormatting";
 import type { ProductPresentation } from "@/domain/commercialTypes";
-
-const mainCategories: StoreMainCategory[] = ["all", "beer", "alcohol", "non-alcohol", "combo", "accessory"];
-const sortOptions = Object.keys(STORE_SORT_LABELS) as StoreSortOption[];
-const priceRangeOptions = Object.keys(STORE_PRICE_RANGE_LABELS) as StorePriceRange[];
-
-function formatPercent(value: number) {
-  if (!Number.isFinite(value) || value <= 0) return "0%";
-  return `${Math.round(value * 100)}%`;
-}
-
-function getSavingsCopy(comparison: ReturnType<typeof buildPresentationComparison>) {
-  if (!comparison) return null;
-  const savings = comparison.hasPromotionalSavings ? comparison.promotionalSavings : comparison.savings;
-  const rate = comparison.hasPromotionalSavings ? comparison.promotionalSavingsRate : comparison.savingsRate;
-  if (savings <= 0) return null;
-  if (comparison.hasPromotionalSavings) {
-    return `Ahorras ${formatPrice(savings)} (${formatPercent(rate)})`;
-  }
-  if (comparison.referencePresentation) {
-    const referenceLabel = getHumanPresentationLabel(comparison.referencePresentation);
-    return `Ahorras ${formatPrice(savings)} comparado con ${referenceLabel}`;
-  }
-  return `Ahorras ${formatPrice(savings)} (${formatPercent(rate)})`;
-}
 
 function ProductVisual({ item }: { item: StoreCatalogItem }) {
   const imageSource = getStoreImageSource(item.product);
@@ -100,9 +97,13 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
   const [presentationId, setPresentationId] = useState(item.presentations[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [feedback, setFeedback] = useState<{ key: number; text: string } | null>(null);
-  const presentation = item.presentations.find((candidate) => candidate.id === presentationId) ?? item.presentations[0];
+  const presentation =
+    item.presentations.find((candidate) => candidate.id === presentationId) ??
+    item.presentations[0];
   const line = presentation ? createCommercialCartItem(item.product, presentation) : null;
-  const comparison = presentation ? buildPresentationComparison(presentation, item.presentations) : null;
+  const comparison = presentation
+    ? buildPresentationComparison(presentation, item.presentations)
+    : null;
   const savingsCopy = getSavingsCopy(comparison);
   const promotionActive = presentation?.promotional === true;
   const promotionSavings = comparison?.hasPromotionalSavings ? comparison.promotionalSavings : 0;
@@ -157,25 +158,34 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
             )}
           </div>
           <h2 className="text-lg font-black leading-tight text-white">{item.product.name}</h2>
-          <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/58">{item.product.description}</p>
+          <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-white/58">
+            {item.product.description}
+          </p>
           {item.product.components && item.product.components.length > 0 && (
-            <p className="mt-2 text-xs leading-relaxed text-white/45">Incluye: {item.product.components.join(", ")}.</p>
+            <p className="mt-2 text-xs leading-relaxed text-white/45">
+              Incluye: {item.product.components.join(", ")}.
+            </p>
           )}
         </div>
 
         <div className="mt-auto space-y-3">
           <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/55">Presentación</span>
-            <Select
-              value={presentation?.id ?? ""}
-              onValueChange={setPresentationId}
-            >
+            <span className="mb-1.5 block text-xs font-bold uppercase tracking-widest text-white/55">
+              Presentación
+            </span>
+            <Select value={presentation?.id ?? ""} onValueChange={setPresentationId}>
               <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/40 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
-                <SelectValue aria-label={presentation ? getHumanPresentationLabel(presentation) : undefined} />
+                <SelectValue
+                  aria-label={presentation ? getHumanPresentationLabel(presentation) : undefined}
+                />
               </SelectTrigger>
               <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
                 {item.presentations.map((candidate: ProductPresentation) => (
-                  <SelectItem key={candidate.id} value={candidate.id} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">
+                  <SelectItem
+                    key={candidate.id}
+                    value={candidate.id}
+                    className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white"
+                  >
                     {getHumanPresentationLabel(candidate)}
                   </SelectItem>
                 ))}
@@ -185,11 +195,17 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
           <div className="min-h-[104px] rounded-xl border border-white/10 bg-black/25 p-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">{promotionActive ? "Precio promo demo" : "Valor estimado"}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+                  {promotionActive ? "Precio promo demo" : "Valor estimado"}
+                </p>
                 {promotionActive && presentation?.compareAtPrice && promotionSavings > 0 && (
-                  <p className="font-mono text-xs font-bold text-white/35 line-through">{formatPrice(presentation.compareAtPrice)}</p>
+                  <p className="font-mono text-xs font-bold text-white/35 line-through">
+                    {formatPrice(presentation.compareAtPrice)}
+                  </p>
                 )}
-                <p className="font-mono text-xl font-black text-primary">{formatPrice(presentation?.unitPrice ?? item.priceFrom)}</p>
+                <p className="font-mono text-xl font-black text-primary">
+                  {formatPrice(presentation?.unitPrice ?? item.priceFrom)}
+                </p>
               </div>
               {promotionActive && (
                 <span className="shrink-0 rounded-full border border-amber-300/30 bg-amber-400/15 px-2 py-1 text-[10px] font-black uppercase tracking-widest text-amber-100">
@@ -203,7 +219,9 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
                   {formatPrice(comparison.effectiveUnitPrice)} por {comparison.unitLabel}
                 </p>
                 {comparison.referenceCost && comparison.hasSavings && (
-                  <p className="text-white/45">Referencia: {formatPrice(comparison.referenceCost)}</p>
+                  <p className="text-white/45">
+                    Referencia: {formatPrice(comparison.referenceCost)}
+                  </p>
                 )}
                 {comparison.bestValueLabel && (
                   <p className="font-bold text-amber-100">{comparison.bestValueLabel}</p>
@@ -234,7 +252,12 @@ function ProductCard({ item }: { item: StoreCatalogItem }) {
             <ShoppingCart className="h-4 w-4" aria-hidden="true" />
             {feedback ? "Agregado" : "Agregar"}
           </button>
-          <p key={feedback?.key ?? "empty"} className="min-h-5 text-xs font-bold text-green-300 motion-safe:animate-in motion-safe:fade-in" role="status" aria-live="polite">
+          <p
+            key={feedback?.key ?? "empty"}
+            className="min-h-5 text-xs font-bold text-green-300 motion-safe:animate-in motion-safe:fade-in"
+            role="status"
+            aria-live="polite"
+          >
             {feedback?.text ?? ""}
           </p>
         </div>
@@ -254,9 +277,12 @@ function ConfigurablePackStoreCard({
   const beers = useMemo(() => buildBeerCatalog(snapshot), [snapshot]);
   const products = useMemo(() => listPackAvailableProducts(beers), [beers]);
   const [failedImage, setFailedImage] = useState(false);
-  const minBottlePrice = products.length > 0 ? Math.min(...products.map((product) => product.price)) : 0;
+  const minBottlePrice =
+    products.length > 0 ? Math.min(...products.map((product) => product.price)) : 0;
   const priceFrom = minBottlePrice * CONFIGURABLE_BEER_PACK_CAPACITY;
-  const image = beers.find((beer) => beer.presentations.some((presentation) => presentation.id === "porron500ml"))?.image;
+  const image = beers.find((beer) =>
+    beer.presentations.some((presentation) => presentation.id === "porron500ml"),
+  )?.image;
 
   return (
     <article className="flex min-h-full flex-col overflow-hidden rounded-2xl border border-primary/25 bg-primary/[0.08] shadow-lg shadow-black/20">
@@ -294,7 +320,9 @@ function ConfigurablePackStoreCard({
         </div>
         <div className="mt-auto space-y-3">
           <div className="min-h-[104px] rounded-xl border border-white/10 bg-black/25 p-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">Precio estimado desde</p>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+              Precio estimado desde
+            </p>
             <p className="font-mono text-xl font-black text-primary">
               {priceFrom > 0 ? formatPrice(priceFrom) : "No disponible"}
             </p>
@@ -336,11 +364,30 @@ export default function StorePage() {
   const checkoutButtonRef = useRef<HTMLButtonElement | null>(null);
   const packBuilderButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const subcategories = useMemo(() => listStoreSubcategories(items, mainCategory), [items, mainCategory]);
+  const subcategories = useMemo(
+    () => listStoreSubcategories(items, mainCategory),
+    [items, mainCategory],
+  );
   const presentationOptions = useMemo(() => listStorePresentationOptions(items), [items]);
   const filters = useMemo(
-    () => ({ query, mainCategory, subcategory, presentationType, onlyPromotions, onlyVolumeSavings, priceRange }),
-    [query, mainCategory, subcategory, presentationType, onlyPromotions, onlyVolumeSavings, priceRange],
+    () => ({
+      query,
+      mainCategory,
+      subcategory,
+      presentationType,
+      onlyPromotions,
+      onlyVolumeSavings,
+      priceRange,
+    }),
+    [
+      query,
+      mainCategory,
+      subcategory,
+      presentationType,
+      onlyPromotions,
+      onlyVolumeSavings,
+      priceRange,
+    ],
   );
   const filtered = useMemo(
     () => sortStoreCatalog(filterStoreCatalog(items, filters), sortBy),
@@ -358,43 +405,38 @@ export default function StorePage() {
     setPriceRange("all");
   };
 
-  useEffect(() => {
-    if (!checkoutOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setCheckoutOpen(false);
-      checkoutButtonRef.current?.focus();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [checkoutOpen]);
-
-  useEffect(() => {
-    if (!packBuilderOpen) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "Escape") return;
-      setPackBuilderOpen(false);
-      packBuilderButtonRef.current?.focus();
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [packBuilderOpen]);
+  useEscapeToClose(checkoutOpen, () => setCheckoutOpen(false), checkoutButtonRef);
+  useEscapeToClose(packBuilderOpen, () => setPackBuilderOpen(false), packBuilderButtonRef);
 
   return (
     <div className="min-h-screen bg-background text-white">
-      <a href="#tienda-contenido" className="skip-link">Saltar al catálogo</a>
+      <a href="#tienda-contenido" className="skip-link">
+        Saltar al catálogo
+      </a>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-background/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link href="/" className="font-display text-xl font-black text-white">Lupulados</Link>
+          <Link href="/" className="font-display text-xl font-black text-white">
+            Lupulados
+          </Link>
           <nav className="flex items-center gap-2">
-            <Link href="/" className="rounded-xl px-3 py-2 text-sm font-bold text-white/70 hover:bg-white/10 hover:text-white">Inicio</Link>
-            <button ref={checkoutButtonRef} type="button" onClick={() => setCheckoutOpen(true)} className="relative rounded-xl bg-primary px-3 py-2 text-sm font-black text-black">
+            <Link
+              href="/"
+              className="rounded-xl px-3 py-2 text-sm font-bold text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              Inicio
+            </Link>
+            <button
+              ref={checkoutButtonRef}
+              type="button"
+              onClick={() => setCheckoutOpen(true)}
+              className="relative rounded-xl bg-primary px-3 py-2 text-sm font-black text-black"
+            >
               Carrito
-              {totalItems > 0 && <span className="ml-2 rounded-full bg-black px-1.5 py-0.5 text-[10px] text-primary">{totalItems}</span>}
+              {totalItems > 0 && (
+                <span className="ml-2 rounded-full bg-black px-1.5 py-0.5 text-[10px] text-primary">
+                  {totalItems}
+                </span>
+              )}
             </button>
           </nav>
         </div>
@@ -403,138 +445,59 @@ export default function StorePage() {
       <main id="tienda-contenido" className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6">
         <section className="mb-8 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end">
           <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-primary">Tienda mockup V1</p>
-            <h1 className="font-display text-4xl font-black leading-tight text-white sm:text-5xl">Presupuestá lo que necesitás</h1>
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.24em] text-primary">
+              Tienda mockup V1
+            </p>
+            <h1 className="font-display text-4xl font-black leading-tight text-white sm:text-5xl">
+              Presupuestá lo que necesitás
+            </h1>
             <p className="mt-4 max-w-2xl text-base leading-relaxed text-white/62">
-              Revisá productos, elegí presentaciones y armá un pedido mixto. Al finalizar se prepara un mensaje de WhatsApp para coordinar detalles.
+              Revisá productos, elegí presentaciones y armá un pedido mixto. Al finalizar se prepara
+              un mensaje de WhatsApp para coordinar detalles.
             </p>
           </div>
           <div className="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4 text-sm leading-relaxed text-amber-100">
-            Catálogo de demostración. Los productos, precios y disponibilidad son ilustrativos y deben confirmarse por WhatsApp. Prohibida la venta de bebidas alcohólicas a menores de 18 años. Beber con moderación.
+            Catálogo de demostración. Los productos, precios y disponibilidad son ilustrativos y
+            deben confirmarse por WhatsApp. Prohibida la venta de bebidas alcohólicas a menores de
+            18 años. Beber con moderación.
           </div>
         </section>
 
-        <section className="mb-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_220px_220px_220px_220px]">
-            <label className="relative block">
-              <span className="sr-only">Buscar productos</span>
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" aria-hidden="true" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar por nombre, estilo, tipo..."
-                className="h-11 w-full rounded-xl border border-white/10 bg-black/35 pl-10 pr-3 text-white placeholder:text-white/35 focus:border-primary focus:outline-none"
-              />
-            </label>
-            <label>
-              <span className="sr-only">Subcategoría</span>
-              <Select value={subcategory} onValueChange={setSubcategory}>
-                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
-                  <SelectValue placeholder="Todas las subcategorías" />
-                </SelectTrigger>
-                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
-                  <SelectItem value="all" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Todas las subcategorías</SelectItem>
-                  {subcategories.map((value) => <SelectItem key={value} value={value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">{value}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </label>
-            <label>
-              <span className="sr-only">Tipo o presentación</span>
-              <Select value={presentationType} onValueChange={setPresentationType}>
-                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
-                  <SelectValue placeholder="Todas las presentaciones" />
-                </SelectTrigger>
-                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
-                  <SelectItem value="all" className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">Todas las presentaciones</SelectItem>
-                  {presentationOptions.map((option) => <SelectItem key={option.value} value={option.value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">{option.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </label>
-            <label>
-              <span className="sr-only">Rango de precio</span>
-              <Select value={priceRange} onValueChange={(value) => setPriceRange(value as StorePriceRange)}>
-                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
-                  <SelectValue placeholder="Todos los precios" />
-                </SelectTrigger>
-                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
-                  {priceRangeOptions.map((value) => (
-                    <SelectItem key={value} value={value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">
-                      {STORE_PRICE_RANGE_LABELS[value]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </label>
-            <label>
-              <span className="sr-only">Ordenar por</span>
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as StoreSortOption)}>
-                <SelectTrigger className="h-11 rounded-xl border-white/10 bg-black/35 px-3 pr-4 text-white focus:ring-1 focus:ring-primary [&>svg]:ml-3 [&>svg]:text-primary">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent className="z-[80] border-white/10 bg-[#15110d] text-white shadow-2xl shadow-black/50">
-                  {sortOptions.map((value) => (
-                    <SelectItem key={value} value={value} className="text-white focus:bg-primary/20 focus:text-white data-[highlighted]:bg-primary/20 data-[highlighted]:text-white">
-                      {STORE_SORT_LABELS[value]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </label>
-          </div>
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            {mainCategories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                onClick={() => {
-                  setMainCategory(category);
-                  setSubcategory("all");
-                }}
-                className={cn(
-                  "rounded-full border px-3 py-2 text-xs font-bold transition-colors",
-                  mainCategory === category ? "border-primary bg-primary text-black" : "border-white/10 bg-white/5 text-white/65 hover:border-primary/60",
-                )}
-              >
-                {STORE_MAIN_CATEGORY_LABELS[category]}
-              </button>
-            ))}
-            <button
-              type="button"
-              onClick={() => setOnlyPromotions((value) => !value)}
-              className={cn(
-                "flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-bold transition-colors",
-                onlyPromotions ? "border-primary bg-primary text-black" : "border-white/10 bg-white/5 text-white/65 hover:border-primary/60",
-              )}
-            >
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              Solo promociones
-            </button>
-            <button
-              type="button"
-              onClick={() => setOnlyVolumeSavings((value) => !value)}
-              className={cn(
-                "flex items-center gap-1 rounded-full border px-3 py-2 text-xs font-bold transition-colors",
-                onlyVolumeSavings ? "border-primary bg-primary text-black" : "border-white/10 bg-white/5 text-white/65 hover:border-primary/60",
-              )}
-            >
-              <ArrowDownAZ className="h-3.5 w-3.5" aria-hidden="true" />
-              Con ahorro
-            </button>
-            <button type="button" onClick={clearFilters} className="ml-auto flex items-center gap-1 rounded-full border border-white/10 px-3 py-2 text-xs font-bold text-white/55 hover:bg-white/10">
-              <X className="h-3.5 w-3.5" aria-hidden="true" />
-              Limpiar filtros{activeFilterCount > 0 ? ` (${activeFilterCount})` : ""}
-            </button>
-          </div>
-          <p className="mt-3 flex items-center gap-2 text-sm text-white/50" role="status">
-            <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-            {getStoreResultLabel(filtered.length)}
-          </p>
-        </section>
+        <StoreFilterBar
+          query={query}
+          onQueryChange={setQuery}
+          subcategory={subcategory}
+          onSubcategoryChange={setSubcategory}
+          subcategories={subcategories}
+          presentationType={presentationType}
+          onPresentationTypeChange={setPresentationType}
+          presentationOptions={presentationOptions}
+          priceRange={priceRange}
+          onPriceRangeChange={setPriceRange}
+          sortBy={sortBy}
+          onSortByChange={setSortBy}
+          mainCategory={mainCategory}
+          onMainCategoryChange={(category) => {
+            setMainCategory(category);
+            setSubcategory("all");
+          }}
+          onlyPromotions={onlyPromotions}
+          onToggleOnlyPromotions={() => setOnlyPromotions((value) => !value)}
+          onlyVolumeSavings={onlyVolumeSavings}
+          onToggleOnlyVolumeSavings={() => setOnlyVolumeSavings((value) => !value)}
+          activeFilterCount={activeFilterCount}
+          onClearFilters={clearFilters}
+          resultCount={filtered.length}
+        />
 
         {filtered.length === 0 ? (
           <section className="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] p-10 text-center">
-            <h2 className="text-xl font-bold text-white">No encontramos productos con esos filtros</h2>
-            <p className="mt-2 text-sm text-white/55">Proba limpiar filtros o buscar por otra palabra.</p>
+            <h2 className="text-xl font-bold text-white">
+              No encontramos productos con esos filtros
+            </h2>
+            <p className="mt-2 text-sm text-white/55">
+              Proba limpiar filtros o buscar por otra palabra.
+            </p>
           </section>
         ) : (
           <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -542,13 +505,20 @@ export default function StorePage() {
               buttonRef={packBuilderButtonRef}
               onCustomize={() => setPackBuilderOpen(true)}
             />
-            {filtered.map((item) => <ProductCard key={item.product.id} item={item} />)}
+            {filtered.map((item) => (
+              <ProductCard key={item.product.id} item={item} />
+            ))}
           </section>
         )}
       </main>
 
       {packBuilderOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Configurar pack de porrones">
+        <div
+          className="fixed inset-0 z-50 bg-black/70 p-3 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Configurar pack de porrones"
+        >
           <div className="mx-auto flex max-h-[calc(100vh-1.5rem)] max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101010] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <h2 className="text-lg font-black text-white">Pack de porrones</h2>
@@ -580,14 +550,24 @@ export default function StorePage() {
       )}
 
       {checkoutOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 p-3 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label="Checkout">
+        <div
+          className="fixed inset-0 z-50 bg-black/70 p-3 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Checkout"
+        >
           <div className="mx-auto flex max-h-[calc(100vh-1.5rem)] max-w-6xl flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#101010] shadow-2xl">
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <h2 className="text-lg font-black text-white">Checkout</h2>
-              <button type="button" onClick={() => {
-                setCheckoutOpen(false);
-                checkoutButtonRef.current?.focus();
-              }} className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white" aria-label="Cerrar checkout">
+              <button
+                type="button"
+                onClick={() => {
+                  setCheckoutOpen(false);
+                  checkoutButtonRef.current?.focus();
+                }}
+                className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white"
+                aria-label="Cerrar checkout"
+              >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
