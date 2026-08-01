@@ -8,6 +8,10 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 
 - Opción para editar manualmente la cantidad de litros de cerveza por persona en la calculadora de barriles.
 
+### Fixed
+
+- En "Armá tu pedido", el banner de recomendación calculada ahora es más compacto y se oculta al llegar al paso de agregar productos al carrito, y se corrigió el grid del wizard (filas implícitas sin alto acotado) que causaba saltos de layout al ir sumando ítems.
+
 ## Historial previo (migrado desde `docs/*.md`)
 
 Estas entradas resumen cambios ya hechos antes de adoptar este changelog. El detalle completo queda en los `docs/*.md` referenciados.
