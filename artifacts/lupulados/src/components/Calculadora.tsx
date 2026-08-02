@@ -1,29 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Calculator,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  SlidersHorizontal,
-  Users,
-} from "lucide-react";
+import { Calculator, ChevronLeft, ChevronRight, Clock, Users } from "lucide-react";
 import { BeerStylePicker } from "@/components/calculadora/BeerStylePicker";
 import { BeverageMixPicker } from "@/components/calculadora/BeverageMixPicker";
 import { EventTypeCards } from "@/components/calculadora/EventTypeCards";
+import { LitersPerPersonPicker } from "@/components/calculadora/LitersPerPersonPicker";
 import { ResultPanel } from "@/components/calculadora/ResultPanel";
 import { SummerToggle } from "@/components/calculadora/SummerToggle";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { NumericStepperField } from "@/components/ui/numeric-stepper-field";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 import { getBeerSharePercentage, type BeverageMixItemEstimate } from "@/domain/beverageMix";
 import { EVENT_TYPES } from "@/domain/calculadoraConstants";
+import { MAX_EVENT_DURATION_MINUTES } from "@/domain/eventDuration";
 import { MAX_EVENT_GUESTS, MIN_EVENT_GUESTS } from "@/domain/eventGuestCount";
 import {
   LITERS_PER_PERSON_MAX,
@@ -47,9 +34,6 @@ const FLEX_STEPPER_FIELD_CLASSES = {
   inputClassName:
     "min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-center font-bold text-primary transition-colors focus:border-primary focus:outline-none",
 };
-
-const COMPACT_BUTTON_CLASS =
-  "shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-bold text-white transition-colors hover:border-primary";
 
 const mobileSteps = [
   { id: 0, label: "Evento" },
@@ -175,6 +159,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
             value={state.hours}
             step={1}
             min={0}
+            max={Math.floor(MAX_EVENT_DURATION_MINUTES / 60)}
             onChange={handlers.handleHoursChange}
             onInputChange={handlers.handleHoursInputChange}
             decreaseAriaLabel="Restar una hora"
@@ -197,6 +182,7 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
             step={15}
             inputStep={15}
             min={0}
+            max={59}
             onChange={handlers.handleMinutesChange}
             onInputChange={handlers.handleMinutesInputChange}
             decreaseAriaLabel="Restar 15 minutos"
@@ -216,75 +202,17 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
   );
 
   const litersOverride = (
-    <div className="calculator-card calculator-summary-card rounded-2xl border border-white/10 bg-white/5 p-3">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white">
-            <SlidersHorizontal className="h-4 w-4 text-primary" aria-hidden="true" /> Litros por
-            persona
-          </span>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Estandar de {eventTypeLabel}: {derived.standardLitersPerPerson.toFixed(1)} L.
-          </p>
-        </div>
-        <span className="font-mono text-sm font-semibold text-primary">
-          {derived.effectiveLitersPerPerson.toFixed(1)} L
-        </span>
-      </div>
-      <button
-        type="button"
-        onClick={handlers.handleExpandLitersOverride}
-        className={`${COMPACT_BUTTON_CLASS} mt-3`}
-      >
-        Personalizar
-      </button>
-
-      <Dialog
-        open={state.showLitersOverride}
-        onOpenChange={(open) => !open && handlers.handleCloseLitersOverride()}
-      >
-        <DialogContent className="max-w-md border-white/10 bg-[#15110d] text-white">
-          <DialogHeader>
-            <DialogTitle>Personalizar litros por persona</DialogTitle>
-            <DialogDescription>
-              Ajusta el consumo base sin cambiar el estilo de fiesta seleccionado.
-            </DialogDescription>
-          </DialogHeader>
-          <NumericStepperField
-            id="calculator-liters-per-person"
-            value={derived.effectiveLitersPerPerson}
-            step={0.1}
-            inputStep={0.1}
-            min={LITERS_PER_PERSON_MIN}
-            max={LITERS_PER_PERSON_MAX}
-            onChange={handlers.handleLitersOverrideChange}
-            onInputChange={handlers.handleLitersOverrideInputChange}
-            inputMode="decimal"
-            wrapperClassName="flex items-center gap-2"
-            buttonClassName="h-10 w-10 shrink-0 rounded-lg border border-white/10 bg-white/5 font-bold text-white transition-colors hover:border-primary"
-            inputClassName="h-10 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-2 text-center font-bold text-primary transition-colors focus:border-primary focus:outline-none"
-            decreaseAriaLabel="Restar 0.1 litros por persona"
-            increaseAriaLabel="Sumar 0.1 litros por persona"
-          />
-          <DialogFooter className="gap-2 sm:space-x-0">
-            <button
-              type="button"
-              onClick={handlers.handleResetLitersOverride}
-              className="min-h-11 rounded-xl border border-white/10 px-4 font-bold text-white/70 hover:text-white"
-            >
-              Restablecer
-            </button>
-            <button
-              type="button"
-              onClick={handlers.handleCloseLitersOverride}
-              className="min-h-11 rounded-xl bg-primary px-5 font-bold text-black"
-            >
-              Aplicar
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+    <LitersPerPersonPicker
+      standardLitersPerPerson={derived.standardLitersPerPerson}
+      effectiveLitersPerPerson={derived.effectiveLitersPerPerson}
+      eventTypeLabel={eventTypeLabel}
+      min={LITERS_PER_PERSON_MIN}
+      max={LITERS_PER_PERSON_MAX}
+      onChange={handlers.handleLitersOverrideChange}
+      onInputChange={handlers.handleLitersOverrideInputChange}
+      onOpen={handlers.handleExpandLitersOverride}
+      onReset={handlers.handleResetLitersOverride}
+    />
   );
 
   const beverageMixCard = (
@@ -331,11 +259,15 @@ export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
     </div>
   );
 
+  const selectedBeerName =
+    beerCatalog.find((beer) => beer.id === state.barrelPlan.beerId)?.name ?? null;
+
   const resultPanel = (
     <ResultPanel
       mixIsDefault={derived.mixIsDefault}
       totalLiters={state.totalLiters}
       barrelPlan={state.barrelPlan}
+      selectedBeerName={selectedBeerName}
       priceDisclaimer={priceDisclaimer}
       mixResult={state.mixResult}
       durationValidationMessage={derived.durationValidationMessage}
