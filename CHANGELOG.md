@@ -6,12 +6,16 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 
 ### Added
 
+- La calculadora de barriles ahora tiene arquitectura viewport-first: layout reutilizable de módulo interactivo, flujo mobile por pasos, modales compactos para estilos y mezcla, y tests de duración extendida/selección múltiple/porcentajes.
 - Opción para editar manualmente la cantidad de litros de cerveza por persona en la calculadora de barriles.
 - `lib/db/src/schema` ahora define en Drizzle las 9 tablas del esquema comercial/admin (antes vacío), espejando `supabase/migrations/20260725120000_commercial_admin_foundation.sql` (columnas, checks, únicos, FK). No se tocaron endpoints de `api-server`; el frontend sigue consultando Supabase directamente.
 - Se agregó infraestructura de tests (vitest) a `lib/db` y `artifacts/api-server`, antes sin ningún test: sanity checks del esquema recién portado y de sus `insertXSchema` (drizzle-zod), y un test del endpoint `GET /api/healthz` con `supertest`.
 
 ### Changed
 
+- La preferencia de estilos de cerveza en la calculadora pasa de selección única visible como tags a selección múltiple en modal. Queda documentada como preferencia para "Arma tu pedido" y ya no modifica litros ni promete reservar estilos concretos.
+- La mezcla de bebidas pasa de controles expansivos inline a modal transaccional con resumen compacto, validación de porcentajes, distribución automática y detalle truncado con "Ver N más" en el resultado.
+- La duración del evento se representa internamente en minutos totales, sin límite de 12/24 horas, con formato en días/horas/minutos y validación explícita para duración cero.
 - Se recalibraron los litros/persona de la mezcla de bebidas espirituosas (`BEVERAGE_LITERS_PER_PERSON`), que hasta ahora eran un placeholder sin contrastar contra ninguna referencia, y ahora también escalan con la intensidad del evento (tranqui/normal/intensa/festival), igual que la cerveza.
 - Se extrajo un componente `QuantityStepper` reutilizable (botón − / cantidad / botón +) y se unificaron los bloques de barril y growler en "Armá tu pedido" en un único `BeerPresentationLineCard`, reemplazando ocho implementaciones inline casi idénticas repartidas entre el wizard y el pack configurable de porrones.
 - `BeerPresentationLineCard` se movió de `ArmaTuPedido.tsx` a su propio archivo (`components/BeerPresentationLineCard.tsx`), como componente exportado y reutilizable, reduciendo el tamaño del wizard. (La fila de producto del pack configurable de porrones no se unificó con este componente porque tiene semántica distinta: ahí la cantidad edita directamente la composición del pack, sin botón "Agregar al pedido" separado.)
@@ -19,7 +23,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 
 ### Fixed
 
-- En "Armá tu pedido", el banner de recomendación calculada ahora es más compacto y se oculta al llegar al paso de agregar productos al carrito, y se corrigió el grid del wizard (filas implícitas sin alto acotado) que causaba saltos de layout al ir sumando ítems.
+- Se elimino el modo inventado de invitados y las expansiones inline que deformaban tarjetas de la Calculadora; litros por persona, mezcla y desglose ya no empujan ni reestructuran el panel principal.- En "Armá tu pedido", el banner de recomendación calculada ahora es más compacto y se oculta al llegar al paso de agregar productos al carrito, y se corrigió el grid del wizard (filas implícitas sin alto acotado) que causaba saltos de layout al ir sumando ítems.
 - En "Armá tu pedido" (desktop), la grilla de estilos y el panel "Tu pedido" ya no quedan acotados a la altura de un viewport con scroll interno propio: ahora la sección crece con el contenido y es la página la que scrollea, sin necesidad de scrollear dentro de esas cajas para ver todo.
 - En "Armá tu pedido" (mobile), el contador de pasos ya no salta de "Paso 1 de 5" a "Paso 3 de 5" al elegir pack degustación o porrón configurable: ahora muestra la fase real ("Paso X de 3"), igual que la versión desktop.
 - En "Armá tu pedido", el botón "Agregar otro producto" para barril y growler ya no resetea el tipo de pedido elegido: vuelve directo a la selección de estilo, sin obligar a re-elegir "Barril"/"Growler" para pedidos con varios estilos.

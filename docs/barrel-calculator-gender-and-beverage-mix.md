@@ -52,3 +52,9 @@ Los 320 tests del proyecto (`npm test`) pasan. Se verificó manualmente en naveg
 - `src/components/Calculadora.tsx` — toggle de género en Invitados, card de mezcla de bebidas, panel de resultado con desglose
 - `src/domain/beerConsumptionEstimate.test.ts` — nuevos casos de género y del helper extraído
 - `src/domain/beverageMix.test.ts` — nuevo archivo de tests
+
+## Actualizacion de UX viewport-first
+
+La segmentacion por genero sigue vigente en el calculo, pero ya no se presenta como modo opcional colapsado. En la Calculadora aprobada, `Total invitados`, `Hombres` y `Mujeres` permanecen visibles al mismo tiempo dentro de una tarjeta compacta y estable. Editar el total sincroniza la composicion proporcionalmente; editar hombres o mujeres recalcula el total visible. Esta decision evita ocultar informacion principal detras de un modo inventado.
+
+La mezcla de bebidas tambien sigue vigente, pero su configuracion completa vive en modal transaccional. La tarjeta principal solo muestra resumen y boton `Configurar`; el desglose detallado de bebidas vive en una tarjeta compacta con boton `Ver desglose` y modal propio. Ninguna de estas acciones debe expandir la pantalla principal.

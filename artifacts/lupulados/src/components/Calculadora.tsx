@@ -1,424 +1,467 @@
-import { Calculator, Clock, SlidersHorizontal, Users, Wine } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Calculator,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import { BeerStylePicker } from "@/components/calculadora/BeerStylePicker";
-import { DurationChips } from "@/components/calculadora/DurationChips";
+import { BeverageMixPicker } from "@/components/calculadora/BeverageMixPicker";
 import { EventTypeCards } from "@/components/calculadora/EventTypeCards";
 import { ResultPanel } from "@/components/calculadora/ResultPanel";
 import { SummerToggle } from "@/components/calculadora/SummerToggle";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { NumericStepperField } from "@/components/ui/numeric-stepper-field";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
-import { BEVERAGE_LABELS, type BeverageMixItemEstimate } from "@/domain/beverageMix";
-import { EVENT_TYPES, NON_BEER_TYPES } from "@/domain/calculadoraConstants";
+import { getBeerSharePercentage, type BeverageMixItemEstimate } from "@/domain/beverageMix";
+import { EVENT_TYPES } from "@/domain/calculadoraConstants";
+import { MAX_EVENT_GUESTS, MIN_EVENT_GUESTS } from "@/domain/eventGuestCount";
 import {
   LITERS_PER_PERSON_MAX,
   LITERS_PER_PERSON_MIN,
   useCalculadoraState,
 } from "@/hooks/useCalculadoraState";
-import { MAX_EVENT_GUESTS, MIN_EVENT_GUESTS } from "@/domain/eventGuestCount";
 import { cn } from "@/lib/utils";
 
 interface CalculadoraProps {
   onUseRecommendation: (
     recommendation: BarrelRecommendation,
     mixResult: BeverageMixItemEstimate[],
+    beerPreferenceIds: string[],
   ) => void;
 }
 
-// Shared − / input / + classes for the men/women/hours/minutes steppers (flex-1 width).
 const FLEX_STEPPER_FIELD_CLASSES = {
   wrapperClassName: "flex items-center gap-2",
   buttonClassName:
-    "w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0",
+    "h-9 w-9 shrink-0 rounded-lg border border-white/10 bg-white/5 font-bold text-white transition-colors hover:border-primary",
   inputClassName:
-    "flex-1 bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors",
+    "min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-center font-bold text-primary transition-colors focus:border-primary focus:outline-none",
 };
+
+const COMPACT_BUTTON_CLASS =
+  "shrink-0 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm font-bold text-white transition-colors hover:border-primary";
+
+const mobileSteps = [
+  { id: 0, label: "Evento" },
+  { id: 1, label: "Bebidas" },
+  { id: 2, label: "Resumen" },
+] as const;
 
 export function Calculadora({ onUseRecommendation }: CalculadoraProps) {
   const { priceDisclaimer, beerCatalog, state, derived, handlers } = useCalculadoraState();
+  const [mobileStep, setMobileStep] = useState(0);
+  const mobileStepContentRef = useRef<HTMLDivElement | null>(null);
+
+  const setMobileStepSafely = (step: number) => {
+    setMobileStep(Math.min(Math.max(step, 0), mobileSteps.length - 1));
+  };
+  const goNext = () => setMobileStepSafely(mobileStep + 1);
+  const goPrev = () => setMobileStepSafely(mobileStep - 1);
+
+  useEffect(() => {
+    const stepContent = mobileStepContentRef.current;
+    if (!stepContent) return;
+
+    stepContent.scrollTop = 0;
+    const frame = window.requestAnimationFrame(() => {
+      stepContent.scrollTop = 0;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [mobileStep]);
+  const eventTypeLabel = EVENT_TYPES.find((t) => t.id === state.type)?.label ?? "evento";
+  const beerSharePercentage = getBeerSharePercentage(state.beverageMixShares);
+
+  const guestControls = (
+    <div className="calculator-card rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white">
+          <Users className="h-4 w-4 text-primary" aria-hidden="true" /> Invitados
+        </label>
+        <span className="text-xs text-muted-foreground">
+          Entre {MIN_EVENT_GUESTS} y {MAX_EVENT_GUESTS} invitados sugeridos.
+        </span>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <div>
+          <label htmlFor="calculator-guests" className="mb-1.5 block text-xs text-muted-foreground">
+            Total invitados
+          </label>
+          <NumericStepperField
+            id="calculator-guests"
+            value={derived.effectiveGuestsTotal}
+            step={5}
+            inputStep={1}
+            min={MIN_EVENT_GUESTS}
+            max={MAX_EVENT_GUESTS}
+            onChange={handlers.handleGuestsChange}
+            onInputChange={handlers.handleGuestsInputChange}
+            decreaseAriaLabel="Restar 5 invitados"
+            increaseAriaLabel="Sumar 5 invitados"
+            required
+            inputMode="numeric"
+            {...FLEX_STEPPER_FIELD_CLASSES}
+          />
+        </div>
+        <div>
+          <label htmlFor="calculator-men" className="mb-1.5 block text-xs text-muted-foreground">
+            Hombres
+          </label>
+          <NumericStepperField
+            id="calculator-men"
+            value={state.men}
+            step={1}
+            min={0}
+            max={MAX_EVENT_GUESTS}
+            onChange={handlers.handleMenChange}
+            onInputChange={handlers.handleMenInputChange}
+            decreaseAriaLabel="Restar un hombre"
+            increaseAriaLabel="Sumar un hombre"
+            inputMode="numeric"
+            {...FLEX_STEPPER_FIELD_CLASSES}
+          />
+        </div>
+        <div>
+          <label htmlFor="calculator-women" className="mb-1.5 block text-xs text-muted-foreground">
+            Mujeres
+          </label>
+          <NumericStepperField
+            id="calculator-women"
+            value={state.women}
+            step={1}
+            min={0}
+            max={MAX_EVENT_GUESTS}
+            onChange={handlers.handleWomenChange}
+            onInputChange={handlers.handleWomenInputChange}
+            decreaseAriaLabel="Restar una mujer"
+            increaseAriaLabel="Sumar una mujer"
+            inputMode="numeric"
+            {...FLEX_STEPPER_FIELD_CLASSES}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const durationControls = (
+    <div className="calculator-card rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <label className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white">
+          <Clock className="h-4 w-4 text-primary" aria-hidden="true" /> Duracion del evento
+        </label>
+        <span className="font-mono text-sm font-semibold text-primary">
+          {derived.durationLabel}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="calculator-hours" className="mb-1.5 block text-xs text-muted-foreground">
+            Horas
+          </label>
+          <NumericStepperField
+            id="calculator-hours"
+            value={state.hours}
+            step={1}
+            min={0}
+            onChange={handlers.handleHoursChange}
+            onInputChange={handlers.handleHoursInputChange}
+            decreaseAriaLabel="Restar una hora"
+            increaseAriaLabel="Sumar una hora"
+            required
+            inputMode="numeric"
+            {...FLEX_STEPPER_FIELD_CLASSES}
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="calculator-minutes"
+            className="mb-1.5 block text-xs text-muted-foreground"
+          >
+            Minutos
+          </label>
+          <NumericStepperField
+            id="calculator-minutes"
+            value={state.minutes}
+            step={15}
+            inputStep={15}
+            min={0}
+            onChange={handlers.handleMinutesChange}
+            onInputChange={handlers.handleMinutesInputChange}
+            decreaseAriaLabel="Restar 15 minutos"
+            increaseAriaLabel="Sumar 15 minutos"
+            required
+            inputMode="numeric"
+            {...FLEX_STEPPER_FIELD_CLASSES}
+          />
+        </div>
+      </div>
+      {derived.durationValidationMessage && (
+        <p className="mt-2 text-xs text-red-300" role="alert">
+          {derived.durationValidationMessage}
+        </p>
+      )}
+    </div>
+  );
+
+  const litersOverride = (
+    <div className="calculator-card calculator-summary-card rounded-2xl border border-white/10 bg-white/5 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <span className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-white">
+            <SlidersHorizontal className="h-4 w-4 text-primary" aria-hidden="true" /> Litros por
+            persona
+          </span>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Estandar de {eventTypeLabel}: {derived.standardLitersPerPerson.toFixed(1)} L.
+          </p>
+        </div>
+        <span className="font-mono text-sm font-semibold text-primary">
+          {derived.effectiveLitersPerPerson.toFixed(1)} L
+        </span>
+      </div>
+      <button
+        type="button"
+        onClick={handlers.handleExpandLitersOverride}
+        className={`${COMPACT_BUTTON_CLASS} mt-3`}
+      >
+        Personalizar
+      </button>
+
+      <Dialog
+        open={state.showLitersOverride}
+        onOpenChange={(open) => !open && handlers.handleCloseLitersOverride()}
+      >
+        <DialogContent className="max-w-md border-white/10 bg-[#15110d] text-white">
+          <DialogHeader>
+            <DialogTitle>Personalizar litros por persona</DialogTitle>
+            <DialogDescription>
+              Ajusta el consumo base sin cambiar el estilo de fiesta seleccionado.
+            </DialogDescription>
+          </DialogHeader>
+          <NumericStepperField
+            id="calculator-liters-per-person"
+            value={derived.effectiveLitersPerPerson}
+            step={0.1}
+            inputStep={0.1}
+            min={LITERS_PER_PERSON_MIN}
+            max={LITERS_PER_PERSON_MAX}
+            onChange={handlers.handleLitersOverrideChange}
+            onInputChange={handlers.handleLitersOverrideInputChange}
+            inputMode="decimal"
+            wrapperClassName="flex items-center gap-2"
+            buttonClassName="h-10 w-10 shrink-0 rounded-lg border border-white/10 bg-white/5 font-bold text-white transition-colors hover:border-primary"
+            inputClassName="h-10 min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-2 text-center font-bold text-primary transition-colors focus:border-primary focus:outline-none"
+            decreaseAriaLabel="Restar 0.1 litros por persona"
+            increaseAriaLabel="Sumar 0.1 litros por persona"
+          />
+          <DialogFooter className="gap-2 sm:space-x-0">
+            <button
+              type="button"
+              onClick={handlers.handleResetLitersOverride}
+              className="min-h-11 rounded-xl border border-white/10 px-4 font-bold text-white/70 hover:text-white"
+            >
+              Restablecer
+            </button>
+            <button
+              type="button"
+              onClick={handlers.handleCloseLitersOverride}
+              className="min-h-11 rounded-xl bg-primary px-5 font-bold text-black"
+            >
+              Aplicar
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+
+  const beverageMixCard = (
+    <BeverageMixPicker
+      shares={state.beverageMixShares}
+      onChange={handlers.handleSetBeverageMixShares}
+    />
+  );
+
+  const eventStep = (
+    <div className="calculator-event-stack space-y-2.5">
+      {guestControls}
+      {durationControls}
+      <EventTypeCards type={state.type} onSelect={handlers.setType} />
+      <div className="calculator-summary-row grid items-stretch gap-2.5 md:grid-cols-2">
+        {litersOverride}
+        <BeerStylePicker
+          beerCatalog={beerCatalog}
+          selectedBeerIds={state.selectedBeerIds}
+          onChange={handlers.setSelectedBeerIds}
+        />
+      </div>
+    </div>
+  );
+  const preferenceCards = (
+    <div className="space-y-3">
+      <SummerToggle
+        isSummer={state.isSummer}
+        onToggle={() => handlers.setIsSummer(!state.isSummer)}
+      />
+      <BeerStylePicker
+        beerCatalog={beerCatalog}
+        selectedBeerIds={state.selectedBeerIds}
+        onChange={handlers.setSelectedBeerIds}
+      />
+      {beverageMixCard}
+    </div>
+  );
+
+  const mobilePreferenceStep = (
+    <div className="space-y-3">
+      {litersOverride}
+      {preferenceCards}
+    </div>
+  );
+
+  const resultPanel = (
+    <ResultPanel
+      mixIsDefault={derived.mixIsDefault}
+      totalLiters={state.totalLiters}
+      barrelPlan={state.barrelPlan}
+      priceDisclaimer={priceDisclaimer}
+      mixResult={state.mixResult}
+      durationValidationMessage={derived.durationValidationMessage}
+      onUseRecommendation={(recommendation, mixResult) =>
+        onUseRecommendation(recommendation, mixResult, state.selectedBeerIds)
+      }
+    />
+  );
+
+  const mobileSummary = (
+    <div className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+      <button
+        type="button"
+        onClick={() => setMobileStepSafely(0)}
+        className="rounded-2xl border border-white/10 bg-white/5 p-3 text-left"
+      >
+        <span className="block text-xs uppercase tracking-wider text-white/45">Evento</span>
+        <span className="font-bold text-white">
+          {derived.effectiveGuestsTotal} invitados, {derived.durationLabel.replace("= ", "")}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setMobileStepSafely(1)}
+        className="rounded-2xl border border-white/10 bg-white/5 p-3 text-left"
+      >
+        <span className="block text-xs uppercase tracking-wider text-white/45">Bebidas</span>
+        <span className="font-bold text-white">
+          {derived.effectiveLitersPerPerson.toFixed(1)} L/persona, cerveza {beerSharePercentage}%
+        </span>
+      </button>
+    </div>
+  );
 
   return (
     <section
       id="calculadora"
-      className="calculator-section site-section site-section-compact bg-background relative border-t border-white/5 overflow-hidden"
+      className="calculator-section viewport-task-section site-section relative overflow-x-hidden border-t border-white/5 bg-background"
     >
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(217,119,6,0.05)_0%,transparent_70%)] pointer-events-none" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(217,119,6,0.05)_0%,transparent_70%)]" />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div
-          data-section-entry
-          className="calculator-panel glass-panel p-4 sm:p-5 lg:p-6 rounded-3xl"
-        >
-          <div className="flex items-center justify-center gap-2.5 mb-2">
-            <Calculator className="w-6 h-6 md:w-7 md:h-7 text-primary" aria-hidden="true" />
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-display font-bold text-white text-center">
-              Calculadora de Barriles
-            </h2>
+      <div className="viewport-task-container relative z-10 mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div data-section-entry className="calculator-panel glass-panel rounded-3xl p-4 sm:p-5">
+          <div className="calculator-header flex shrink-0 flex-col items-center gap-1 pb-3 text-center">
+            <div className="flex items-center justify-center gap-2.5">
+              <Calculator className="h-6 w-6 text-primary md:h-7 md:w-7" aria-hidden="true" />
+              <h2 className="font-display text-2xl font-bold text-white md:text-3xl lg:text-4xl">
+                Calculadora de Barriles
+              </h2>
+            </div>
+            <p className="calculator-copy max-w-2xl text-sm text-muted-foreground md:text-base">
+              Estima litros, formatos y bebidas sin perder de vista la recomendacion.
+            </p>
           </div>
 
-          <p className="calculator-copy text-center text-sm md:text-base text-muted-foreground mb-4 lg:mb-5 max-w-2xl mx-auto">
-            Ajustá los detalles de tu evento y estimá cuánta cerveza conviene pedir.
-          </p>
-
-          <div className="calculator-grid grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-5 xl:gap-6">
-            {/* Inputs */}
-            <div className="calculator-controls lg:col-span-7 space-y-3 lg:space-y-4">
-              {/* Guests */}
-              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 mb-2.5">
-                  <label
-                    htmlFor="calculator-guests"
-                    className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2"
-                  >
-                    <Users className="w-4 h-4 text-primary" aria-hidden="true" /> Invitados
-                  </label>
-                  <button
-                    type="button"
-                    aria-pressed={state.genderModeEnabled}
-                    onClick={handlers.handleToggleGenderMode}
-                    className="shrink-0 px-3 py-1.5 rounded-lg border text-sm font-bold bg-white/5 text-muted-foreground border-white/10 hover:border-white/30 transition-all"
-                  >
-                    {state.genderModeEnabled ? "Modo simple" : "Personalizar por género"}
-                  </button>
-                </div>
-
-                {!state.genderModeEnabled ? (
-                  <>
-                    <NumericStepperField
-                      id="calculator-guests"
-                      value={state.guests}
-                      step={5}
-                      inputStep={1}
-                      min={MIN_EVENT_GUESTS}
-                      max={MAX_EVENT_GUESTS}
-                      onChange={handlers.handleGuestsChange}
-                      onInputChange={handlers.handleGuestsInputChange}
-                      decreaseAriaLabel="Restar 5 invitados"
-                      increaseAriaLabel="Sumar 5 invitados"
-                      required
-                      inputMode="numeric"
-                      inputAriaDescribedBy="calculator-guests-help"
-                      wrapperClassName="flex justify-end items-center gap-2 mb-2.5"
-                      buttonClassName="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold"
-                      inputClassName="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                    />
-                    <input
-                      aria-label="Cantidad de invitados"
-                      aria-describedby="calculator-guests-help"
-                      type="range"
-                      min={MIN_EVENT_GUESTS}
-                      max={MAX_EVENT_GUESTS}
-                      step="1"
-                      value={state.guests}
-                      onChange={(e) => handlers.handleGuestsChange(Number(e.target.value))}
-                      className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                    />
-                    <div className="flex justify-between mt-1.5 text-xs text-muted-foreground font-mono">
-                      <span>{MIN_EVENT_GUESTS}</span>
-                      <span>{MAX_EVENT_GUESTS}+</span>
-                    </div>
-                    <p id="calculator-guests-help" className="sr-only">
-                      Elegi una cantidad entera entre 1 y 500 invitados.
-                    </p>
-                  </>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label
-                          htmlFor="calculator-men"
-                          className="text-xs text-muted-foreground block mb-1.5"
-                        >
-                          Hombres
-                        </label>
-                        <NumericStepperField
-                          id="calculator-men"
-                          value={state.men}
-                          step={1}
-                          min={0}
-                          max={500}
-                          onChange={handlers.handleMenChange}
-                          onInputChange={handlers.handleMenInputChange}
-                          decreaseAriaLabel="Restar un hombre"
-                          increaseAriaLabel="Sumar un hombre"
-                          inputMode="numeric"
-                          {...FLEX_STEPPER_FIELD_CLASSES}
-                        />
-                      </div>
-                      <div>
-                        <label
-                          htmlFor="calculator-women"
-                          className="text-xs text-muted-foreground block mb-1.5"
-                        >
-                          Mujeres
-                        </label>
-                        <NumericStepperField
-                          id="calculator-women"
-                          value={state.women}
-                          step={1}
-                          min={0}
-                          max={500}
-                          onChange={handlers.handleWomenChange}
-                          onInputChange={handlers.handleWomenInputChange}
-                          decreaseAriaLabel="Restar una mujer"
-                          increaseAriaLabel="Sumar una mujer"
-                          inputMode="numeric"
-                          {...FLEX_STEPPER_FIELD_CLASSES}
-                        />
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      Total:{" "}
-                      <span className="text-primary font-mono font-semibold">
-                        {state.men + state.women}
-                      </span>{" "}
-                      invitados
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Duration */}
-              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5 mb-2.5">
-                  <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-primary" aria-hidden="true" /> ¿Cuánto dura el
-                    evento?
-                  </label>
-                  <span className="text-sm text-primary font-mono font-semibold">
-                    {derived.durationLabel}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 mb-2.5">
-                  {/* Hours input */}
-                  <div>
-                    <label
-                      htmlFor="calculator-hours"
-                      className="text-xs text-muted-foreground block mb-1.5"
-                    >
-                      Horas
-                    </label>
-                    <NumericStepperField
-                      id="calculator-hours"
-                      value={state.hours}
-                      step={1}
-                      min={1}
-                      max={12}
-                      onChange={handlers.handleHoursChange}
-                      onInputChange={handlers.handleHoursInputChange}
-                      decreaseAriaLabel="Restar una hora"
-                      increaseAriaLabel="Sumar una hora"
-                      required
-                      inputMode="numeric"
-                      {...FLEX_STEPPER_FIELD_CLASSES}
-                    />
-                  </div>
-
-                  {/* Minutes input */}
-                  <div>
-                    <label
-                      htmlFor="calculator-minutes"
-                      className="text-xs text-muted-foreground block mb-1.5"
-                    >
-                      Minutos
-                    </label>
-                    <NumericStepperField
-                      id="calculator-minutes"
-                      value={state.minutes}
-                      step={15}
-                      inputStep={15}
-                      min={0}
-                      max={45}
-                      onChange={handlers.handleMinutesChange}
-                      onInputChange={handlers.handleMinutesInputChange}
-                      decreaseAriaLabel="Restar 15 minutos"
-                      increaseAriaLabel="Sumar 15 minutos"
-                      required
-                      inputMode="numeric"
-                      {...FLEX_STEPPER_FIELD_CLASSES}
-                    />
-                  </div>
-                </div>
-
-                {/* Quick chips */}
-                <DurationChips
-                  isChipActive={derived.isChipActive}
-                  onSelect={handlers.handleSelectDurationChip}
-                />
-              </div>
-
-              {/* Event Type — 4 large cards */}
-              <EventTypeCards type={state.type} onSelect={handlers.setType} />
-
-              {/* Liters per person override — advanced/optional */}
-              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
-                  <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                    <SlidersHorizontal className="w-4 h-4 text-primary" aria-hidden="true" /> Litros
-                    por persona
-                  </label>
-                  <span className="text-sm text-primary font-mono font-semibold">
-                    {derived.effectiveLitersPerPerson.toFixed(1)} L
-                  </span>
-                </div>
-
-                {!state.showLitersOverride ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
-                    <p className="text-xs text-muted-foreground">
-                      Usamos el estándar de "{EVENT_TYPES.find((t) => t.id === state.type)?.label}".
-                      Cambialo solo si conocés el consumo real de tu evento.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={handlers.handleExpandLitersOverride}
-                      className="shrink-0 px-3 py-1.5 rounded-lg border text-sm font-bold bg-white/5 text-muted-foreground border-white/10 hover:border-white/30 transition-all"
-                    >
-                      Personalizar
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-2.5">
-                    <NumericStepperField
-                      id="calculator-liters-per-person"
-                      value={derived.effectiveLitersPerPerson}
-                      step={0.1}
-                      inputStep={0.1}
-                      min={LITERS_PER_PERSON_MIN}
-                      max={LITERS_PER_PERSON_MAX}
-                      onChange={handlers.handleLitersOverrideChange}
-                      onInputChange={handlers.handleLitersOverrideInputChange}
-                      inputMode="decimal"
-                      wrapperClassName="flex items-center gap-2 mb-2.5"
-                      buttonClassName="w-8 h-8 rounded-lg bg-white/5 border border-white/10 text-white hover:border-primary transition-colors font-bold shrink-0"
-                      inputClassName="w-20 bg-black/40 border border-white/10 rounded-lg px-2 py-1 text-primary font-bold text-center focus:outline-none focus:border-primary transition-colors"
-                      decreaseAriaLabel="Restar 0.1 litros por persona"
-                      increaseAriaLabel="Sumar 0.1 litros por persona"
-                      rangeSlider={{
-                        ariaLabel: "Litros por persona",
-                        step: 0.1,
-                        className:
-                          "flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary",
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handlers.handleResetLitersOverride}
-                      className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
-                    >
-                      Restablecer al estándar ({derived.standardLitersPerPerson.toFixed(1)} L)
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Summer toggle */}
+          <div className="calculator-desktop-grid hidden min-h-0 grid-cols-12 gap-4 lg:grid">
+            <div className="calculator-scroll-panel calculator-controls col-span-7 min-h-0 space-y-3 overflow-y-auto pr-1">
+              {eventStep}
+            </div>
+            <div className="calculator-scroll-panel calculator-right-stack col-span-5 min-h-0 space-y-2.5 overflow-hidden">
+              {resultPanel}
               <SummerToggle
                 isSummer={state.isSummer}
                 onToggle={() => handlers.setIsSummer(!state.isSummer)}
               />
+              {beverageMixCard}
+            </div>
+          </div>
 
-              {/* Beer style — optional, refines the price from "estimated minimum" to the real price */}
-              <BeerStylePicker
-                beerCatalog={beerCatalog}
-                selectedBeerId={state.selectedBeerId}
-                onSelect={handlers.setSelectedBeerId}
-              />
-
-              {/* Beverage mix — optional, splits consumption across beer + other drinks by % of guests */}
-              <div className="calculator-card bg-white/5 p-3.5 lg:p-4 rounded-2xl border border-white/10">
-                <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
-                  <label className="text-sm font-semibold text-white uppercase tracking-wider flex items-center gap-2">
-                    <Wine className="w-4 h-4 text-primary" aria-hidden="true" /> Mezcla de bebidas
-                  </label>
-                </div>
-
-                {!state.showBeverageMix ? (
-                  <div className="flex flex-wrap items-center justify-between gap-3 mt-2">
-                    <p className="text-xs text-muted-foreground">
-                      100% cerveza (comportamiento estándar).
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => handlers.setShowBeverageMix(true)}
-                      className="shrink-0 px-3 py-1.5 rounded-lg border text-sm font-bold bg-white/5 text-muted-foreground border-white/10 hover:border-white/30 transition-all"
-                    >
-                      Personalizar mezcla
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-2.5 space-y-2.5">
-                    <div className="bg-primary/10 text-primary border border-primary/20 rounded-lg px-3 py-1.5 text-sm font-bold inline-flex">
-                      Cerveza: {derived.beerSharePercentage}% (resto)
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {NON_BEER_TYPES.map((bevType) => {
-                        const active = derived.activeBeverageTypes.has(bevType);
-                        return (
-                          <button
-                            key={bevType}
-                            type="button"
-                            onClick={() => handlers.handleToggleBeverageType(bevType)}
-                            aria-pressed={active}
-                            className={cn(
-                              "px-3 py-1.5 rounded-lg border text-sm font-bold transition-all",
-                              active
-                                ? "bg-primary text-black border-primary"
-                                : "bg-white/5 text-muted-foreground border-white/10 hover:border-white/30",
-                            )}
-                          >
-                            {BEVERAGE_LABELS[bevType]}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {state.beverageMixShares
-                      .filter((s) => s.percentage > 0)
-                      .map((share) => (
-                        <div key={share.type} className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground w-16 shrink-0">
-                            {BEVERAGE_LABELS[share.type]}
-                          </span>
-                          <input
-                            aria-label={`Porcentaje de ${BEVERAGE_LABELS[share.type]}`}
-                            type="range"
-                            min={0}
-                            max={100}
-                            step={5}
-                            value={share.percentage}
-                            onChange={(e) =>
-                              handlers.handleBeverageShareChange(share.type, Number(e.target.value))
-                            }
-                            className="flex-1 h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-primary"
-                          />
-                          <span className="text-sm text-primary font-mono font-semibold w-12 text-right shrink-0">
-                            {share.percentage}%
-                          </span>
-                        </div>
-                      ))}
-
-                    <button
-                      type="button"
-                      onClick={handlers.handleResetBeverageMix}
-                      className="text-xs text-muted-foreground hover:text-primary underline transition-colors"
-                    >
-                      Volver a solo cerveza
-                    </button>
-                  </div>
-                )}
-              </div>
+          <div className="calculator-mobile-flow flex min-h-0 flex-1 flex-col lg:hidden">
+            <div className="mb-3 grid shrink-0 grid-cols-3 gap-2">
+              {mobileSteps.map((step) => (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => setMobileStepSafely(step.id)}
+                  className={cn(
+                    "rounded-lg border px-2 py-2 text-xs font-bold",
+                    mobileStep === step.id
+                      ? "border-primary bg-primary text-black"
+                      : "border-white/10 bg-white/5 text-white/60",
+                  )}
+                >
+                  {step.label}
+                </button>
+              ))}
             </div>
 
-            {/* Output */}
-            <ResultPanel
-              mixIsDefault={derived.mixIsDefault}
-              totalLiters={state.totalLiters}
-              barrelPlan={state.barrelPlan}
-              selectedBeer={derived.selectedBeer}
-              priceDisclaimer={priceDisclaimer}
-              mixResult={state.mixResult}
-              onUseRecommendation={onUseRecommendation}
-            />
+            <div
+              ref={mobileStepContentRef}
+              className="calculator-mobile-step min-h-0 flex-1 overflow-y-auto pr-1"
+            >
+              {mobileStep === 0 && (
+                <div className="space-y-3">
+                  {guestControls}
+                  {durationControls}
+                  <EventTypeCards type={state.type} onSelect={handlers.setType} />
+                </div>
+              )}
+              {mobileStep === 1 && mobilePreferenceStep}
+              {mobileStep === 2 && (
+                <>
+                  {resultPanel}
+                  {mobileSummary}
+                </>
+              )}
+            </div>
+
+            <div className="calculator-mobile-actions mt-3 grid shrink-0 grid-cols-2 gap-2 pb-[env(safe-area-inset-bottom)]">
+              <button
+                type="button"
+                onClick={goPrev}
+                disabled={mobileStep === 0}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" /> Volver
+              </button>
+              <button
+                type="button"
+                onClick={goNext}
+                disabled={mobileStep === mobileSteps.length - 1}
+                className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary font-bold text-black disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Continuar <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

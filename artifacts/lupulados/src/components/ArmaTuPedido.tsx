@@ -88,6 +88,7 @@ import { PresentationSelector } from "@/components/order-wizard/PresentationSele
 interface ArmaTuPedidoProps {
   pendingRecommendation: BarrelRecommendation | null;
   pendingBeverageMix: BeverageMixItemEstimate[] | null;
+  pendingBeerPreferenceIds: string[];
   sectionRef: RefObject<HTMLElement | null>;
 }
 
@@ -257,6 +258,7 @@ function LiveOrderSummary({
 export function ArmaTuPedido({
   pendingRecommendation,
   pendingBeverageMix,
+  pendingBeerPreferenceIds,
   sectionRef,
 }: ArmaTuPedidoProps) {
   const { items, addItem, updateQty, totalItems, totalPrice, orderSummary, extras, setExtras } =
@@ -334,6 +336,13 @@ export function ArmaTuPedido({
   const selectedWhatsAppChannel =
     whatsAppChannels.find((channel) => channel.id === selectedWhatsAppChannelId) ??
     whatsAppChannels[0];
+  const pendingBeerPreferenceNames = useMemo(
+    () =>
+      pendingBeerPreferenceIds
+        .map((beerId) => BEERS.find((beer) => beer.id === beerId)?.name)
+        .filter((name): name is string => Boolean(name)),
+    [BEERS, pendingBeerPreferenceIds],
+  );
 
   useEffect(() => {
     if (!pendingRecommendation) return;
@@ -343,6 +352,9 @@ export function ArmaTuPedido({
     if (pendingRecommendation.beerId) {
       const recommendedBeer = BEERS.find((beer) => beer.id === pendingRecommendation.beerId);
       if (recommendedBeer) setSelectedBeer(recommendedBeer);
+    } else if (pendingBeerPreferenceIds.length === 1) {
+      const preferredBeer = BEERS.find((beer) => beer.id === pendingBeerPreferenceIds[0]);
+      if (preferredBeer) setSelectedBeer(preferredBeer);
     }
     // Si la recomendación no incluye cerveza (mezcla 100% espirituosas), no tiene sentido
     // forzar al usuario a elegir una cerveza para poder avanzar: se salta directo al paso
@@ -352,7 +364,7 @@ export function ArmaTuPedido({
     setRecommendationStatus("idle");
     setRecommendationError("");
     appliedRecommendationKeyRef.current = "";
-  }, [pendingRecommendation, pendingBeverageMix]);
+  }, [BEERS, pendingRecommendation, pendingBeverageMix, pendingBeerPreferenceIds]);
 
   useEffect(() => {
     if (visibleCategories.length === 0) {
@@ -556,6 +568,7 @@ export function ArmaTuPedido({
       pendingRecommendation.label,
       ...pendingRecommendation.parts.map((part) => `${part.presentationId}:${part.count}`),
       ...(pendingBeverageMix ?? []).map((item) => `${item.type}:${item.percentage}:${item.liters}`),
+      ...pendingBeerPreferenceIds,
     ].join("|");
     if (appliedRecommendationKeyRef.current === recommendationKey) return;
 
@@ -947,6 +960,14 @@ export function ArmaTuPedido({
                       </p>
                     </div>
                   </div>
+                  {pendingBeerPreferenceNames.length > 0 && (
+                    <p className="mt-3 text-xs text-white/55">
+                      Preferencias de estilo: {pendingBeerPreferenceNames.slice(0, 3).join(", ")}
+                      {pendingBeerPreferenceNames.length > 3
+                        ? ` +${pendingBeerPreferenceNames.length - 3}`
+                        : ""}
+                    </p>
+                  )}
                 </div>
                 <div className="md:text-right shrink-0">
                   <p className="text-[11px] uppercase tracking-widest text-white/40 mb-1">
@@ -992,7 +1013,7 @@ export function ArmaTuPedido({
               )}
             >
               {/* Wizard */}
-                            <div
+              <div
                 className={cn(
                   "relative min-h-0 min-w-0 pr-0 lg:pr-1",
                   isConfigurablePackStep

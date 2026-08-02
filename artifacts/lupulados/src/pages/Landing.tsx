@@ -63,7 +63,10 @@ export default function Landing() {
   const [pendingBeverageMix, setPendingBeverageMix] = useState<BeverageMixItemEstimate[] | null>(
     null,
   );
+  const [pendingBeerPreferenceIds, setPendingBeerPreferenceIds] = useState<string[]>([]);
   const [orderSectionVisible, setOrderSectionVisible] = useState(false);
+  const [calculatorSectionVisible, setCalculatorSectionVisible] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(false);
   const [currentHash, setCurrentHash] = useState(() =>
     typeof window === "undefined" ? "" : window.location.hash,
   );
@@ -98,12 +101,14 @@ export default function Landing() {
   const useRecommendation = (
     recommendation: BarrelRecommendation,
     mixResult: BeverageMixItemEstimate[],
+    beerPreferenceIds: string[] = [],
   ) => {
     setPendingRecommendation({
       ...recommendation,
       parts: recommendation.parts.map((part) => ({ ...part })),
     });
     setPendingBeverageMix(mixResult.map((item) => ({ ...item })));
+    setPendingBeerPreferenceIds([...beerPreferenceIds]);
     scrollToSection("arma-tu-pedido", { updateHash: true });
   };
 
@@ -160,7 +165,33 @@ export default function Landing() {
     return () => observer.disconnect();
   }, []);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 1023px)");
+    const updateMobileViewport = () => setMobileViewport(mediaQuery.matches);
+
+    updateMobileViewport();
+    mediaQuery.addEventListener("change", updateMobileViewport);
+    return () => mediaQuery.removeEventListener("change", updateMobileViewport);
+  }, []);
+
+  useEffect(() => {
+    if (typeof IntersectionObserver !== "function") return;
+    const section = document.getElementById("calculadora");
+    if (!section) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setCalculatorSectionVisible(entry.isIntersecting),
+      { rootMargin: "-10% 0px -25% 0px", threshold: 0 },
+    );
+
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, []);
+
   const orderFlowActive = currentHash === "#arma-tu-pedido" || orderSectionVisible;
+  const calculatorFlowActive =
+    mobileViewport && (currentHash === "#calculadora" || calculatorSectionVisible);
+  const floatingControlsOffset = orderFlowActive || calculatorFlowActive;
 
   return (
     <div className="relative w-full bg-background">
@@ -198,6 +229,7 @@ export default function Landing() {
           <ArmaTuPedido
             pendingRecommendation={pendingRecommendation}
             pendingBeverageMix={pendingBeverageMix}
+            pendingBeerPreferenceIds={pendingBeerPreferenceIds}
             sectionRef={orderSectionRef}
           />
         </Suspense>
@@ -255,8 +287,8 @@ export default function Landing() {
       </main>
 
       <Footer />
-      <FloatingActions orderFlowActive={orderFlowActive} />
-      <CartFloating orderFlowActive={orderFlowActive} />
+      <FloatingActions orderFlowActive={floatingControlsOffset} />
+      <CartFloating orderFlowActive={floatingControlsOffset} />
     </div>
   );
 }

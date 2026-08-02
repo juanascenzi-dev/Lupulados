@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import { estimateBeerLiters } from "./beerConsumptionEstimate";
 import {
   calculateBeverageMixEstimate,
+  distributeBeverageMixShares,
   getBeerSharePercentage,
+  getNonBeerShareTotal,
   isDefaultBeverageMix,
   normalizeBeverageMixShares,
   updateBeverageMixShare,
+  validateBeverageMixShares,
 } from "./beverageMix";
 
 describe("normalizeBeverageMixShares", () => {
@@ -74,6 +77,67 @@ describe("getBeerSharePercentage", () => {
         { type: "whisky", percentage: 20 },
       ]),
     ).toBe(50);
+  });
+});
+
+describe("validateBeverageMixShares", () => {
+  it("rejects negative percentages", () => {
+    expect(validateBeverageMixShares([{ type: "fernet", percentage: -1 }])).toBe(
+      "Los porcentajes no pueden ser negativos.",
+    );
+  });
+
+  it("keeps totals at or below 100 after normalization", () => {
+    expect(
+      validateBeverageMixShares([
+        { type: "fernet", percentage: 70 },
+        { type: "whisky", percentage: 30 },
+      ]),
+    ).toBeNull();
+    expect(getNonBeerShareTotal([{ type: "fernet", percentage: 40 }])).toBe(40);
+  });
+
+  it("actualiza litros cuando cambian invitados, duracion, verano o mezcla", () => {
+    const base = calculateBeverageMixEstimate({
+      guests: 50,
+      intensity: "normal",
+      totalHoursDecimal: 4,
+      isSummer: false,
+      shares: [],
+    });
+    const moreGuests = calculateBeverageMixEstimate({
+      guests: 100,
+      intensity: "normal",
+      totalHoursDecimal: 4,
+      isSummer: false,
+      shares: [],
+    });
+    const longSummerMixed = calculateBeverageMixEstimate({
+      guests: 100,
+      intensity: "normal",
+      totalHoursDecimal: 26,
+      isSummer: true,
+      shares: [{ type: "fernet", percentage: 30 }],
+    });
+
+    expect(moreGuests.find((item) => item.type === "beer")?.liters).toBeGreaterThan(
+      base.find((item) => item.type === "beer")?.liters ?? 0,
+    );
+    expect(longSummerMixed.find((item) => item.type === "beer")?.percentage).toBe(70);
+    expect(longSummerMixed.find((item) => item.type === "fernet")?.liters).toBeGreaterThan(0);
+  });
+});
+
+describe("distributeBeverageMixShares", () => {
+  it("distributes selected beverage types to exactly 100%", () => {
+    const result = distributeBeverageMixShares(["fernet", "wine", "gin"]);
+
+    expect(result).toEqual([
+      { type: "fernet", percentage: 34 },
+      { type: "wine", percentage: 33 },
+      { type: "gin", percentage: 33 },
+    ]);
+    expect(getNonBeerShareTotal(result)).toBe(100);
   });
 });
 

@@ -13,36 +13,49 @@ export function SummerToggle({ isSummer, onToggle }: SummerToggleProps) {
       onClick={onToggle}
       aria-pressed={isSummer}
       className={cn(
-        "calculator-card w-full p-3.5 lg:p-4 rounded-2xl border cursor-pointer transition-all flex flex-row items-center justify-between gap-3",
+        "calculator-card calculator-summer-card grid h-full w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border p-3 text-left transition-all",
         isSummer
-          ? "bg-amber-500/10 border-amber-500/30"
-          : "bg-white/5 border-white/10 hover:border-white/30",
+          ? "border-amber-500/30 bg-amber-500/10"
+          : "border-white/10 bg-white/5 hover:border-white/30",
       )}
     >
-      <div className="flex min-w-0 items-center gap-3">
+      <div className="flex min-w-0 items-start gap-2.5">
         <Sun
-          className={cn("w-6 h-6 shrink-0", isSummer ? "text-amber-500" : "text-muted-foreground")}
+          className={cn(
+            "mt-0.5 h-5 w-5 shrink-0",
+            isSummer ? "text-amber-500" : "text-muted-foreground",
+          )}
           aria-hidden="true"
         />
-        <div className="text-left">
-          <span className="text-sm font-semibold text-white uppercase tracking-wider block mb-0.5">
-            ¿Es verano?
+        <div className="min-w-0">
+          <span className="block truncate text-sm font-semibold uppercase tracking-wider text-white">
+            Es verano?
           </span>
-          <span className="text-xs text-muted-foreground">La gente toma más con calor (+25%)</span>
+          <span className="mt-1 block text-xs leading-snug text-muted-foreground">
+            La gente toma mas cuando hace calor (+25%).
+          </span>
+          <span className="mt-0.5 block text-xs leading-snug text-white/50">
+            Activa esta opcion para ajustar automaticamente la recomendacion.
+          </span>
         </div>
       </div>
-      <div
-        className={cn(
-          "w-12 h-6 rounded-full p-1 transition-colors shrink-0",
-          isSummer ? "bg-amber-500" : "bg-secondary",
-        )}
-      >
+      <div className="flex shrink-0 items-center gap-2">
+        <span className="rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-xs font-bold text-primary">
+          +25%
+        </span>
         <div
           className={cn(
-            "w-4 h-4 rounded-full bg-white transition-transform",
-            isSummer ? "translate-x-6" : "translate-x-0",
+            "h-6 w-12 rounded-full p-1 transition-colors",
+            isSummer ? "bg-amber-500" : "bg-secondary",
           )}
-        />
+        >
+          <div
+            className={cn(
+              "h-4 w-4 rounded-full bg-white transition-transform",
+              isSummer ? "translate-x-6" : "translate-x-0",
+            )}
+          />
+        </div>
       </div>
     </button>
   );

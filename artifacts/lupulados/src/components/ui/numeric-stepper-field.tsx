@@ -13,7 +13,7 @@ interface NumericStepperFieldProps {
   /** Native `step` attribute of the number input. Omit to leave it unset (browser default). */
   inputStep?: number;
   min: number;
-  max: number;
+  max?: number;
   /** Commits a value: used by the − / + buttons, the range slider (if any) and onBlur. */
   onChange: (next: number) => void;
   /** Fired on every keystroke while typing; callers typically parse loosely and clamp only the ceiling here. */
@@ -87,7 +87,7 @@ export function NumericStepperField({
       >
         +
       </button>
-      {rangeSlider && (
+      {rangeSlider && max !== undefined && (
         <input
           aria-label={rangeSlider.ariaLabel}
           type="range"

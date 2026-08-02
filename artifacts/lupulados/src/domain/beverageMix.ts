@@ -127,6 +127,35 @@ export function getBeerSharePercentage(shares: BeverageMixShare[]): number {
   return Math.max(100 - otherTotal, 0);
 }
 
+export function getNonBeerShareTotal(shares: BeverageMixShare[]): number {
+  return normalizeBeverageMixShares(shares).reduce((sum, share) => sum + share.percentage, 0);
+}
+
+export function validateBeverageMixShares(shares: BeverageMixShare[]): string | null {
+  if (shares.some((share) => share.percentage < 0)) {
+    return "Los porcentajes no pueden ser negativos.";
+  }
+
+  const normalized = normalizeBeverageMixShares(shares);
+  const total = normalized.reduce((sum, share) => sum + share.percentage, 0);
+  if (total > 100) return "La mezcla no puede superar el 100%.";
+  return null;
+}
+
+export function distributeBeverageMixShares(types: NonBeerBeverageType[]): BeverageMixShare[] {
+  const uniqueTypes = Array.from(new Set(types));
+  if (uniqueTypes.length === 0) return [];
+
+  const base = Math.floor(100 / uniqueTypes.length);
+  let remainder = 100 - base * uniqueTypes.length;
+
+  return uniqueTypes.map((type) => {
+    const extra = remainder > 0 ? 1 : 0;
+    remainder -= extra;
+    return { type, percentage: base + extra };
+  });
+}
+
 export function isDefaultBeverageMix(shares: BeverageMixShare[]): boolean {
   return normalizeBeverageMixShares(shares).length === 0;
 }

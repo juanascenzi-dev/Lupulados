@@ -3,7 +3,6 @@ import {
   calculateBarrelRecommendation,
   type BarrelRecommendation,
 } from "@/domain/barrelCalculator";
-import type { Beer } from "@/domain/beerCatalog";
 import { EVENT_INTENSITY_MULTIPLIERS, type EventIntensity } from "@/domain/beerConsumptionEstimate";
 import {
   calculateBeverageMixEstimate,
@@ -14,7 +13,14 @@ import {
   type BeverageMixShare,
   type NonBeerBeverageType,
 } from "@/domain/beverageMix";
-import { formatDurationLabel } from "@/domain/eventDuration";
+import {
+  durationPartsFromMinutes,
+  durationToHoursDecimal,
+  durationMinutesFromInputs,
+  formatDurationLabel,
+  parseDurationUnit,
+  validateEventDuration,
+} from "@/domain/eventDuration";
 import { clampEventGuestCount, parseEventGuestCount } from "@/domain/eventGuestCount";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { parseNumericInput } from "@/lib/utils";
@@ -26,19 +32,15 @@ export function useCalculadoraState() {
   const { priceDisclaimer, beerCatalog } = useCommercialDerivedData();
 
   const [guests, setGuests] = useState(50);
-  const [hours, setHours] = useState(4);
-  const [minutes, setMinutes] = useState(0);
+  const [durationMinutes, setDurationMinutes] = useState(240);
   const [type, setType] = useState<EventIntensity>("normal");
   const [isSummer, setIsSummer] = useState(false);
-  const [selectedBeerId, setSelectedBeerId] = useState<string | null>(null);
+  const [selectedBeerIds, setSelectedBeerIds] = useState<string[]>([]);
   const [showLitersOverride, setShowLitersOverride] = useState(false);
   const [customLitersPerPerson, setCustomLitersPerPerson] = useState<number | null>(null);
-  const [genderModeEnabled, setGenderModeEnabled] = useState(false);
   const [men, setMen] = useState(25);
   const [women, setWomen] = useState(25);
-  const [showBeverageMix, setShowBeverageMix] = useState(false);
   const [beverageMixShares, setBeverageMixShares] = useState<BeverageMixShare[]>([]);
-  const selectedBeer: Beer | null = beerCatalog.find((beer) => beer.id === selectedBeerId) ?? null;
 
   const [totalLiters, setTotalLiters] = useState(0);
   const [barrelPlan, setBarrelPlan] = useState<BarrelRecommendation>(() =>
@@ -46,31 +48,49 @@ export function useCalculadoraState() {
   );
   const [mixResult, setMixResult] = useState<BeverageMixItemEstimate[]>([]);
 
-  const handleGuestsChange = (val: number) => {
-    setGuests(clampEventGuestCount(val));
+  const syncGenderCompositionToTotal = (nextGuests: number) => {
+    const currentTotal = men + women;
+    if (currentTotal <= 0) {
+      setMen(Math.ceil(nextGuests / 2));
+      setWomen(Math.floor(nextGuests / 2));
+      return;
+    }
+
+    const nextMen = Math.min(nextGuests, Math.round((men / currentTotal) * nextGuests));
+    setMen(nextMen);
+    setWomen(nextGuests - nextMen);
   };
 
-  const handleMenChange = (val: number) => setMen(Math.min(Math.max(val, 0), 500));
-  const handleWomenChange = (val: number) => setWomen(Math.min(Math.max(val, 0), 500));
+  const handleGuestsChange = (val: number) => {
+    const nextGuests = clampEventGuestCount(val);
+    setGuests(nextGuests);
+    syncGenderCompositionToTotal(nextGuests);
+  };
 
-  const handleToggleGenderMode = () => {
-    if (genderModeEnabled) {
-      setGuests(clampEventGuestCount(men + women));
-      setGenderModeEnabled(false);
-    } else {
-      setMen(Math.ceil(guests / 2));
-      setWomen(Math.floor(guests / 2));
-      setGenderModeEnabled(true);
-    }
+  const handleMenChange = (val: number) => {
+    const nextMen = Math.min(Math.max(val, 0), 500);
+    setMen(nextMen);
+    setGuests(clampEventGuestCount(nextMen + women));
+  };
+
+  const handleWomenChange = (val: number) => {
+    const nextWomen = Math.min(Math.max(val, 0), 500);
+    setWomen(nextWomen);
+    setGuests(clampEventGuestCount(men + nextWomen));
   };
 
   const handleHoursChange = (val: number) => {
-    setHours(Math.min(Math.max(val, 1), 12));
+    const nextHours = parseDurationUnit(val);
+    if (nextHours === null) return;
+    const { minutes: currentMinutes } = durationPartsFromMinutes(durationMinutes);
+    setDurationMinutes(durationMinutesFromInputs(nextHours, currentMinutes));
   };
 
   const handleMinutesChange = (val: number) => {
-    const stepped = Math.min(Math.max(Math.round(val / 15) * 15, 0), 45);
-    setMinutes(stepped);
+    const nextMinutes = parseDurationUnit(val);
+    if (nextMinutes === null) return;
+    const { days, hours } = durationPartsFromMinutes(durationMinutes);
+    setDurationMinutes(durationMinutesFromInputs(days * 24 + hours, nextMinutes));
   };
 
   const handleLitersOverrideChange = (val: number) => {
@@ -80,26 +100,29 @@ export function useCalculadoraState() {
     );
   };
 
-  const handleGuestsInputChange = (raw: string) => {     const parsed = parseEventGuestCount(raw);     if (parsed !== null) setGuests(parsed);   };
+  const handleGuestsInputChange = (raw: string) => {
+    const parsed = parseEventGuestCount(raw);
+    if (parsed !== null) handleGuestsChange(parsed);
+  };
 
   const handleMenInputChange = (raw: string) => {
     const value = parseNumericInput(raw);
-    if (value !== null) setMen(Math.min(Math.max(value, 0), 500));
+    if (value !== null) handleMenChange(value);
   };
 
   const handleWomenInputChange = (raw: string) => {
     const value = parseNumericInput(raw);
-    if (value !== null) setWomen(Math.min(Math.max(value, 0), 500));
+    if (value !== null) handleWomenChange(value);
   };
 
   const handleHoursInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setHours(Math.min(Math.max(value, 0), 12));
+    const value = parseDurationUnit(raw);
+    if (value !== null) handleHoursChange(value);
   };
 
   const handleMinutesInputChange = (raw: string) => {
-    const value = parseNumericInput(raw);
-    if (value !== null) setMinutes(Math.min(Math.max(value, 0), 59));
+    const value = parseDurationUnit(raw);
+    if (value !== null) handleMinutesChange(value);
   };
 
   const handleLitersOverrideInputChange = (raw: string) => {
@@ -111,7 +134,7 @@ export function useCalculadoraState() {
 
   const standardLitersPerPerson = EVENT_INTENSITY_MULTIPLIERS[type];
   const effectiveLitersPerPerson = customLitersPerPerson ?? standardLitersPerPerson;
-  const effectiveGuestsTotal = genderModeEnabled ? men + women : guests;
+  const effectiveGuestsTotal = men + women;
 
   const activeBeverageTypes = new Set(
     beverageMixShares.filter((s) => s.percentage > 0).map((s) => s.type),
@@ -133,9 +156,12 @@ export function useCalculadoraState() {
   const handleBeverageShareChange = (bevType: NonBeerBeverageType, value: number) =>
     setBeverageMixShares((current) => updateBeverageMixShare(current, bevType, Math.round(value)));
 
+  const handleSetBeverageMixShares = (shares: BeverageMixShare[]) => {
+    setBeverageMixShares(shares);
+  };
+
   const handleResetBeverageMix = () => {
     setBeverageMixShares([]);
-    setShowBeverageMix(false);
   };
 
   const handleExpandLitersOverride = () => {
@@ -143,22 +169,31 @@ export function useCalculadoraState() {
     setShowLitersOverride(true);
   };
 
+  const handleCloseLitersOverride = () => {
+    setShowLitersOverride(false);
+  };
+
   const handleResetLitersOverride = () => {
     setCustomLitersPerPerson(null);
     setShowLitersOverride(false);
   };
 
-  const handleSelectDurationChip = (chip: { hours: number; minutes: number }) => {
-    setHours(chip.hours);
-    setMinutes(chip.minutes);
-  };
-
-  const totalHoursDecimal = hours + minutes / 60;
-
-  const durationLabel = formatDurationLabel(hours, minutes);
+  const durationParts = durationPartsFromMinutes(durationMinutes);
+  const hours = durationParts.days * 24 + durationParts.hours;
+  const minutes = durationParts.minutes;
+  const totalHoursDecimal = durationToHoursDecimal(durationMinutes);
+  const durationLabel = formatDurationLabel(durationMinutes);
+  const durationValidationMessage = validateEventDuration(durationMinutes);
 
   useEffect(() => {
-    const genderComposition = genderModeEnabled ? { men, women } : undefined;
+    const genderComposition = { men, women };
+
+    if (durationValidationMessage) {
+      setMixResult([]);
+      setTotalLiters(0);
+      setBarrelPlan(calculateBarrelRecommendation(0, null, beerCatalog));
+      return;
+    }
 
     const mixEstimate = calculateBeverageMixEstimate({
       guests: effectiveGuestsTotal,
@@ -174,30 +209,21 @@ export function useCalculadoraState() {
     const beerLiters = mixEstimate.find((item) => item.type === "beer")?.liters ?? 0;
     setTotalLiters(beerLiters);
 
-    const barrelRecommendation = calculateBarrelRecommendation(
-      beerLiters,
-      selectedBeer,
-      beerCatalog,
-    );
+    const barrelRecommendation = calculateBarrelRecommendation(beerLiters, null, beerCatalog);
     setBarrelPlan(barrelRecommendation);
   }, [
     effectiveGuestsTotal,
-    genderModeEnabled,
     men,
     women,
-    hours,
-    minutes,
+    durationMinutes,
     type,
     isSummer,
     totalHoursDecimal,
-    selectedBeer,
     beerCatalog,
     customLitersPerPerson,
     beverageMixShares,
+    durationValidationMessage,
   ]);
-
-  const isChipActive = (chip: { hours: number; minutes: number }) =>
-    hours === chip.hours && minutes === chip.minutes;
 
   return {
     // Commercial context passthrough
@@ -209,15 +235,14 @@ export function useCalculadoraState() {
       guests,
       hours,
       minutes,
+      durationMinutes,
       type,
       isSummer,
-      selectedBeerId,
+      selectedBeerIds,
       showLitersOverride,
       customLitersPerPerson,
-      genderModeEnabled,
       men,
       women,
-      showBeverageMix,
       beverageMixShares,
       totalLiters,
       barrelPlan,
@@ -226,7 +251,6 @@ export function useCalculadoraState() {
 
     // Derived values, recomputed every render from state
     derived: {
-      selectedBeer,
       standardLitersPerPerson,
       effectiveLitersPerPerson,
       effectiveGuestsTotal,
@@ -235,19 +259,17 @@ export function useCalculadoraState() {
       mixIsDefault,
       totalHoursDecimal,
       durationLabel,
-      isChipActive,
+      durationValidationMessage,
     },
 
     // Handlers, including the direct setters used as-is by simple selectors
     handlers: {
       setType,
       setIsSummer,
-      setSelectedBeerId,
-      setShowBeverageMix,
+      setSelectedBeerIds,
       handleGuestsChange,
       handleMenChange,
       handleWomenChange,
-      handleToggleGenderMode,
       handleHoursChange,
       handleMinutesChange,
       handleLitersOverrideChange,
@@ -259,10 +281,11 @@ export function useCalculadoraState() {
       handleLitersOverrideInputChange,
       handleToggleBeverageType,
       handleBeverageShareChange,
+      handleSetBeverageMixShares,
       handleResetBeverageMix,
       handleExpandLitersOverride,
+      handleCloseLitersOverride,
       handleResetLitersOverride,
-      handleSelectDurationChip,
     },
   };
 }
