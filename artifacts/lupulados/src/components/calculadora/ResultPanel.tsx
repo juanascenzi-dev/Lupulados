@@ -6,6 +6,7 @@ interface ResultPanelProps {
   mixIsDefault: boolean;
   totalLiters: number;
   barrelPlan: BarrelRecommendation;
+  selectedBeerName: string | null;
   priceDisclaimer: string;
   mixResult: BeverageMixItemEstimate[];
   durationValidationMessage: string | null;
@@ -19,6 +20,7 @@ export function ResultPanel({
   mixIsDefault,
   totalLiters,
   barrelPlan,
+  selectedBeerName,
   priceDisclaimer,
   mixResult,
   durationValidationMessage,
@@ -94,7 +96,9 @@ export function ResultPanel({
               </div>
 
               <div className="flex items-end justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-left">
-                <span className="text-xs text-white/45">Estimado desde</span>
+                <span className="text-xs text-white/45">
+                  {selectedBeerName ? `Precio para ${selectedBeerName}` : "Estimado desde"}
+                </span>
                 <span className="shrink-0 text-2xl font-bold leading-none text-white">
                   {formatPrice(barrelPlan.estimatedPrice)}
                 </span>

@@ -21,7 +21,11 @@ import {
   parseDurationUnit,
   validateEventDuration,
 } from "@/domain/eventDuration";
-import { clampEventGuestCount, parseEventGuestCount } from "@/domain/eventGuestCount";
+import {
+  clampEventGuestCount,
+  MAX_EVENT_GUESTS,
+  parseEventGuestCount,
+} from "@/domain/eventGuestCount";
 import { useCommercialDerivedData } from "@/context/CommercialDataContext";
 import { parseNumericInput } from "@/lib/utils";
 
@@ -36,7 +40,6 @@ export function useCalculadoraState() {
   const [type, setType] = useState<EventIntensity>("normal");
   const [isSummer, setIsSummer] = useState(false);
   const [selectedBeerIds, setSelectedBeerIds] = useState<string[]>([]);
-  const [showLitersOverride, setShowLitersOverride] = useState(false);
   const [customLitersPerPerson, setCustomLitersPerPerson] = useState<number | null>(null);
   const [men, setMen] = useState(25);
   const [women, setWomen] = useState(25);
@@ -68,15 +71,19 @@ export function useCalculadoraState() {
   };
 
   const handleMenChange = (val: number) => {
-    const nextMen = Math.min(Math.max(val, 0), 500);
+    const nextMen = Math.min(Math.max(val, 0), MAX_EVENT_GUESTS);
+    const nextWomen = Math.min(women, Math.max(0, MAX_EVENT_GUESTS - nextMen));
     setMen(nextMen);
-    setGuests(clampEventGuestCount(nextMen + women));
+    setWomen(nextWomen);
+    setGuests(clampEventGuestCount(nextMen + nextWomen));
   };
 
   const handleWomenChange = (val: number) => {
-    const nextWomen = Math.min(Math.max(val, 0), 500);
+    const nextWomen = Math.min(Math.max(val, 0), MAX_EVENT_GUESTS);
+    const nextMen = Math.min(men, Math.max(0, MAX_EVENT_GUESTS - nextWomen));
     setWomen(nextWomen);
-    setGuests(clampEventGuestCount(men + nextWomen));
+    setMen(nextMen);
+    setGuests(clampEventGuestCount(nextMen + nextWomen));
   };
 
   const handleHoursChange = (val: number) => {
@@ -135,6 +142,10 @@ export function useCalculadoraState() {
   const standardLitersPerPerson = EVENT_INTENSITY_MULTIPLIERS[type];
   const effectiveLitersPerPerson = customLitersPerPerson ?? standardLitersPerPerson;
   const effectiveGuestsTotal = men + women;
+  const selectedBeer =
+    selectedBeerIds.length === 1
+      ? (beerCatalog.find((beer) => beer.id === selectedBeerIds[0]) ?? null)
+      : null;
 
   const activeBeverageTypes = new Set(
     beverageMixShares.filter((s) => s.percentage > 0).map((s) => s.type),
@@ -166,16 +177,10 @@ export function useCalculadoraState() {
 
   const handleExpandLitersOverride = () => {
     setCustomLitersPerPerson((current) => current ?? standardLitersPerPerson);
-    setShowLitersOverride(true);
-  };
-
-  const handleCloseLitersOverride = () => {
-    setShowLitersOverride(false);
   };
 
   const handleResetLitersOverride = () => {
     setCustomLitersPerPerson(null);
-    setShowLitersOverride(false);
   };
 
   const durationParts = durationPartsFromMinutes(durationMinutes);
@@ -191,7 +196,7 @@ export function useCalculadoraState() {
     if (durationValidationMessage) {
       setMixResult([]);
       setTotalLiters(0);
-      setBarrelPlan(calculateBarrelRecommendation(0, null, beerCatalog));
+      setBarrelPlan(calculateBarrelRecommendation(0, selectedBeer, beerCatalog));
       return;
     }
 
@@ -209,7 +214,11 @@ export function useCalculadoraState() {
     const beerLiters = mixEstimate.find((item) => item.type === "beer")?.liters ?? 0;
     setTotalLiters(beerLiters);
 
-    const barrelRecommendation = calculateBarrelRecommendation(beerLiters, null, beerCatalog);
+    const barrelRecommendation = calculateBarrelRecommendation(
+      beerLiters,
+      selectedBeer,
+      beerCatalog,
+    );
     setBarrelPlan(barrelRecommendation);
   }, [
     effectiveGuestsTotal,
@@ -223,6 +232,7 @@ export function useCalculadoraState() {
     customLitersPerPerson,
     beverageMixShares,
     durationValidationMessage,
+    selectedBeer,
   ]);
 
   return {
@@ -239,7 +249,6 @@ export function useCalculadoraState() {
       type,
       isSummer,
       selectedBeerIds,
-      showLitersOverride,
       customLitersPerPerson,
       men,
       women,
@@ -284,7 +293,6 @@ export function useCalculadoraState() {
       handleSetBeverageMixShares,
       handleResetBeverageMix,
       handleExpandLitersOverride,
-      handleCloseLitersOverride,
       handleResetLitersOverride,
     },
   };

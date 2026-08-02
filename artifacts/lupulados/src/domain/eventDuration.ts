@@ -5,6 +5,7 @@ export interface EventDurationParts {
 }
 
 export const MIN_EVENT_DURATION_MINUTES = 0;
+export const MAX_EVENT_DURATION_MINUTES = 20160; // 14 dias
 
 export function parseDurationUnit(value: string | number): number | null {
   const rawValue = typeof value === "number" ? String(value) : value.trim();
@@ -21,7 +22,7 @@ export function normalizeDurationMinutes(totalMinutes: number): number {
     return MIN_EVENT_DURATION_MINUTES;
   }
 
-  return Math.trunc(totalMinutes);
+  return Math.min(Math.trunc(totalMinutes), MAX_EVENT_DURATION_MINUTES);
 }
 
 export function durationPartsFromMinutes(totalMinutes: number): EventDurationParts {

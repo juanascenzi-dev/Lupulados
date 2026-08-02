@@ -5,6 +5,7 @@ import {
   durationToHoursDecimal,
   formatDuration,
   formatDurationLabel,
+  MAX_EVENT_DURATION_MINUTES,
   normalizeDurationMinutes,
   parseDurationUnit,
   validateEventDuration,
@@ -43,6 +44,13 @@ describe("eventDuration", () => {
   it("normalizes invalid or negative totals to zero without NaN", () => {
     expect(normalizeDurationMinutes(Number.NaN)).toBe(0);
     expect(normalizeDurationMinutes(-30)).toBe(0);
+  });
+
+  it("caps totals above the maximum supported duration", () => {
+    expect(normalizeDurationMinutes(MAX_EVENT_DURATION_MINUTES + 1000)).toBe(
+      MAX_EVENT_DURATION_MINUTES,
+    );
+    expect(durationMinutesFromInputs(100000, 0)).toBe(MAX_EVENT_DURATION_MINUTES);
   });
 
   it("builds total minutes from extended hour and minute inputs", () => {
