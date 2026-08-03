@@ -19,6 +19,7 @@ Desde la raíz:
 - `pnpm run lint` — ESLint sobre todo el repo.
 - `pnpm run build` — typecheck + build recursivo (`--if-present`) de cada paquete.
 - `pnpm --filter lupulados test` — corre los tests (vitest) de la app principal.
+- `pnpm --filter lupulados test:coverage` — igual, con reporte de cobertura (gate del 70% en `src/domain`, ver política de testing).
 - `pnpm --filter lupulados dev` — levanta el dev server de la app principal.
 
 ## Convenciones
@@ -34,18 +35,24 @@ Antes cada cambio no trivial generaba un archivo nuevo en `docs/*.md`. A partir 
 ### Flujo de branches y PRs
 
 - Nada se commitea directo a `main`. Se trabaja en ramas `feature/*` o `fix/*`.
-- Antes de abrir PR: `pnpm run typecheck`, `pnpm run lint` y `pnpm --filter lupulados test` deben pasar en local.
+- Antes de abrir PR: `pnpm run typecheck`, `pnpm run lint` y `pnpm --filter lupulados test:coverage` deben pasar en local.
 - El PR debe incluir su entrada correspondiente en `CHANGELOG.md`.
 - Merge a `main` solo cuando CI está en verde y el PR fue revisado (squash merge).
 
 ### Lint / formato / hooks
 
 - ESLint (`eslint.config.js`) + Prettier configurados en la raíz.
-- Husky + lint-staged corren automáticamente en `pre-commit` (lint + format de archivos staged) y en `pre-push` (`typecheck` + `test`). No usar `--no-verify` salvo indicación explícita del usuario.
+- Husky + lint-staged corren automáticamente en `pre-commit` (lint + format de archivos staged) y en `pre-push` (`typecheck` + `test:coverage`). No usar `--no-verify` salvo indicación explícita del usuario.
 
 ### CI
 
-`.github/workflows/ci.yml` corre en push/PR contra `main`: install → typecheck → lint → test → build. Un PR no se mergea si CI falla.
+`.github/workflows/ci.yml` corre en push/PR contra `main`: install → typecheck → lint → test (con coverage) → build. Un PR no se mergea si CI falla.
+
+### Testing de componentes
+
+- `artifacts/lupulados/vitest.config.mjs` define dos `test.projects`: `node` (specs de `src/domain`, sin DOM) y `jsdom` (`*.test.tsx`, con `@testing-library/react`/`jest-dom`/`user-event`, `setupFiles: src/test/setupTests.ts`).
+- Helpers compartidos en `artifacts/lupulados/src/test/`: `renderWithCommercialData`/`renderWithCart`/`renderAdmin` (`renderWithProviders.tsx`) arman el árbol de providers real de `App.tsx` para cada flujo; `supabaseAdminMock.ts` mockea `@/lib/supabase/client` + `@/lib/supabase/config` para testear login/CRUD del panel admin sin pegarle a Supabase.
+- `pnpm --filter lupulados test:coverage` mide cobertura solo sobre `src/domain` (`coverage.include`), con umbral de 70% (statements/branches/functions/lines) — es el comando que corre en CI y en `pre-push`.
 
 ## Deploy
 

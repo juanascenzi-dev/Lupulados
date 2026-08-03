@@ -31,7 +31,8 @@ export function ExtraForm({
       onCancel={onCancel}
       onSubmit={async (event) => {
         event.preventDefault();
-        const input = Object.fromEntries(new FormData(event.currentTarget));
+        const form = event.currentTarget;
+        const input = Object.fromEntries(new FormData(form));
         try {
           void (mode === "edit" ? parseExtraUpdateForm(input) : parseExtraForm(input));
           setError("");
@@ -40,7 +41,7 @@ export function ExtraForm({
           return;
         }
         const ok = await onSubmit(input, mode);
-        if (ok && mode === "create") event.currentTarget.reset();
+        if (ok && mode === "create") form.reset();
       }}
     >
       <Field name="id" label="ID" defaultValue={initial?.id} disabled={mode === "edit"} />

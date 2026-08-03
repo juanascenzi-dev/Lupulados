@@ -9,7 +9,7 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 | Área                                    | Puntaje                          |
 | --------------------------------------- | -------------------------------- |
 | 1. Calidad de código (DRY/SOLID/naming) | 8/10                             |
-| 2. Cobertura de testing                 | 6/10                             |
+| 2. Cobertura de testing                 | ~~6/10~~ → 8/10 (2026-08-03)     |
 | 3. Documentación                        | ~~5/10~~ → 8/10 (2026-08-03)     |
 | 4. CI/CD                                | ~~7.5/10~~ → 8/10 (2026-08-03)   |
 | 5. Variables de entorno                 | 9/10                             |
@@ -42,27 +42,26 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 
 ---
 
-## 2. Cobertura de testing — 6/10
+## 2. Cobertura de testing — ~~6/10~~ → 8/10 (2026-08-03)
 
 **Bien:**
 
 - 354 tests, 34 archivos, 100% passing. Cobertura fuerte y con casos de borde reales en la capa de dominio (`barrelCalculator`, `eventDuration`, `eventGuestCount`, `beverageMix`, `cartStorage`, `commercialRepository`, `orderWizardValidation`, etc.).
 - Tests de configuración sensible: `supabase/config.test.ts` cubre detección de keys privadas filtradas.
 - `pre-push` hook corre `typecheck + test` — evita que código roto llegue a CI.
+- **Resuelto (2026-08-03):** se agregó infraestructura de testing de componentes — `jsdom` + `@testing-library/react`/`jest-dom`/`user-event`, con `vitest.config.mjs` dividido en `test.projects` (`node` para los specs de dominio existentes, `jsdom` + `setupFiles: src/test/setupTests.ts` para los nuevos `.test.tsx`) — y tests de integración con render real para los 3 flujos de mayor riesgo de negocio: `Calculadora.test.tsx` (cálculo en vivo + callback `onUseRecommendation`), `ArmaTuPedido.test.tsx` (wizard completo de 5 pasos hasta el link de WhatsApp generado) y `AdminLogin.test.tsx`/`AdminDashboard.test.tsx` (login + CRUD de productos), estos últimos mockeando `@/lib/supabase/client` y `@/lib/supabase/config` con un fake client reusable (`src/test/supabaseAdminMock.ts`). También se agregó `@vitest/coverage-v8` con un gate de cobertura del 70% acotado a `src/domain`, corrido en CI y en `pre-push` vía el nuevo script `test:coverage`. De paso, escribir el test de `AdminDashboard` expuso un bug real en los 6 forms admin (`ProductForm` y hermanos): usaban `event.currentTarget` después de un `await`, que React ya limpió a esa altura — se corrigió capturando la referencia al formulario antes del `await`. Detalle completo en `CHANGELOG.md`.
 
 **Mejorable:**
 
-- La capa de componentes React está prácticamente sin testear: de ~90 archivos en `src/components/`, solo `Navbar.test.ts` tiene test asociado (y por el `.ts`, probablemente testea lógica extraída, no render). Componentes grandes y con lógica de estado real (`ArmaTuPedido`, `Calculadora`, `AdminDashboard`, `StorePage`) no tienen tests de integración/render.
-- No hay `@testing-library/react` ni configuración de `jsdom`/`happy-dom` en `vitest.config.mjs` (`environment: "node"`), lo que sugiere que no se puede testear render de componentes con la config actual.
-- Sin reporte de cobertura configurado (`vitest --coverage` no está en scripts, sin umbral mínimo en CI).
-- Sin tests E2E (Playwright/Cypress) para flujos críticos completos (armar pedido → checkout WhatsApp, login admin → CRUD).
+- Fuera de los 3 flujos priorizados, el resto de `src/components/` (~110 archivos) sigue sin tests de render — se priorizó por riesgo de negocio, no cobertura total de la capa de componentes.
+- Sin tests E2E (Playwright/Cypress) para flujos críticos completos (armar pedido → checkout WhatsApp, login admin → CRUD) — **diferido explícitamente** (ver acción concreta abajo), no es un olvido.
 
 **Acciones concretas:**
 
-- [ ] Agregar `@vitejs/plugin-react` + `jsdom`/`happy-dom` + `@testing-library/react` para poder testear render/interacción de componentes.
-- [ ] Priorizar tests de integración para los 3 flujos de mayor riesgo de negocio: Calculadora → resultado, ArmaTuPedido → checkout WhatsApp, AdminDashboard → login y CRUD.
-- [ ] Configurar `vitest --coverage` (v8 provider) y fijar un umbral mínimo razonable (ej. 70% en `src/domain`) que corra en CI.
-- [ ] Evaluar Playwright para 1-2 smoke tests E2E de los flujos de conversión (calculadora y pedido).
+- [x] Agregar `@vitejs/plugin-react` + `jsdom`/`happy-dom` + `@testing-library/react` para poder testear render/interacción de componentes. — resuelto (2026-08-03): `jsdom` + `@testing-library/react`/`jest-dom`/`user-event`, `test.projects` (`node`/`jsdom`) en `vitest.config.mjs`.
+- [x] Priorizar tests de integración para los 3 flujos de mayor riesgo de negocio: Calculadora → resultado, ArmaTuPedido → checkout WhatsApp, AdminDashboard → login y CRUD. — resuelto (2026-08-03): `Calculadora.test.tsx`, `ArmaTuPedido.test.tsx`, `AdminLogin.test.tsx` + `AdminDashboard.test.tsx`.
+- [x] Configurar `vitest --coverage` (v8 provider) y fijar un umbral mínimo razonable (ej. 70% en `src/domain`) que corra en CI. — resuelto (2026-08-03): `@vitest/coverage-v8`, gate 70% (`coverage.include: ["src/domain/**"]`), corre en CI y `pre-push` vía `pnpm run test:coverage`.
+- [ ] Evaluar Playwright para 1-2 smoke tests E2E de los flujos de conversión (calculadora y pedido). — diferido explícitamente, fuera de alcance de este cambio.
 
 ---
 
@@ -95,10 +94,10 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 - Husky + lint-staged en `pre-commit` (lint+format de staged) y `pre-push` (typecheck+test) espejan casi 1:1 lo que corre CI, así se detectan problemas antes de llegar al PR.
 - `permissions: contents: read` explícito en el workflow (buena práctica de mínimo privilegio).
 - pnpm con cache de `actions/setup-node` configurado.
+- **Resuelto (2026-08-03):** el step "Test" corre `pnpm run test:coverage` (gate de 70% en `src/domain`, ver punto 2), en vez de `pnpm run test` sin cobertura.
 
 **Mejorable:**
 
-- Sin cobertura de tests reportada/gateada en CI (ver punto 2).
 - Sin matriz de versiones de Node (solo Node 24) — razonable para una app frontend sin usuarios de librería externa, pero vale decidirlo explícitamente.
 - Sin cache de resultados de build/typecheck entre jobs (todo corre secuencial en un único job; no es grave al tamaño actual del repo, pero crecerá el tiempo de CI con el monorepo).
 - **Resuelto (2026-08-03):** el mecanismo de deploy (Vercel + integración nativa de Git, sin step en `ci.yml`) ya está documentado en `CLAUDE.md` (sección "Deploy").
@@ -106,7 +105,7 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 **Acciones concretas:**
 
 - [x] Documentar en `CLAUDE.md`/README cómo se despliega (Vercel + integración Git) — resuelto (2026-08-03), ver `CLAUDE.md` sección "Deploy".
-- [ ] Sumar `--coverage` al step de test en CI una vez que el punto 2 esté resuelto, con un umbral que falle el build si baja.
+- [x] Sumar `--coverage` al step de test en CI una vez que el punto 2 esté resuelto, con un umbral que falle el build si baja. — resuelto (2026-08-03): `pnpm run test:coverage` (gate 70% en `src/domain`) corre en el step "Test" de `ci.yml` y en `pre-push`.
 - [ ] Si el monorepo sigue creciendo, considerar separar jobs por paquete (`lupulados`, `mockup-sandbox`, `scripts`) para paralelizar y evitar que un fallo en el sandbox bloquee la app productiva.
 
 ---
@@ -207,9 +206,9 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 
 ### Testing
 
-- [ ] Sumar `jsdom`/`happy-dom` + `@testing-library/react` a vitest
-- [ ] Tests de integración para Calculadora, ArmaTuPedido→checkout WhatsApp, AdminDashboard login+CRUD
-- [ ] Configurar `vitest --coverage` con umbral mínimo en CI
+- [x] Sumar `jsdom`/`happy-dom` + `@testing-library/react` a vitest
+- [x] Tests de integración para Calculadora, ArmaTuPedido→checkout WhatsApp, AdminDashboard login+CRUD
+- [x] Configurar `vitest --coverage` con umbral mínimo en CI
 - [ ] Evaluar smoke tests E2E (Playwright) para flujos de conversión
 
 ### Documentación
@@ -221,7 +220,7 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 ### CI/CD
 
 - [x] Documentar mecanismo real de deploy (Vercel + integración Git)
-- [ ] Gatear cobertura de tests en CI una vez configurada
+- [x] Gatear cobertura de tests en CI una vez configurada
 - [ ] Evaluar separar jobs por paquete si el monorepo crece
 
 ### Variables de entorno

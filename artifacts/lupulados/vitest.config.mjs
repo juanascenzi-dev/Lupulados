@@ -14,7 +14,36 @@ export default defineConfig({
     },
   },
   test: {
-    environment: "node",
     globals: false,
+    coverage: {
+      provider: "v8",
+      include: ["src/domain/**"],
+      reporter: ["text", "html"],
+      thresholds: {
+        statements: 70,
+        branches: 70,
+        functions: 70,
+        lines: 70,
+      },
+    },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "node",
+          environment: "node",
+          include: ["src/**/*.test.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "jsdom",
+          environment: "jsdom",
+          include: ["src/**/*.test.tsx"],
+          setupFiles: ["src/test/setupTests.ts"],
+        },
+      },
+    ],
   },
 });
