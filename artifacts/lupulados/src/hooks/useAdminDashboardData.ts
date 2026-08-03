@@ -12,6 +12,7 @@ import {
   type AdminCommercialData,
 } from "@/domain/adminDataLoader";
 import { getFirstZodError } from "@/domain/adminFormAdapters";
+import { reportError } from "@/lib/monitoring/sentry";
 import {
   emptyAdminData,
   matchesProductSearch,
@@ -68,6 +69,7 @@ export function useAdminDashboardData(
     try {
       setAdminData(await loadAdminCommercialData(repository));
     } catch (error) {
+      reportError(error, { scope: "admin-load-data" });
       toast({
         title: "No se pudieron cargar los datos administrativos",
         description: getFirstZodError(error, "Error inesperado."),
@@ -95,6 +97,7 @@ export function useAdminDashboardData(
       await refreshEverything();
       toast({ title: success });
     }).catch((error) => {
+      reportError(error, { scope: "admin-mutation" });
       toast({
         title: "No se pudo guardar",
         description: getFirstZodError(error, "Error inesperado."),
@@ -114,6 +117,7 @@ export function useAdminDashboardData(
     try {
       setAudit(await repository.listAuditLog());
     } catch (error) {
+      reportError(error, { scope: "admin-load-audit" });
       toast({
         title: "No se pudo cargar la actividad",
         description: getFirstZodError(error, "Error inesperado."),

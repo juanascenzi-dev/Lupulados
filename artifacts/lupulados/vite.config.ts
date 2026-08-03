@@ -28,8 +28,7 @@ export default defineConfig({
     tailwindcss(),
     runtimeErrorOverlay(),
 
-    ...(process.env.NODE_ENV !== "production" &&
-    process.env.REPL_ID !== undefined
+    ...(process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined
       ? [
           await import("@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer({
@@ -37,9 +36,7 @@ export default defineConfig({
             }),
           ),
 
-          await import("@replit/vite-plugin-dev-banner").then((m) =>
-            m.devBanner(),
-          ),
+          await import("@replit/vite-plugin-dev-banner").then((m) => m.devBanner()),
         ]
       : []),
   ],
@@ -48,12 +45,7 @@ export default defineConfig({
     alias: {
       "@": path.resolve(projectDir, "src"),
 
-      "@assets": path.resolve(
-        projectDir,
-        "..",
-        "..",
-        "attached_assets",
-      ),
+      "@assets": path.resolve(projectDir, "..", "..", "attached_assets"),
     },
 
     dedupe: ["react", "react-dom"],
@@ -70,6 +62,7 @@ export default defineConfig({
           const normalizedId = id.replaceAll("\\", "/");
           if (!normalizedId.includes("/node_modules/")) return undefined;
           if (normalizedId.includes("/node_modules/@supabase/")) return "vendor-supabase";
+          if (normalizedId.includes("/node_modules/@sentry/")) return "vendor-sentry";
           if (normalizedId.includes("/node_modules/framer-motion/")) return "vendor-motion";
           if (normalizedId.includes("/node_modules/@radix-ui/")) return "vendor-radix";
           if (normalizedId.includes("/node_modules/lucide-react/")) return "vendor-icons";

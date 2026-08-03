@@ -1,11 +1,20 @@
 import React, { createContext, useContext, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { commercialSnapshot } from "@/domain/commercialData";
-import { buildBeerCatalog, buildBusinessConfig, buildOrderTypeOptions } from "@/domain/commercialAdapters";
-import { StaticCommercialRepository, SupabaseCommercialRepository, type CommercialRepository } from "@/domain/commercialRepository";
+import {
+  buildBeerCatalog,
+  buildBusinessConfig,
+  buildOrderTypeOptions,
+} from "@/domain/commercialAdapters";
+import {
+  StaticCommercialRepository,
+  SupabaseCommercialRepository,
+  type CommercialRepository,
+} from "@/domain/commercialRepository";
 import type { CommercialSnapshot } from "@/domain/commercialTypes";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
+import { reportError } from "@/lib/monitoring/sentry";
 
 export type CommercialDataSource = "supabase" | "static";
 
@@ -37,6 +46,7 @@ export async function resolveCommercialSnapshot(repository: CommercialRepository
     if (import.meta.env.DEV) {
       console.warn("[commercial-data] usando fallback estatico", error);
     }
+    reportError(error, { scope: "commercial-data-fallback" });
     return {
       snapshot: await staticRepository.getCommercialSnapshot(),
       source: "static" as const,
