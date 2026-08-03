@@ -221,21 +221,51 @@ describe("storeCatalog", () => {
       resolve(process.cwd(), "src/components/ArmaTuPedido.tsx"),
       "utf8",
     );
+    const customerDetailsForm = readFileSync(
+      resolve(process.cwd(), "src/components/order-wizard/CustomerDetailsForm.tsx"),
+      "utf8",
+    );
+    const beerQuantityStep = readFileSync(
+      resolve(process.cwd(), "src/components/order-wizard/BeerQuantityStep.tsx"),
+      "utf8",
+    );
 
     expect(checkout).toContain("@/components/ui/select");
     expect(checkout).not.toContain("<select");
-    expect(orderWizard).toContain("@/components/ui/select");
-    expect(orderWizard).toContain("ConfigurableBeerPackBuilder");
-    expect(orderWizard).toContain('orderType === "porrón"');
+    expect(customerDetailsForm).toContain("@/components/ui/select");
+    expect(customerDetailsForm).not.toContain("<select");
     expect(orderWizard).not.toContain("<select");
-    expect(orderWizard).toContain('orderType === "paquete" &&');
-    expect(orderWizard).toContain("setStep(3)");
-    expect(orderWizard).not.toContain("setStep(4);\n      return;\n    }");
+    expect(beerQuantityStep).toContain("ConfigurableBeerPackBuilder");
+    expect(beerQuantityStep).toContain('orderType === "porrón"');
+    expect(beerQuantityStep).toContain('orderType === "paquete" &&');
+  });
+
+  it("keeps the beer-category step skip (paquete/porrón jump straight to step 3) working via the pure wizard-step helpers", () => {
+    const orderWizardConstants = readFileSync(
+      resolve(process.cwd(), "src/domain/orderWizardConstants.ts"),
+      "utf8",
+    );
+    const orderWizardConstantsTest = readFileSync(
+      resolve(process.cwd(), "src/domain/orderWizardConstants.test.ts"),
+      "utf8",
+    );
+
+    expect(orderWizardConstants).toContain("getNextWizardStep");
+    expect(orderWizardConstants).toContain("getPrevWizardStep");
+    expect(orderWizardConstantsTest).toContain("skips step 2 for paquete/porrón");
   });
 
   it("keeps configurable beer pack layout and step navigation behavior scoped to the shared builder", () => {
     const orderWizard = readFileSync(
       resolve(process.cwd(), "src/components/ArmaTuPedido.tsx"),
+      "utf8",
+    );
+    const useOrderWizardState = readFileSync(
+      resolve(process.cwd(), "src/hooks/useOrderWizardState.ts"),
+      "utf8",
+    );
+    const beerQuantityStep = readFileSync(
+      resolve(process.cwd(), "src/components/order-wizard/BeerQuantityStep.tsx"),
       "utf8",
     );
     const storePage = readFileSync(resolve(process.cwd(), "src/pages/StorePage.tsx"), "utf8");
@@ -244,12 +274,12 @@ describe("storeCatalog", () => {
       "utf8",
     );
 
-    expect(orderWizard).toContain("CONFIGURABLE_PACK_ORDER_TYPE");
+    expect(useOrderWizardState).toContain("CONFIGURABLE_PACK_ORDER_TYPE");
     expect(orderWizard).toContain("isConfigurablePackStep");
     expect(orderWizard).toContain("!isConfigurablePackStep &&");
-    expect(orderWizard).toContain("scrollIntoView");
-    expect(orderWizard).toContain("prefers-reduced-motion: reduce");
-    expect(orderWizard).toContain('layout="wide"');
+    expect(useOrderWizardState).toContain("scrollIntoView");
+    expect(useOrderWizardState).toContain("prefers-reduced-motion: reduce");
+    expect(beerQuantityStep).toContain('layout="wide"');
     expect(orderWizard).toContain("WizardActionBar");
     expect(orderWizard).toContain("MobileCartSummary");
     expect(orderWizard).toContain("getCompactCartLineDescription");

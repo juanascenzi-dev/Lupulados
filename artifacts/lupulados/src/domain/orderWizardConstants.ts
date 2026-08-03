@@ -31,3 +31,19 @@ export const BUBBLES = Array.from({ length: 12 }, (_, i) => ({
   delay: Math.random() * 8,
   duration: 5 + Math.random() * 6,
 }));
+
+const SKIP_STEP_TWO_ORDER_TYPES: OrderType[] = ["paquete", "porrón"];
+
+export function getNextWizardStep(step: Step, isBeerCategory: boolean, orderType: OrderType): Step {
+  if (isBeerCategory && step === 1 && SKIP_STEP_TWO_ORDER_TYPES.includes(orderType)) {
+    return 3;
+  }
+  return Math.min(step + 1, 5) as Step;
+}
+
+export function getPrevWizardStep(step: Step, isBeerCategory: boolean, orderType: OrderType): Step {
+  if (isBeerCategory && step === 3 && SKIP_STEP_TWO_ORDER_TYPES.includes(orderType)) {
+    return 1;
+  }
+  return Math.max(step - 1, 1) as Step;
+}

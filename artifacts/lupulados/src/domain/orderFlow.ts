@@ -95,6 +95,31 @@ export interface BeverageMixOrderResult {
   skipped: NonBeerBeverageType[];
 }
 
+export interface RecommendationKeyInput {
+  selectedBeerId: string | null;
+  recommendation: BarrelRecommendation;
+  beverageMix: BeverageMixItemEstimate[] | null;
+  beerPreferenceIds: string[];
+}
+
+/** Dedup key used to avoid re-adding the same pending recommendation twice. */
+export function buildRecommendationKey({
+  selectedBeerId,
+  recommendation,
+  beverageMix,
+  beerPreferenceIds,
+}: RecommendationKeyInput): string {
+  return [
+    selectedBeerId ?? "",
+    recommendation.requiredLiters,
+    recommendation.coveredLiters,
+    recommendation.label,
+    ...recommendation.parts.map((part) => `${part.presentationId}:${part.count}`),
+    ...(beverageMix ?? []).map((item) => `${item.type}:${item.percentage}:${item.liters}`),
+    ...beerPreferenceIds,
+  ].join("|");
+}
+
 export function buildRecommendedBeverageMixItems(
   mixResult: BeverageMixItemEstimate[],
   snapshot: CommercialSnapshot,

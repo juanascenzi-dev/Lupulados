@@ -11,6 +11,7 @@ import type { BeverageMixItemEstimate } from "./beverageMix";
 import type { StoredCartItem } from "./cartStorage";
 import { commercialSnapshot } from "./commercialData";
 import {
+  buildRecommendationKey,
   buildRecommendedBarrelItems,
   buildRecommendedBeverageMixItems,
   hasCurrentSelectionInCart,
@@ -188,6 +189,65 @@ describe("orderFlow", () => {
 
     expect(JSON.stringify(ipa)).toBe(beerBefore);
     expect(JSON.stringify(plan)).toBe(planBefore);
+  });
+});
+
+describe("buildRecommendationKey", () => {
+  const plan = planFromParts([{ presentationId: "barril30L", size: 30, count: 2, price: 54000 }]);
+  const mix: BeverageMixItemEstimate[] = [
+    { type: "fernet", percentage: 40, liters: 12, approxBottles: 16 },
+  ];
+  const baseInput = {
+    selectedBeerId: "blonde-ale",
+    recommendation: plan,
+    beverageMix: mix,
+    beerPreferenceIds: ["blonde-ale", "ipa"],
+  };
+
+  it("builds the same key for the same input", () => {
+    expect(buildRecommendationKey(baseInput)).toBe(buildRecommendationKey({ ...baseInput }));
+  });
+
+  it("changes when the selected beer changes", () => {
+    expect(buildRecommendationKey({ ...baseInput, selectedBeerId: "ipa" })).not.toBe(
+      buildRecommendationKey(baseInput),
+    );
+  });
+
+  it("treats a null selected beer as an empty segment, distinct from any beer id", () => {
+    expect(buildRecommendationKey({ ...baseInput, selectedBeerId: null })).not.toBe(
+      buildRecommendationKey(baseInput),
+    );
+  });
+
+  it("changes when the recommendation parts change", () => {
+    const otherPlan = planFromParts([
+      { presentationId: "barril20L", size: 20, count: 1, price: 38000 },
+    ]);
+    expect(buildRecommendationKey({ ...baseInput, recommendation: otherPlan })).not.toBe(
+      buildRecommendationKey(baseInput),
+    );
+  });
+
+  it("changes when the beverage mix percentages change", () => {
+    const otherMix: BeverageMixItemEstimate[] = [
+      { type: "fernet", percentage: 60, liters: 18, approxBottles: 24 },
+    ];
+    expect(buildRecommendationKey({ ...baseInput, beverageMix: otherMix })).not.toBe(
+      buildRecommendationKey(baseInput),
+    );
+  });
+
+  it("treats a null beverage mix the same as an empty one", () => {
+    expect(buildRecommendationKey({ ...baseInput, beverageMix: null })).toBe(
+      buildRecommendationKey({ ...baseInput, beverageMix: [] }),
+    );
+  });
+
+  it("changes when beer preference ids differ, including order", () => {
+    expect(
+      buildRecommendationKey({ ...baseInput, beerPreferenceIds: ["ipa", "blonde-ale"] }),
+    ).not.toBe(buildRecommendationKey(baseInput));
   });
 });
 
