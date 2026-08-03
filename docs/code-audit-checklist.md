@@ -10,8 +10,8 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 | --------------------------------------- | -------------------------------- |
 | 1. Calidad de código (DRY/SOLID/naming) | 8/10                             |
 | 2. Cobertura de testing                 | 6/10                             |
-| 3. Documentación                        | 5/10                             |
-| 4. CI/CD                                | 7.5/10                           |
+| 3. Documentación                        | ~~5/10~~ → 8/10 (2026-08-03)     |
+| 4. CI/CD                                | ~~7.5/10~~ → 8/10 (2026-08-03)   |
 | 5. Variables de entorno                 | 9/10                             |
 | 6. Logging y monitoreo                  | ~~3/10~~ → resuelto (2026-08-02) |
 | 7. Manejo de errores                    | ~~7/10~~ → 8/10 (2026-08-02)     |
@@ -66,29 +66,28 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 
 ---
 
-## 3. Documentación — 5/10
+## 3. Documentación — ~~5/10~~ → 8/10 (2026-08-03)
 
 **Bien:**
 
-- `CLAUDE.md` documenta estructura, comandos, convenciones de commits, flujo de branches y CI — funciona como guía operativa interna sólida.
+- `CLAUDE.md` documenta estructura, comandos, convenciones de commits, flujo de branches, CI, deploy y política de logging — funciona como guía operativa interna sólida.
 - `CHANGELOG.md` activo y detallado, siguiendo Keep a Changelog, con migración explícita del historial previo en `docs/*.md`.
 - Naming autoexplicativo reduce la necesidad de comentarios (política deliberada, no negligencia).
+- **Resuelto (2026-08-03):** `README.md` en la raíz (agregado en `c9c3ad3`, el día después de esta auditoría) y `README.md` en `artifacts/lupulados` (env vars requeridas, comportamiento real vs. fallback estático de Supabase). `docs/obsidian-pending/` tiene ahora un índice (`docs/obsidian-pending/README.md`) que documenta el estado real de cada nota: 5 resueltas/históricas, 1 (`18 - Packs de porrones configurables.md`) con un ítem de QA manual genuinamente pendiente.
 
 **Mejorable:**
 
-- **No existe ningún `README.md`** en el repo (ni raíz ni en `artifacts/lupulados`). Para alguien nuevo (o para GitHub mostrando la página del repo) no hay punto de entrada: qué es el proyecto, cómo levantarlo, qué es Lupulados como negocio.
 - Sin documentación de arquitectura de alto nivel (por qué Supabase directo desde el cliente y no un backend propio — decisión que sí quedó en el CHANGELOG pero no en un doc dedicado y fácil de encontrar).
-- `docs/obsidian-pending/` mezcla notas de producto/QA sin resolver con el resto de `docs/` (que es historial ya migrado); vale la pena aclarar su estado (¿pendiente de qué? ¿se puede archivar?).
 
 **Acciones concretas:**
 
-- [ ] Crear `README.md` en la raíz: qué es Lupulados, stack, cómo instalar/correr/testear (puede resumir lo que ya está en `CLAUDE.md`, pero `README.md` es lo que se ve primero en GitHub).
-- [ ] Agregar un `README.md` corto en `artifacts/lupulados` con specifics de la app (variables de entorno requeridas, cómo correr contra Supabase real vs. fallback estático).
-- [ ] Revisar `docs/obsidian-pending/` y decidir: mover a `docs/` definitivo, cerrar como completado, o documentar explícitamente por qué siguen "pending".
+- [x] Crear `README.md` en la raíz — resuelto (2026-08-03, vía `c9c3ad3`).
+- [x] Agregar un `README.md` corto en `artifacts/lupulados` con specifics de la app (variables de entorno requeridas, cómo correr contra Supabase real vs. fallback estático) — resuelto (2026-08-03).
+- [x] Revisar `docs/obsidian-pending/` y documentar su estado — resuelto (2026-08-03) vía `docs/obsidian-pending/README.md`.
 
 ---
 
-## 4. CI/CD — 7.5/10
+## 4. CI/CD — ~~7.5/10~~ → 8/10 (2026-08-03)
 
 **Bien:**
 
@@ -99,14 +98,14 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 
 **Mejorable:**
 
-- No hay step de deploy visible en `.github/workflows/` (asumo que Vercel deploya vía su propia integración de Git, fuera de este workflow — vale confirmarlo y documentarlo).
 - Sin cobertura de tests reportada/gateada en CI (ver punto 2).
 - Sin matriz de versiones de Node (solo Node 24) — razonable para una app frontend sin usuarios de librería externa, pero vale decidirlo explícitamente.
 - Sin cache de resultados de build/typecheck entre jobs (todo corre secuencial en un único job; no es grave al tamaño actual del repo, pero crecerá el tiempo de CI con el monorepo).
+- **Resuelto (2026-08-03):** el mecanismo de deploy (Vercel + integración nativa de Git, sin step en `ci.yml`) ya está documentado en `CLAUDE.md` (sección "Deploy").
 
 **Acciones concretas:**
 
-- [ ] Documentar en `CLAUDE.md`/README cómo se despliega (Vercel + integración Git, o el mecanismo real) para que quede explícito y no solo inferido de `vercel.json`.
+- [x] Documentar en `CLAUDE.md`/README cómo se despliega (Vercel + integración Git) — resuelto (2026-08-03), ver `CLAUDE.md` sección "Deploy".
 - [ ] Sumar `--coverage` al step de test en CI una vez que el punto 2 esté resuelto, con un umbral que falle el build si baja.
 - [ ] Si el monorepo sigue creciendo, considerar separar jobs por paquete (`lupulados`, `mockup-sandbox`, `scripts`) para paralelizar y evitar que un fallo en el sandbox bloquee la app productiva.
 
@@ -146,7 +145,7 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 - [x] Integrar un servicio de error tracking en producción y reportar desde `ErrorBoundary.componentDidCatch` sin el gate de `DEV`.
 - [x] Reportar también errores no capturados por boundaries: fallos de `client.rpc`/queries de Supabase en `AdminAuthContext` y `CommercialDataContext`, y las mutaciones de `useAdminDashboardData`.
 - [ ] Definir qué eventos de negocio vale la pena trackear (completar Calculadora, agregar al pedido, enviar WhatsApp, login admin) y con qué herramienta (Vercel Analytics, Plausible, o el mismo Sentry con breadcrumbs). **Sigue pendiente** — quedó fuera de alcance de la integración de Sentry.
-- [ ] Documentar en `CLAUDE.md` la política de logging una vez definida (qué se loggea, dónde, con qué severidad).
+- [x] Documentar en `CLAUDE.md` la política de logging — resuelto (2026-08-03), ver `CLAUDE.md` sección "Política de logging".
 - [ ] Seguimiento pendiente para que Sentry reciba eventos reales: crear el proyecto en sentry.io, setear `VITE_SENTRY_DSN` en Vercel (env de producción), y confirmar/ajustar el host exacto de `connect-src` en `vercel.json` (hoy usa `https://*.ingest.us.sentry.io` como placeholder de la región US).
 - [ ] (Opcional) Upload de source maps / release tracking con `@sentry/vite-plugin`, requiere `SENTRY_AUTH_TOKEN` como secret de CI.
 
@@ -215,13 +214,13 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 
 ### Documentación
 
-- [ ] Crear `README.md` en la raíz del repo
-- [ ] Crear `README.md` en `artifacts/lupulados` (env vars, cómo correr contra Supabase real vs. fallback)
-- [ ] Resolver estado de `docs/obsidian-pending/`
+- [x] Crear `README.md` en la raíz del repo
+- [x] Crear `README.md` en `artifacts/lupulados` (env vars, cómo correr contra Supabase real vs. fallback)
+- [x] Resolver estado de `docs/obsidian-pending/`
 
 ### CI/CD
 
-- [ ] Documentar mecanismo real de deploy (Vercel + integración Git u otro)
+- [x] Documentar mecanismo real de deploy (Vercel + integración Git)
 - [ ] Gatear cobertura de tests en CI una vez configurada
 - [ ] Evaluar separar jobs por paquete si el monorepo crece
 
@@ -235,7 +234,7 @@ Estado verificado en esta auditoría: `pnpm run lint` → 0 errores / 29 warning
 - [x] Reportar fallos de Supabase (`AdminAuthContext`, `CommercialDataContext`, `useAdminDashboardData`) al mismo sistema
 - [ ] Crear el proyecto en sentry.io, setear `VITE_SENTRY_DSN` en Vercel y confirmar el host real de `connect-src` en `vercel.json`
 - [ ] Definir y trackear eventos de negocio clave (calculadora completada, pedido agregado, WhatsApp enviado, login admin)
-- [ ] Documentar política de logging en `CLAUDE.md`
+- [x] Documentar política de logging en `CLAUDE.md`
 - [ ] (Opcional) Upload de source maps / release tracking con `@sentry/vite-plugin` (requiere `SENTRY_AUTH_TOKEN` en CI)
 
 ### Manejo de errores
