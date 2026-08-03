@@ -2,13 +2,18 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
+import { reportError } from "@/lib/monitoring/sentry";
 
 export type AdminAccess = "loading" | "unconfigured" | "anonymous" | "unauthorized" | "admin";
 
-export function resolveAdminAccessState(input: { configured: boolean; hasSession: boolean; isAdmin: boolean | null }) {
+export function resolveAdminAccessState(input: {
+  configured: boolean;
+  hasSession: boolean;
+  isAdmin: boolean | null;
+}) {
   if (!input.configured) return "unconfigured" as const;
   if (!input.hasSession) return "anonymous" as const;
-  return input.isAdmin === true ? "admin" as const : "unauthorized" as const;
+  return input.isAdmin === true ? ("admin" as const) : ("unauthorized" as const);
 }
 
 interface AdminAuthState {
@@ -47,6 +52,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     const { data, error: rpcError } = await client.rpc("is_admin");
     if (rpcError) {
+      reportError(rpcError, { scope: "admin-rpc-is-admin" });
       setError("No se pudo verificar el rol administrativo.");
       setAccess("unauthorized");
       return;
@@ -88,7 +94,15 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminAuthContext.Provider
-      value={{ access, session, user: session?.user ?? null, error, signIn, signOut, refreshAdminStatus }}
+      value={{
+        access,
+        session,
+        user: session?.user ?? null,
+        error,
+        signIn,
+        signOut,
+        refreshAdminStatus,
+      }}
     >
       {children}
     </AdminAuthContext.Provider>
