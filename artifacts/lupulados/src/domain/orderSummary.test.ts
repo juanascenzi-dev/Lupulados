@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { beerCatalog, createBeerCartItem } from "./beerCatalog";
-import { calculateOrderSummary, type OrderSummaryExtras, type OrderSummaryItem } from "./orderSummary";
+import {
+  calculateOrderSummary,
+  type OrderSummaryExtras,
+  type OrderSummaryItem,
+} from "./orderSummary";
 
 const baseExtras: OrderSummaryExtras = {
   chopera: false,
@@ -24,7 +28,10 @@ describe("orderSummary", () => {
     expect(summary.totalLiters).toBe(90);
     expect(summary.itemsSubtotal).toBe(189000);
     expect(summary.total).toBe(189000);
-    expect(summary.items.map((item) => item.productName)).toEqual(["IPA", "American Pale Ale (APA)"]);
+    expect(summary.items.map((item) => item.productName)).toEqual([
+      "IPA",
+      "American Pale Ale (APA)",
+    ]);
   });
 
   it("summarizes a mixed generic test order with variants, optional presentations and accessories", () => {
@@ -63,12 +70,68 @@ describe("orderSummary", () => {
     expect(summary.totalItems).toBe(12);
     expect(summary.itemsSubtotal).toBe(29000);
     expect(summary.total).toBe(29000);
-    expect(summary.items[0]).toMatchObject({ variantLabel: "Reserva", presentationLabel: "Botella 750ml" });
+    expect(summary.items[0]).toMatchObject({
+      variantLabel: "Reserva",
+      presentationLabel: "Botella 750ml",
+    });
     expect(summary.items[1]).toMatchObject({ productCategory: "accessory" });
     expect(summary.items[1]).not.toHaveProperty("variantLabel");
     expect(serialized).not.toContain("undefined");
     expect(serialized).not.toContain("null");
     expect(serialized).not.toContain("NaN");
     expect(serialized).not.toContain("[object Object]");
+  });
+
+  describe("discounts", () => {
+    const items = [{ ...createBeerCartItem(beerCatalog[2], "barril50L"), qty: 1 }];
+
+    it("defaults to a percentage discount when discountType is omitted", () => {
+      const summary = calculateOrderSummary(items, {
+        ...baseExtras,
+        promoCode: "PROMO",
+        discount: 0.1,
+      });
+
+      expect(summary.itemsSubtotal).toBe(105000);
+      expect(summary.discountType).toBe("percentage");
+      expect(summary.discountValue).toBe(0.1);
+      expect(summary.discountAmount).toBe(10500);
+      expect(summary.discountCode).toBe("PROMO");
+      expect(summary.total).toBe(94500);
+    });
+
+    it("discounts the raw peso value for a fixed promotion, not subtotal * value", () => {
+      const summary = calculateOrderSummary(items, {
+        ...baseExtras,
+        promoCode: "FIJO",
+        discount: 1000,
+        discountType: "fixed",
+      });
+
+      expect(summary.discountType).toBe("fixed");
+      expect(summary.discountValue).toBe(1000);
+      expect(summary.discountAmount).toBe(1000);
+      expect(summary.total).toBe(104000);
+    });
+
+    it("caps a fixed discount at the subtotal so the total never goes negative", () => {
+      const summary = calculateOrderSummary(items, {
+        ...baseExtras,
+        promoCode: "FIJO",
+        discount: 999999,
+        discountType: "fixed",
+      });
+
+      expect(summary.discountAmount).toBe(summary.itemsSubtotal);
+      expect(summary.total).toBe(0);
+    });
+
+    it("applies no discount when there is no promo code", () => {
+      const summary = calculateOrderSummary(items, { ...baseExtras, promoCode: "", discount: 0.1 });
+
+      expect(summary.discountAmount).toBe(0);
+      expect(summary.discountCode).toBe("");
+      expect(summary.total).toBe(summary.itemsSubtotal);
+    });
   });
 });

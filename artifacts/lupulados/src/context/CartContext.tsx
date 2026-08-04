@@ -10,7 +10,7 @@ import {
 } from "@/domain/cartStorage";
 import { calculateOrderSummary, type OrderSummary } from "@/domain/orderSummary";
 import { useCommercialData } from "@/context/CommercialDataContext";
-import type { DeliveryOptionId } from "@/domain/commercialTypes";
+import type { DeliveryOptionId, PromotionType } from "@/domain/commercialTypes";
 import { buildStoreSnapshot } from "@/domain/storeCatalog";
 
 export type CartItem = StoredCartItem;
@@ -31,6 +31,7 @@ export interface CartContextType {
     vasos: number;
     promoCode: string;
     discount: number;
+    discountType?: PromotionType;
   };
   setExtras: React.Dispatch<React.SetStateAction<CartContextType["extras"]>>;
 }
@@ -52,6 +53,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     vasos: 0,
     promoCode: "",
     discount: 0,
+    discountType: "percentage",
   });
 
   useEffect(() => {
@@ -86,7 +88,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
-    setExtras({ chopera: false, delivery: "fabrica", hielo: 0, vasos: 0, promoCode: "", discount: 0 });
+    setExtras({
+      chopera: false,
+      delivery: "fabrica",
+      hielo: 0,
+      vasos: 0,
+      promoCode: "",
+      discount: 0,
+      discountType: "percentage",
+    });
   };
 
   const orderSummary = calculateOrderSummary(items, extras, cartSnapshot);

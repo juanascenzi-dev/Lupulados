@@ -1,12 +1,15 @@
 import { Check, Tag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatPromotionValue } from "@/domain/promotionDiscount";
+import type { PromotionType } from "@/domain/commercialTypes";
 
 interface PromoCodeFieldProps {
   value: string;
   onChange: (value: string) => void;
   onApply: () => void;
   status: "none" | "valid" | "invalid";
-  discountRate: number;
+  discountType: PromotionType;
+  discountValue: number;
   placeholderCode: string;
 }
 
@@ -15,7 +18,8 @@ export function PromoCodeField({
   onChange,
   onApply,
   status,
-  discountRate,
+  discountType,
+  discountValue,
   placeholderCode,
 }: PromoCodeFieldProps) {
   return (
@@ -73,7 +77,8 @@ export function PromoCodeField({
       </div>
       {status === "valid" && (
         <p id="promo-code-success" className="text-green-400 text-xs mt-2 font-bold" role="status">
-          ✓ ¡Descuento del {discountRate * 100}% aplicado!
+          ✓ ¡Descuento de {formatPromotionValue({ type: discountType, value: discountValue })}{" "}
+          aplicado!
         </p>
       )}
       {status === "invalid" && (

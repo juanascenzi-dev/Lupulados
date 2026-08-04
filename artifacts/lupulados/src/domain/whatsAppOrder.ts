@@ -1,5 +1,6 @@
 import { formatPrice } from "./format";
 import { getPricingConfig } from "./commercialSelectors";
+import { formatPromotionValue } from "./promotionDiscount";
 import type { CommercialSnapshot } from "./commercialTypes";
 import type { OrderSummary } from "./orderSummary";
 
@@ -131,8 +132,12 @@ export function buildWhatsAppOrderMessage({ customer, summary, snapshot }: Whats
   lines.push(`Envio: ${formatPrice(summary.deliveryCost)}`);
   lines.push(`Subtotal: ${formatPrice(summary.subtotal)}`);
   if (summary.discountAmount > 0) {
+    const discountValueText = formatPromotionValue({
+      type: summary.discountType,
+      value: summary.discountValue,
+    });
     lines.push(
-      `Descuento ${summary.discountCode} (${summary.discountRate * 100}%): -${formatPrice(summary.discountAmount)}`,
+      `Descuento ${summary.discountCode} (${discountValueText}): -${formatPrice(summary.discountAmount)}`,
     );
   }
   lines.push(`Total estimado: ${formatPrice(summary.total)}`);

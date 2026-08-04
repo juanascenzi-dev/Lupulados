@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { commercialSnapshot } from "./commercialData";
-import { getPrimaryOrderWhatsAppChannel, listActivePromotions } from "./commercialSelectors";
+import {
+  getActivePromotion,
+  getPrimaryOrderWhatsAppChannel,
+  listActivePromotions,
+} from "./commercialSelectors";
 import {
   productFromRow,
   snapshotFromRows,
@@ -14,16 +18,18 @@ import {
   type WhatsAppRow,
 } from "./commercialRepository";
 
-const profileRows: BusinessProfileRow[] = [{
-  id: "lupulados-public-profile",
-  business_name: "Lupulados",
-  address: "Primera Junta 2614",
-  opening_hours: "Atención las 24 horas, todos los días.",
-  email: null,
-  pricing_status: "estimated",
-  price_disclaimer: "Los precios son estimativos y están sujetos a confirmación.",
-  active: true,
-}];
+const profileRows: BusinessProfileRow[] = [
+  {
+    id: "lupulados-public-profile",
+    business_name: "Lupulados",
+    address: "Primera Junta 2614",
+    opening_hours: "Atención las 24 horas, todos los días.",
+    email: null,
+    pricing_status: "estimated",
+    price_disclaimer: "Los precios son estimativos y están sujetos a confirmación.",
+    active: true,
+  },
+];
 
 const productRows: ProductRow[] = commercialSnapshot.products.map((product) => ({
   id: product.id,
@@ -40,18 +46,20 @@ const productRows: ProductRow[] = commercialSnapshot.products.map((product) => (
   badge: product.badge ?? null,
 }));
 
-const presentationRows: PresentationRow[] = commercialSnapshot.productPresentations.map((presentation) => ({
-  id: presentation.id,
-  product_id: presentation.productId,
-  presentation_type: presentation.presentationType,
-  label: presentation.label,
-  volume_liters: presentation.volumeLiters,
-  unit_price: presentation.unitPrice,
-  status: presentation.active ? "active" : "archived",
-  sort_order: presentation.sortOrder,
-  category: presentation.category,
-  description: presentation.description ?? null,
-}));
+const presentationRows: PresentationRow[] = commercialSnapshot.productPresentations.map(
+  (presentation) => ({
+    id: presentation.id,
+    product_id: presentation.productId,
+    presentation_type: presentation.presentationType,
+    label: presentation.label,
+    volume_liters: presentation.volumeLiters,
+    unit_price: presentation.unitPrice,
+    status: presentation.active ? "active" : "archived",
+    sort_order: presentation.sortOrder,
+    category: presentation.category,
+    description: presentation.description ?? null,
+  }),
+);
 
 const whatsappRows: WhatsAppRow[] = commercialSnapshot.whatsappChannels.map((channel) => ({
   id: channel.id,
@@ -115,16 +123,28 @@ describe("Supabase commercial mappers", () => {
 
   it("sorts public rows by sort_order", () => {
     const snapshot = snapshotFromRows(rows({ products: [...productRows].reverse() }));
-    expect(snapshot.products.map((product) => product.id)).toEqual(commercialSnapshot.products.map((product) => product.id));
+    expect(snapshot.products.map((product) => product.id)).toEqual(
+      commercialSnapshot.products.map((product) => product.id),
+    );
   });
 
   it("excludes archived products and presentations from the public snapshot", () => {
-    const snapshot = snapshotFromRows(rows({
-      products: productRows.map((product) => product.id === "ipa" ? { ...product, status: "archived" } : product),
-      productPresentations: presentationRows.map((presentation) => presentation.id === "apa:barril20L" ? { ...presentation, status: "archived" } : presentation),
-    }));
+    const snapshot = snapshotFromRows(
+      rows({
+        products: productRows.map((product) =>
+          product.id === "ipa" ? { ...product, status: "archived" } : product,
+        ),
+        productPresentations: presentationRows.map((presentation) =>
+          presentation.id === "apa:barril20L"
+            ? { ...presentation, status: "archived" }
+            : presentation,
+        ),
+      }),
+    );
     expect(snapshot.products.map((product) => product.id)).not.toContain("ipa");
-    expect(snapshot.productPresentations.map((presentation) => presentation.id)).not.toContain("apa:barril20L");
+    expect(snapshot.productPresentations.map((presentation) => presentation.id)).not.toContain(
+      "apa:barril20L",
+    );
   });
 
   it("rejects invalid Supabase data", () => {
@@ -157,7 +177,9 @@ describe("commercial repository mutations", () => {
     const from = vi.fn(() => ({ insert }));
     const repo = new SupabaseCommercialRepository({ from } as never);
     await repo.createProduct(commercialSnapshot.products[0]);
-    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ id: "blonde-ale", status: "active" }));
+    expect(insert).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "blonde-ale", status: "active" }),
+    );
   });
 
   it("does not send ID changes when editing products", async () => {
@@ -174,26 +196,64 @@ describe("commercial repository mutations", () => {
 
   it("updates presentation product, price, and nullable description", async () => {
     const { repo, update } = repoForUpdate(presentationRows[0]);
-    await repo.updatePresentation("apa:barril20L", { productId: "ipa", unitPrice: 0, description: null });
+    await repo.updatePresentation("apa:barril20L", {
+      productId: "ipa",
+      unitPrice: 0,
+      description: null,
+    });
     expect(update).toHaveBeenCalledWith({ product_id: "ipa", unit_price: 0, description: null });
   });
 
   it("updates delivery options", async () => {
     const { repo, update } = repoForUpdate(deliveryRows[0]);
-    await repo.updateDeliveryOption("delivery", { label: "Retiro", description: "Retiro", price: 0, requiresAddress: false, sortOrder: 1 });
-    expect(update).toHaveBeenCalledWith({ label: "Retiro", description: "Retiro", price: 0, requires_address: false, sort_order: 1 });
+    await repo.updateDeliveryOption("delivery", {
+      label: "Retiro",
+      description: "Retiro",
+      price: 0,
+      requiresAddress: false,
+      sortOrder: 1,
+    });
+    expect(update).toHaveBeenCalledWith({
+      label: "Retiro",
+      description: "Retiro",
+      price: 0,
+      requires_address: false,
+      sort_order: 1,
+    });
   });
 
   it("updates extra options", async () => {
     const { repo, update } = repoForUpdate(extraRows[0]);
-    await repo.updateExtraOption("ice", { label: "Hielo", price: 1000, unit: "bolsa", sortOrder: 2 });
-    expect(update).toHaveBeenCalledWith({ label: "Hielo", price: 1000, unit: "bolsa", sort_order: 2 });
+    await repo.updateExtraOption("ice", {
+      label: "Hielo",
+      price: 1000,
+      unit: "bolsa",
+      sortOrder: 2,
+    });
+    expect(update).toHaveBeenCalledWith({
+      label: "Hielo",
+      price: 1000,
+      unit: "bolsa",
+      sort_order: 2,
+    });
   });
 
   it("updates promotions with uppercase codes and nullable dates", async () => {
     const { repo, update } = repoForUpdate(promotionRows[0]);
-    await repo.updatePromotion("promo", { code: " verano ", type: "fixed", value: 1000, startDate: null, endDate: null });
-    expect(update).toHaveBeenCalledWith({ code: "VERANO", promotion_type: "fixed", value: 1000, starts_at: null, ends_at: null });
+    await repo.updatePromotion("promo", {
+      code: " verano ",
+      type: "fixed",
+      value: 1000,
+      startDate: null,
+      endDate: null,
+    });
+    expect(update).toHaveBeenCalledWith({
+      code: "VERANO",
+      promotion_type: "fixed",
+      value: 1000,
+      starts_at: null,
+      ends_at: null,
+    });
   });
 
   it("archives and restores products using status", async () => {
@@ -205,17 +265,46 @@ describe("commercial repository mutations", () => {
   });
 
   it("accepts zero presentation prices but rejects negative snapshots", () => {
-    expect(snapshotFromRows(rows({ productPresentations: presentationRows.map((row, index) => index === 0 ? { ...row, unit_price: 0 } : row) })).productPresentations[0].unitPrice).toBe(0);
-    expect(() => snapshotFromRows(rows({ productPresentations: presentationRows.map((row, index) => index === 0 ? { ...row, unit_price: -1 } : row) }))).toThrow();
+    expect(
+      snapshotFromRows(
+        rows({
+          productPresentations: presentationRows.map((row, index) =>
+            index === 0 ? { ...row, unit_price: 0 } : row,
+          ),
+        }),
+      ).productPresentations[0].unitPrice,
+    ).toBe(0);
+    expect(() =>
+      snapshotFromRows(
+        rows({
+          productPresentations: presentationRows.map((row, index) =>
+            index === 0 ? { ...row, unit_price: -1 } : row,
+          ),
+        }),
+      ),
+    ).toThrow();
   });
 });
 
 describe("commercial public compatibility", () => {
   it("keeps real beer catalog IDs stable and adds demo IDs explicitly", () => {
-    expect(commercialSnapshot.products.filter((product) => product.category === "beer" && !product.demo).map((product) => product.id)).toEqual([
-      "blonde-ale", "apa", "ipa", "red-ale", "stout", "honey-wheat", "session-ipa", "scotch-ale",
+    expect(
+      commercialSnapshot.products
+        .filter((product) => product.category === "beer" && !product.demo)
+        .map((product) => product.id),
+    ).toEqual([
+      "blonde-ale",
+      "apa",
+      "ipa",
+      "red-ale",
+      "stout",
+      "honey-wheat",
+      "session-ipa",
+      "scotch-ale",
     ]);
-    expect(commercialSnapshot.products.filter((product) => product.demo).map((product) => product.id)).toContain("demo-combo-gin");
+    expect(
+      commercialSnapshot.products.filter((product) => product.demo).map((product) => product.id),
+    ).toContain("demo-combo-gin");
   });
 
   it("falls back to the first active order channel when primary is inactive", () => {
@@ -227,25 +316,69 @@ describe("commercial public compatibility", () => {
   });
 
   it("keeps public snapshot valid when Supabase has no primary order flag but has an active order channel", () => {
-    const snapshot = snapshotFromRows(rows({
-      whatsappChannels: whatsappRows.map((row) => ({
-        ...row,
-        purpose: "orders_and_contact",
-        is_primary: false,
-      })),
-    }));
+    const snapshot = snapshotFromRows(
+      rows({
+        whatsappChannels: whatsappRows.map((row) => ({
+          ...row,
+          purpose: "orders_and_contact",
+          is_primary: false,
+        })),
+      }),
+    );
 
-    expect(getPrimaryOrderWhatsAppChannel(snapshot.whatsappChannels)?.id).toBe("whatsapp-principal");
+    expect(getPrimaryOrderWhatsAppChannel(snapshot.whatsappChannels)?.id).toBe(
+      "whatsapp-principal",
+    );
   });
 
   it("excludes expired promotions", () => {
-    expect(listActivePromotions({
-      ...commercialSnapshot,
-      promotions: [{ id: "old", code: "OLD", type: "percentage", value: 0.1, active: true, endDate: "2020-01-01" }],
-    })).toEqual([]);
+    expect(
+      listActivePromotions({
+        ...commercialSnapshot,
+        promotions: [
+          {
+            id: "old",
+            code: "OLD",
+            type: "percentage",
+            value: 0.1,
+            active: true,
+            endDate: "2020-01-01",
+          },
+        ],
+      }),
+    ).toEqual([]);
+  });
+
+  it("getActivePromotion returns the first active promotion, or null if there is none", () => {
+    const active = {
+      id: "primerabirra",
+      code: "PRIMERABIRRA",
+      type: "percentage" as const,
+      value: 0.1,
+      active: true,
+    };
+    expect(getActivePromotion({ ...commercialSnapshot, promotions: [active] })).toEqual(active);
+    expect(getActivePromotion({ ...commercialSnapshot, promotions: [] })).toBeNull();
+    expect(
+      getActivePromotion({
+        ...commercialSnapshot,
+        promotions: [
+          {
+            id: "old",
+            code: "OLD",
+            type: "percentage",
+            value: 0.1,
+            active: true,
+            endDate: "2020-01-01",
+          },
+        ],
+      }),
+    ).toBeNull();
   });
 
   it("keeps estimated pricing disclaimer", () => {
-    expect(commercialSnapshot.businessProfile.priceDisclaimer).toBe("Los precios son estimativos y están sujetos a confirmación.");
+    expect(commercialSnapshot.businessProfile.priceDisclaimer).toBe(
+      "Los precios son estimativos y están sujetos a confirmación.",
+    );
   });
 });

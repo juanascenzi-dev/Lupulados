@@ -1,7 +1,12 @@
 import { getDeliveryOption } from "./businessConfig";
-import { buildBusinessConfig, getCartItemLitersFromSnapshot, getDeliveryOptionFromSnapshot } from "./commercialAdapters";
+import {
+  buildBusinessConfig,
+  getCartItemLitersFromSnapshot,
+  getDeliveryOptionFromSnapshot,
+} from "./commercialAdapters";
 import { commercialSnapshot } from "./commercialData";
-import type { CommercialSnapshot, DeliveryOptionId } from "./commercialTypes";
+import { calculateDiscountAmount } from "./promotionDiscount";
+import type { CommercialSnapshot, DeliveryOptionId, PromotionType } from "./commercialTypes";
 import type { PackLineMetadata } from "./configurableBeerPack";
 
 export interface OrderSummaryItem {
@@ -32,7 +37,10 @@ export interface OrderSummaryExtras {
   hielo: number;
   vasos: number;
   promoCode: string;
+  /** Fracción (0-1) si discountType es "percentage", monto en pesos si es "fixed". */
   discount: number;
+  /** Opcional para no romper a los consumidores existentes; default "percentage". */
+  discountType?: PromotionType;
 }
 
 export interface OrderExtraLine {
@@ -54,7 +62,8 @@ export interface OrderSummary {
   deliveryCost: number;
   subtotal: number;
   discountCode: string;
-  discountRate: number;
+  discountType: PromotionType;
+  discountValue: number;
   discountAmount: number;
   total: number;
 }
@@ -68,14 +77,14 @@ export function calculateOrderSummary(
   const safeItems = items.map((item) => ({ ...item }));
   const itemsSubtotal = safeItems.reduce((acc, item) => acc + item.price * item.qty, 0);
   const totalItems = safeItems.reduce((acc, item) => acc + item.qty, 0);
-  const totalLiters = safeItems.reduce(
-    (acc, item) => {
-      if (item.pack?.type === "configurable-beer-pack") return acc + item.pack.capacity * 0.5 * item.qty;
-      return acc + getCartItemLitersFromSnapshot(item.presentationId ?? item.id, snapshot) * item.qty;
-    },
-    0,
+  const totalLiters = safeItems.reduce((acc, item) => {
+    if (item.pack?.type === "configurable-beer-pack")
+      return acc + item.pack.capacity * 0.5 * item.qty;
+    return acc + getCartItemLitersFromSnapshot(item.presentationId ?? item.id, snapshot) * item.qty;
+  }, 0);
+  const has50L = safeItems.some((item) =>
+    (item.presentationType ?? item.presentationId ?? item.id).includes("barril50L"),
   );
-  const has50L = safeItems.some((item) => (item.presentationType ?? item.presentationId ?? item.id).includes("barril50L"));
 
   const extraLines: OrderExtraLine[] = [];
   if (extras.chopera && !has50L) {
@@ -98,7 +107,9 @@ export function calculateOrderSummary(
   }
 
   const vasosCost =
-    itemsSubtotal > dynamicConfig.additionalCosts.freeGlassesThreshold ? 0 : extras.vasos * dynamicConfig.additionalCosts.vasos;
+    itemsSubtotal > dynamicConfig.additionalCosts.freeGlassesThreshold
+      ? 0
+      : extras.vasos * dynamicConfig.additionalCosts.vasos;
   if (extras.vasos > 0 && vasosCost > 0) {
     extraLines.push({
       id: "vasos",
@@ -109,13 +120,18 @@ export function calculateOrderSummary(
     });
   }
 
-  const delivery = getDeliveryOptionFromSnapshot(extras.delivery, snapshot) ?? getDeliveryOption(extras.delivery);
+  const delivery =
+    getDeliveryOptionFromSnapshot(extras.delivery, snapshot) ?? getDeliveryOption(extras.delivery);
   const deliveryCost = delivery.cost;
   const extrasTotal = extraLines.reduce((acc, line) => acc + line.total, 0);
   const subtotal = itemsSubtotal + extrasTotal + deliveryCost;
   const discountCode = extras.promoCode.trim();
-  const discountRate = discountCode && extras.discount > 0 ? extras.discount : 0;
-  const discountAmount = subtotal * discountRate;
+  const discountType: PromotionType = extras.discountType ?? "percentage";
+  const discountValue = discountCode && extras.discount > 0 ? extras.discount : 0;
+  const discountAmount = calculateDiscountAmount(subtotal, {
+    type: discountType,
+    value: discountValue,
+  });
 
   return {
     items: safeItems,
@@ -127,8 +143,9 @@ export function calculateOrderSummary(
     delivery,
     deliveryCost,
     subtotal,
-    discountCode: discountRate > 0 ? discountCode : "",
-    discountRate,
+    discountCode: discountValue > 0 ? discountCode : "",
+    discountType,
+    discountValue,
     discountAmount,
     total: subtotal - discountAmount,
   };

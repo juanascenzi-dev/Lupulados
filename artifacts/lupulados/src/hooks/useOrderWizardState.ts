@@ -45,6 +45,7 @@ import {
   listVisibleCatalogCategories,
   normalizeCatalogQuantity,
 } from "@/domain/productCatalog";
+import { resolveAppliedPromotion } from "@/domain/promotionMatching";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
 
 interface UseOrderWizardStateInput {
@@ -404,15 +405,17 @@ export function useOrderWizardState({
   };
 
   const applyPromo = () => {
-    if (promotionConfig.code && promoInput.toUpperCase() === promotionConfig.code) {
+    const matched = resolveAppliedPromotion(promoInput, snapshot);
+    if (matched) {
       setExtras((p) => ({
         ...p,
-        promoCode: promotionConfig.code,
-        discount: promotionConfig.discountRate,
+        promoCode: matched.code,
+        discount: matched.value,
+        discountType: matched.type,
       }));
       setPromoStatus("valid");
     } else {
-      setExtras((p) => ({ ...p, promoCode: "", discount: 0 }));
+      setExtras((p) => ({ ...p, promoCode: "", discount: 0, discountType: "percentage" }));
       setPromoStatus("invalid");
     }
   };

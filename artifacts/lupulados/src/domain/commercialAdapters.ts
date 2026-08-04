@@ -1,6 +1,7 @@
 import { formatPrice } from "./format";
 import { buildWhatsAppOrderUrl } from "./whatsAppOrder";
 import {
+  getActivePromotion,
   getBusinessProfile,
   getFreeGlassesThreshold,
   getPricingConfig,
@@ -9,7 +10,6 @@ import {
   listActiveExtraOptions,
   listActiveProductPresentations,
   listActiveProducts,
-  listActivePromotions,
   listActiveWhatsAppChannels,
 } from "./commercialSelectors";
 import { commercialSnapshot } from "./commercialData";
@@ -29,7 +29,10 @@ export function buildBeerCatalog(snapshot: CommercialSnapshot = commercialSnapsh
   return listActiveProducts(snapshot)
     .filter((product) => product.category === "beer")
     .map((product) => {
-      const presentations: BeerPresentation[] = listActiveProductPresentations(product.id, snapshot).map((presentation) => ({
+      const presentations: BeerPresentation[] = listActiveProductPresentations(
+        product.id,
+        snapshot,
+      ).map((presentation) => ({
         id: presentation.presentationType,
         label: presentation.label,
         price: presentation.unitPrice,
@@ -39,7 +42,10 @@ export function buildBeerCatalog(snapshot: CommercialSnapshot = commercialSnapsh
       }));
 
       const precios = Object.fromEntries(
-        presentationIds.map((id) => [id, presentations.find((presentation) => presentation.id === id)?.price ?? 0]),
+        presentationIds.map((id) => [
+          id,
+          presentations.find((presentation) => presentation.id === id)?.price ?? 0,
+        ]),
       ) as Record<BeerPresentationId, number>;
 
       return {
@@ -59,7 +65,9 @@ export function buildBeerCatalog(snapshot: CommercialSnapshot = commercialSnapsh
 }
 
 function getMinimumPresentationPrice(catalog: readonly Beer[], ids: readonly BeerPresentationId[]) {
-  const prices = catalog.flatMap((beer) => ids.map((presentationId) => beer.precios[presentationId]).filter((price) => price > 0));
+  const prices = catalog.flatMap((beer) =>
+    ids.map((presentationId) => beer.precios[presentationId]).filter((price) => price > 0),
+  );
   return prices.length > 0 ? Math.min(...prices) : 0;
 }
 
@@ -69,7 +77,11 @@ function formatStartingPrice(price: number, suffix = "") {
 
 export function buildOrderTypeOptions(snapshot: CommercialSnapshot = commercialSnapshot) {
   const catalog = buildBeerCatalog(snapshot);
-  const barrelStartingPrice = getMinimumPresentationPrice(catalog, ["barril20L", "barril30L", "barril50L"]);
+  const barrelStartingPrice = getMinimumPresentationPrice(catalog, [
+    "barril20L",
+    "barril30L",
+    "barril50L",
+  ]);
   const growlerStartingPrice = getMinimumPresentationPrice(catalog, ["growler1L", "growler2L"]);
   const packagedStartingPrice = getMinimumPresentationPrice(catalog, ["porron500ml"]);
 
@@ -129,8 +141,10 @@ export function buildBusinessConfig(snapshot: CommercialSnapshot = commercialSna
     cost: option.price,
     requiresAddress: option.requiresAddress,
   }));
-  const extrasById = Object.fromEntries(listActiveExtraOptions(snapshot).map((extra) => [extra.id, extra]));
-  const activePromotion = listActivePromotions(snapshot)[0];
+  const extrasById = Object.fromEntries(
+    listActiveExtraOptions(snapshot).map((extra) => [extra.id, extra]),
+  );
+  const activePromotion = getActivePromotion(snapshot);
 
   return {
     businessProfile: profile,
@@ -158,29 +172,46 @@ export function buildBusinessConfig(snapshot: CommercialSnapshot = commercialSna
     },
     promotionConfig: {
       code: activePromotion?.code ?? "",
-      discountRate: activePromotion?.type === "percentage" ? activePromotion.value : 0,
+      type: activePromotion?.type ?? "percentage",
+      value: activePromotion?.value ?? 0,
       bannerClosedStorageKey: "promoBannerClosed",
     },
   };
 }
 
-export function getDeliveryOptionFromSnapshot(id: string, snapshot: CommercialSnapshot = commercialSnapshot) {
+export function getDeliveryOptionFromSnapshot(
+  id: string,
+  snapshot: CommercialSnapshot = commercialSnapshot,
+) {
   const options = buildBusinessConfig(snapshot).deliveryOptions;
   return options.find((option) => option.id === id) ?? options[0];
 }
 
-export function buildWhatsAppUrlFromSnapshot(message: string, phone: string | undefined, snapshot: CommercialSnapshot = commercialSnapshot) {
+export function buildWhatsAppUrlFromSnapshot(
+  message: string,
+  phone: string | undefined,
+  snapshot: CommercialSnapshot = commercialSnapshot,
+) {
   const selectedPhone = phone ?? buildBusinessConfig(snapshot).whatsappNumber;
   return buildWhatsAppOrderUrl(selectedPhone, message);
 }
 
-export function getCartItemLitersFromSnapshot(itemId: string, snapshot: CommercialSnapshot = commercialSnapshot) {
-  const directPresentation = snapshot.productPresentations.find((presentation) => presentation.id === itemId);
+export function getCartItemLitersFromSnapshot(
+  itemId: string,
+  snapshot: CommercialSnapshot = commercialSnapshot,
+) {
+  const directPresentation = snapshot.productPresentations.find(
+    (presentation) => presentation.id === itemId,
+  );
   if (directPresentation) return directPresentation.volumeLiters;
 
   const presentationId =
     /(?:^|\|)presentation=[^:|]+:([^|]+)/.exec(itemId)?.[1] ??
     (itemId.includes(":") ? itemId.split(":")[1] : itemId);
   if (!presentationId) return 0;
-  return snapshot.productPresentations.find((presentation) => presentation.presentationType === presentationId)?.volumeLiters ?? 0;
+  return (
+    snapshot.productPresentations.find(
+      (presentation) => presentation.presentationType === presentationId,
+    )?.volumeLiters ?? 0
+  );
 }

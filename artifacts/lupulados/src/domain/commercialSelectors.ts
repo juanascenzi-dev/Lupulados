@@ -22,32 +22,46 @@ export function getPricingConfig(snapshot: CommercialSnapshot = commercialSnapsh
 }
 
 export function listActiveWhatsAppChannels(snapshot: CommercialSnapshot = commercialSnapshot) {
-  return sorted(snapshot.whatsappChannels.filter((channel) => channel.active)).map(copyWhatsAppChannel);
+  return sorted(snapshot.whatsappChannels.filter((channel) => channel.active)).map(
+    copyWhatsAppChannel,
+  );
 }
 
 export function getPrimaryOrderWhatsAppChannel(channels: readonly WhatsAppChannel[]) {
   const validOrderChannels = channels
-    .filter((channel) => channel.active && isValidWhatsAppPhone(channel.phoneE164) && acceptsOrders(channel))
+    .filter(
+      (channel) =>
+        channel.active && isValidWhatsAppPhone(channel.phoneE164) && acceptsOrders(channel),
+    )
     .sort((a, b) => a.sortOrder - b.sortOrder);
 
   return validOrderChannels.find((channel) => channel.isPrimary) ?? validOrderChannels[0] ?? null;
 }
 
-export function getPrimaryOrderWhatsAppChannelFromSnapshot(snapshot: CommercialSnapshot = commercialSnapshot) {
+export function getPrimaryOrderWhatsAppChannelFromSnapshot(
+  snapshot: CommercialSnapshot = commercialSnapshot,
+) {
   const channel = getPrimaryOrderWhatsAppChannel(snapshot.whatsappChannels);
   return channel ? copyWhatsAppChannel(channel) : null;
 }
 
 export function listActiveProducts(snapshot: CommercialSnapshot = commercialSnapshot) {
-  return sorted(snapshot.products.filter((product) => product.status === "active")).map(copyProduct);
+  return sorted(snapshot.products.filter((product) => product.status === "active")).map(
+    copyProduct,
+  );
 }
 
-export function listActiveProductPresentations(productId: string, snapshot: CommercialSnapshot = commercialSnapshot) {
+export function listActiveProductPresentations(
+  productId: string,
+  snapshot: CommercialSnapshot = commercialSnapshot,
+) {
   const activeProductIds = new Set(listActiveProducts(snapshot).map((product) => product.id));
   if (!activeProductIds.has(productId)) return [];
 
   return sorted(
-    snapshot.productPresentations.filter((presentation) => presentation.productId === productId && presentation.active),
+    snapshot.productPresentations.filter(
+      (presentation) => presentation.productId === productId && presentation.active,
+    ),
   ).map(copyPresentation);
 }
 
@@ -60,7 +74,15 @@ export function listActiveExtraOptions(snapshot: CommercialSnapshot = commercial
 }
 
 export function listActivePromotions(snapshot: CommercialSnapshot = commercialSnapshot) {
-  return snapshot.promotions.filter((promotion) => promotion.active && isPromotionInWindow(promotion)).map(copyPromotion);
+  return snapshot.promotions
+    .filter((promotion) => promotion.active && isPromotionInWindow(promotion))
+    .map(copyPromotion);
+}
+
+export function getActivePromotion(
+  snapshot: CommercialSnapshot = commercialSnapshot,
+): Promotion | null {
+  return listActivePromotions(snapshot)[0] ?? null;
 }
 
 export function getFreeGlassesThreshold(snapshot: CommercialSnapshot = commercialSnapshot) {

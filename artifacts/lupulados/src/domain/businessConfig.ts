@@ -1,13 +1,13 @@
 import { formatPrice } from "./format";
 import { buildWhatsAppOrderUrl } from "./whatsAppOrder";
 import {
+  getActivePromotion,
   getBusinessProfile,
   getFreeGlassesThreshold,
   getPricingConfig,
   getPrimaryOrderWhatsAppChannelFromSnapshot,
   listActiveDeliveryOptions,
   listActiveExtraOptions,
-  listActivePromotions,
   listActiveWhatsAppChannels,
 } from "./commercialSelectors";
 import type { DeliveryOptionId } from "./commercialTypes";
@@ -55,10 +55,11 @@ export const additionalCosts = {
   freeGlassesThreshold: getFreeGlassesThreshold(),
 };
 
-const activePromotion = listActivePromotions()[0];
+const activePromotion = getActivePromotion();
 export const promotionConfig = {
   code: activePromotion?.code ?? "",
-  discountRate: activePromotion?.type === "percentage" ? activePromotion.value : 0,
+  type: activePromotion?.type ?? "percentage",
+  value: activePromotion?.value ?? 0,
   bannerClosedStorageKey: "promoBannerClosed",
 };
 
@@ -72,5 +73,7 @@ export function buildWhatsAppUrl(message: string, phone = whatsappNumber) {
 
 export function formatDeliveryForMessage(id: DeliveryOptionId) {
   const option = getDeliveryOption(id);
-  return option.cost > 0 ? `${option.label} (${formatPrice(option.cost)})` : `${option.label} (Gratis)`;
+  return option.cost > 0
+    ? `${option.label} (${formatPrice(option.cost)})`
+    : `${option.label} (Gratis)`;
 }

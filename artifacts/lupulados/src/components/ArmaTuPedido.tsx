@@ -585,7 +585,8 @@ export function ArmaTuPedido({
                             onChange={setPromoInput}
                             onApply={applyPromo}
                             status={promoStatus}
-                            discountRate={promotionConfig.discountRate}
+                            discountType={promotionConfig.type}
+                            discountValue={promotionConfig.value}
                             placeholderCode={promotionConfig.code}
                           />
                         </div>
