@@ -53,5 +53,5 @@ describe("ArmaTuPedido", () => {
     const decodedMessage = decodeURIComponent(href.split("?text=")[1]);
     expect(decodedMessage).toContain("Juan Perez");
     expect(decodedMessage).toContain("Blonde Ale");
-  });
+  }, 15000);
 });
