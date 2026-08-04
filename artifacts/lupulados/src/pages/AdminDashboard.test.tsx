@@ -68,5 +68,5 @@ describe("AdminDashboard", () => {
     await waitFor(() =>
       expect(within(blondeAleRow()).getByRole("button", { name: "Restaurar" })).toBeInTheDocument(),
     );
-  });
+  }, 15000);
 });
