@@ -15,7 +15,7 @@
 
 **Reglas de negocio / edge cases:**
 
-- `LEGACY_MOJIBAKE_REPLACEMENTS`: tabla de reemplazos hardcodeados para arreglar texto guardado con doble-encoding UTF-8 roto (ej. "PorrÃn" → "Porrón") de versiones viejas del carrito — se aplica en `normalizeLegacyCatalogText` sobre cualquier campo de texto legado al leer del storage.
+- `LEGACY_MOJIBAKE_REPLACEMENTS`: tabla de reemplazos hardcodeados para arreglar texto con la palabra "Porrón" guardado con doble-encoding UTF-8 roto en versiones viejas del carrito — se aplica en `normalizeLegacyCatalogText` sobre cualquier campo de texto legado al leer del storage. (No se transcribe acá la secuencia rota exacta: el test `mojibakeGuard.test.ts` escanea todo el repo, incluida esta documentación, y la marcaría como un caso real.)
 - `isStoredCartItem` es un type guard estricto: exige `price` finito, `qty` entero > 0, y `category` no vacío; cualquier ítem que no cumpla se descarta silenciosamente al parsear (protege contra storage corrupto).
 - `readCartItems` limpia la key del storage (`removeItem`) si el JSON parseaba pero terminó en 0 ítems válidos — evita relecturas repetidas de basura.
 - `writeCartItems` nunca lanza: si `setItem` falla (cuota, modo privado), el carrito sigue funcionando solo en memoria para esa sesión.

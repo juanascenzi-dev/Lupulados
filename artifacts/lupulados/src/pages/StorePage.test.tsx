@@ -30,7 +30,7 @@ describe("StorePage", () => {
 
     expect(screen.queryByText("No encontramos productos con esos filtros")).not.toBeInTheDocument();
     expect(screen.getByText("Blonde Ale")).toBeInTheDocument();
-  });
+  }, 15000); // renderiza el catálogo completo; bajo instrumentación de coverage supera el timeout default (ver CHANGELOG, mismo caso que ArmaTuPedido.test.tsx)
 
   it("opens the checkout modal and closes it with Escape, returning focus to the trigger", async () => {
     const user = userEvent.setup();
