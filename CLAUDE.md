@@ -32,6 +32,15 @@ Formato `tipo: descripción breve en imperativo`. Tipos usados en este repo: `fe
 
 Antes cada cambio no trivial generaba un archivo nuevo en `docs/*.md`. A partir de ahora, todo cambio no trivial agrega una entrada a `CHANGELOG.md` (formato Keep a Changelog) bajo `## [Unreleased]`, en la sección que corresponda (`Added`/`Changed`/`Fixed`). Los `docs/*.md` existentes quedan como referencia histórica pero no se crean nuevos.
 
+### Documentación de lógica por archivo (`src/domain`)
+
+Todo archivo de `artifacts/lupulados/src/domain/` (excepto `*.test.ts`) tiene un `.md` compañero colocado en la misma carpeta, mismo nombre base (`archivo.ts` → `archivo.md`), que explica su lógica. Es una convención distinta de la anterior (esa es sobre docs por _cambio_; esta es documentación viva por _archivo_, que describe el estado actual del código, no su historia).
+
+- Al crear un archivo nuevo en `src/domain`, se crea su `.md` en el mismo cambio.
+- Al modificar la lógica de un archivo existente en `src/domain` (no aplica a cambios triviales de formato/typo), se actualiza su `.md` para que siga reflejando el comportamiento real.
+- Formato del `.md`: propósito (1-2 frases), exports principales (qué hace cada uno, inputs/outputs relevantes), reglas de negocio/edge cases no obvios desde la firma de tipos, dependencias clave de otros módulos, y referencia al `.test.ts` si existe.
+- Esta regla aplica hoy solo a `src/domain`; no se extiende automáticamente a otros directorios de `src/` salvo que se decida explícitamente ampliarla.
+
 ### Flujo de branches y PRs
 
 - Nada se commitea directo a `main`. Se trabaja en ramas `feature/*` o `fix/*`.
