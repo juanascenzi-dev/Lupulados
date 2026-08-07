@@ -9,8 +9,8 @@ related: ["[[adminContracts]]"]
 
 **Exports principales:**
 
-- `admin*FormSchema` (product, presentation, delivery, extra, promotion, whatsApp) — schemas Zod con mensajes de error en español, cada uno con sus propias reglas de coerción (`nonNegativeNumber`, `positiveNumber`, `sortOrder`, `dateOrNull`, etc.).
-- `parse*Form(input)` / `parse*UpdateForm(input)` — parsean `FormData | Record<string, unknown>` contra el schema correspondiente y devuelven el input tipado (`Create*Input`/`Update*Input` de [[adminContracts]]); lanzan `ZodError` si la validación falla.
+- `admin*FormSchema` (product, presentation, delivery, extra, promotion, whatsApp, businessProfile) — schemas Zod con mensajes de error en español, cada uno con sus propias reglas de coerción (`nonNegativeNumber`, `positiveNumber`, `sortOrder`, `dateOrNull`, `emailOrNull`, etc.).
+- `parse*Form(input)` / `parse*UpdateForm(input)` — parsean `FormData | Record<string, unknown>` contra el schema correspondiente y devuelven el input tipado (`Create*Input`/`Update*Input` de [[adminContracts]]); lanzan `ZodError` si la validación falla. `parseBusinessProfileForm` es la excepción: `BusinessProfile` es singleton (no hay `CreateBusinessProfileInput`), así que solo existe la variante "update" y el schema no tiene campo `id`.
 - `*ToFormValues(entity)` — el camino inverso: de la entidad de dominio a los valores planos que precargan el formulario de edición.
 - `getFirstZodError(error, fallback)` — extrae el primer mensaje de un `ZodError` (o `error.message`, o `fallback`) para mostrarlo en la UI.
 
@@ -22,7 +22,8 @@ related: ["[[adminContracts]]"]
 - `parseBoolean` acepta `true`, `"true"` y `"on"` (el valor que manda un `<input type="checkbox">` nativo dentro de `FormData`).
 - `assertProductExists` lanza si `parsePresentationForm`/`parsePresentationUpdateForm` referencian un `productId` que no está en la lista de productos pasada — evita crear presentaciones huérfanas desde un form desincronizado.
 - `CreateDeliveryOptionInput`/`CreateExtraOptionInput` no llevan `id` explícito en su tipo (ver [[adminContracts]]), pero sus schemas sí piden `id` — la coherencia depende del caller.
+- `emailOrNull` sigue el mismo patrón que `dateOrNull` (string vacío → `null` antes de validar formato) — usado hoy solo por `adminBusinessProfileFormSchema`, el email es el único campo opcional de ese schema.
 
 **Dependencias clave:** tipos de [[adminContracts]] y `commercialTypes.ts`; `zod` para todo el parsing/validación.
 
-**Tests:** no existe `adminFormAdapters.test.ts` en el momento de este doc.
+**Tests:** `adminFormAdapters.test.ts`, un caso por entidad (preload de valores + parseo válido/inválido).
