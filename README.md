@@ -76,19 +76,19 @@ pnpm --filter lupulados serve   # preview del build
 
 - Nada se commitea directo a `main`: se trabaja en ramas `feature/*` o `fix/*`.
 - Todo cambio no trivial agrega una entrada a `CHANGELOG.md` bajo `[Unreleased]`.
-- Antes de abrir PR deben pasar en local: `pnpm run typecheck`, `pnpm run lint` y `pnpm --filter lupulados test`.
-- Husky corre lint-staged en `pre-commit` y typecheck + test en `pre-push`.
+- Antes de abrir PR deben pasar en local: `pnpm run typecheck`, `pnpm run lint` y `pnpm --filter lupulados test:coverage`.
+- Husky corre lint-staged en `pre-commit`, `commitlint` en `commit-msg` y typecheck + test:coverage en `pre-push`.
 - Merge a `main` solo con CI en verde (squash merge).
 
 Ver [CLAUDE.md](CLAUDE.md) para el detalle completo de convenciones.
 
 ## CI
 
-`.github/workflows/ci.yml` corre en push/PR contra `main`: install → typecheck → lint → test → build.
+`.github/workflows/ci.yml` corre en push/PR contra `main`: install → typecheck → lint → test:coverage → build.
 
 ## Supabase
 
-`supabase/migrations` y `supabase/seed.sql` contienen el esquema y los datos iniciales. Ver [docs/supabase-operations.md](docs/supabase-operations.md) para las convenciones de operación (incluye advertencias sobre no correr `db reset` contra el proyecto remoto equivocado).
+`supabase/migrations` y `supabase/seed.sql` contienen el esquema y los datos iniciales.
 
 ## Licencia
 

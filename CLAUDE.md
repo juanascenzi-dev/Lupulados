@@ -15,9 +15,10 @@ Monorepo pnpm (workspaces en `pnpm-workspace.yaml`):
 Desde la raíz:
 
 - `pnpm install` — instala todo el workspace.
-- `pnpm run typecheck` — corre `tsc --build` en libs y typecheck por paquete en `artifacts/*` y `scripts`.
+- `pnpm run typecheck` — corre `tsc --build` en libs y typecheck por paquete en `artifacts/*` y `scripts` (excluye `artifacts/mockup-sandbox`, que queda fuera del pipeline de CI).
 - `pnpm run lint` — ESLint sobre todo el repo.
-- `pnpm run build` — typecheck + build recursivo (`--if-present`) de cada paquete.
+- `pnpm run format` / `pnpm run format:check` — Prettier (write / check) sobre todo el repo.
+- `pnpm run build` — typecheck + build recursivo (`--if-present`) de cada paquete (misma exclusión de `mockup-sandbox` que `typecheck`).
 - `pnpm --filter lupulados test` — corre los tests (vitest) de la app principal.
 - `pnpm --filter lupulados test:coverage` — igual, con reporte de cobertura (gate del 70% en `src/domain`, ver política de testing).
 - `pnpm --filter lupulados dev` — levanta el dev server de la app principal.
@@ -27,6 +28,8 @@ Desde la raíz:
 ### Commits (Conventional Commits)
 
 Formato `tipo: descripción breve en imperativo`. Tipos usados en este repo: `feat`, `fix`, `refactor`, `docs`, `chore`, `test`. Ejemplos reales: `fix: calibra multiplicadores de consumo con benchmarks reales de asados/fiestas`, `feat: precio real por estilo de cerveza en la calculadora de barriles`.
+
+Se enforcea automáticamente: `commitlint` (`commitlint.config.mjs`, config `@commitlint/config-conventional`) corre en el hook `.husky/commit-msg` y rechaza el commit si el mensaje no sigue Conventional Commits.
 
 ### CHANGELOG en vez de doc por cambio
 
@@ -62,7 +65,7 @@ Estas notas son notas de Obsidian (el repo tiene `.obsidian/` en la raíz): usan
 ### Lint / formato / hooks
 
 - ESLint (`eslint.config.js`) + Prettier configurados en la raíz.
-- Husky + lint-staged corren automáticamente en `pre-commit` (lint + format de archivos staged) y en `pre-push` (`typecheck` + `test:coverage`). No usar `--no-verify` salvo indicación explícita del usuario.
+- Husky + lint-staged corren automáticamente en `pre-commit` (lint + format de archivos staged), `commit-msg` (`commitlint`, ver convención de commits arriba) y `pre-push` (`typecheck` + `test:coverage`). No usar `--no-verify` salvo indicación explícita del usuario.
 
 ### CI
 
