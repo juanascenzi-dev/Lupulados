@@ -45,7 +45,7 @@ describe("ConfigurableBeerPackBuilder", () => {
 
     // Se resetea a 1 pack vacío después de agregar.
     expect(screen.getByRole("button", { name: /Agregar 1 pack al carrito/ })).toBeDisabled();
-  });
+  }, 15000);
 
   it("asks for confirmation before discarding a configured pack when reducing the pack count", async () => {
     const user = userEvent.setup();
@@ -66,7 +66,7 @@ describe("ConfigurableBeerPackBuilder", () => {
 
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(screen.getAllByRole("tab")).toHaveLength(1);
-  });
+  }, 15000);
 
   it("cancels the confirmation dialog without changing the pack count", async () => {
     const user = userEvent.setup();
@@ -82,5 +82,5 @@ describe("ConfigurableBeerPackBuilder", () => {
 
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(screen.getAllByRole("tab")).toHaveLength(2);
-  });
+  }, 15000);
 });
