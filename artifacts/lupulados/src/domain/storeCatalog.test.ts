@@ -277,6 +277,14 @@ describe("storeCatalog", () => {
       resolve(process.cwd(), "src/components/order-wizard/LiveOrderSummary.tsx"),
       "utf8",
     );
+    const packProductList = readFileSync(
+      resolve(process.cwd(), "src/components/configurable-beer-pack/PackProductList.tsx"),
+      "utf8",
+    );
+    const packSummaryPanel = readFileSync(
+      resolve(process.cwd(), "src/components/configurable-beer-pack/PackSummaryPanel.tsx"),
+      "utf8",
+    );
 
     expect(useOrderWizardState).toContain("CONFIGURABLE_PACK_ORDER_TYPE");
     expect(orderWizard).toContain("isConfigurablePackStep");
