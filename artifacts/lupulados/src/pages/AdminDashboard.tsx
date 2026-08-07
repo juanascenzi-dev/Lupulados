@@ -7,8 +7,10 @@ import { useAdminAuth } from "@/context/AdminAuthContext";
 import { useCommercialData } from "@/context/CommercialDataContext";
 import { useAdminDashboardData } from "@/hooks/useAdminDashboardData";
 import {
+  businessProfileToFormValues,
   deliveryToFormValues,
   extraToFormValues,
+  parseBusinessProfileForm,
   parseDeliveryForm,
   parseDeliveryUpdateForm,
   parseExtraForm,
@@ -274,11 +276,11 @@ export default function AdminDashboard() {
 
           <TabsContent value="business">
             <BusinessForm
-              profile={commercial.snapshot.businessProfile}
+              profile={businessProfileToFormValues(commercial.snapshot.businessProfile)}
               disabled={busy}
               onSubmit={(input) =>
                 run(
-                  () => repository!.updateBusinessProfile(input),
+                  () => repository!.updateBusinessProfile(parseBusinessProfileForm(input)),
                   "Información comercial actualizada",
                 )
               }

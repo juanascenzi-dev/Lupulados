@@ -45,7 +45,7 @@ describe("StorePage", () => {
       expect(screen.queryByRole("dialog", { name: "Checkout" })).not.toBeInTheDocument(),
     );
     expect(screen.getByRole("button", { name: /Carrito/ })).toHaveFocus();
-  });
+  }, 15000); // renderiza el catálogo completo; bajo instrumentación de coverage supera el timeout default (ver CHANGELOG, mismo caso que ArmaTuPedido.test.tsx)
 
   it("opens the pack builder modal and closes it with Escape, returning focus to the trigger", async () => {
     const user = userEvent.setup();
@@ -64,5 +64,5 @@ describe("StorePage", () => {
       ).not.toBeInTheDocument(),
     );
     expect(screen.getByRole("button", { name: "Personalizar pack" })).toHaveFocus();
-  });
+  }, 15000); // renderiza el catálogo completo; bajo instrumentación de coverage supera el timeout default (ver CHANGELOG, mismo caso que ArmaTuPedido.test.tsx)
 });

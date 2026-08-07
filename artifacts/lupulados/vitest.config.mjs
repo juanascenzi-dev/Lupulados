@@ -10,7 +10,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(projectDir, "src"),
-      "@assets": path.resolve(projectDir, "..", "..", "attached_assets"),
     },
   },
   test: {

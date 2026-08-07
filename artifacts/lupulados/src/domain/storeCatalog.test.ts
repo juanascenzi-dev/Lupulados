@@ -273,6 +273,14 @@ describe("storeCatalog", () => {
       resolve(process.cwd(), "src/components/ConfigurableBeerPackBuilder.tsx"),
       "utf8",
     );
+    const packProductList = readFileSync(
+      resolve(process.cwd(), "src/components/configurable-beer-pack/PackProductList.tsx"),
+      "utf8",
+    );
+    const packSummaryPanel = readFileSync(
+      resolve(process.cwd(), "src/components/configurable-beer-pack/PackSummaryPanel.tsx"),
+      "utf8",
+    );
 
     expect(useOrderWizardState).toContain("CONFIGURABLE_PACK_ORDER_TYPE");
     expect(orderWizard).toContain("isConfigurablePackStep");
@@ -298,8 +306,8 @@ describe("storeCatalog", () => {
     expect(builder).toContain('layout?: "default" | "wide"');
     expect(builder).toContain("minmax(0,1fr)");
     expect(builder).toContain("grid-rows-[auto_auto_minmax(0,1fr)]");
-    expect(builder).toContain("lg:overflow-y-auto");
-    expect(builder).toContain("Completa todos los packs");
+    expect(packProductList).toContain("lg:overflow-y-auto");
+    expect(packSummaryPanel).toContain("Completa todos los packs");
     expect(builder).not.toContain("position:absolute");
   });
 

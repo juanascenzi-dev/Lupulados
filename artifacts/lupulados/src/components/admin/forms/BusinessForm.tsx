@@ -1,56 +1,62 @@
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Save } from "lucide-react";
+import { AdminForm } from "@/components/admin/forms/AdminForm";
 import { Field } from "@/components/admin/Field";
 import { SelectField } from "@/components/admin/SelectField";
-import type { BusinessProfile } from "@/domain/commercialTypes";
+import {
+  getFirstZodError,
+  parseBusinessProfileForm,
+  type BusinessProfileFormValues,
+} from "@/domain/adminFormAdapters";
 
 export function BusinessForm({
   profile,
   disabled,
   onSubmit,
 }: {
-  profile: BusinessProfile;
+  profile: BusinessProfileFormValues;
   disabled: boolean;
-  onSubmit: (input: {
-    businessName: string;
-    address: string;
-    openingHours: string;
-    email: string | null;
-    pricingStatus: "estimated" | "confirmed";
-    priceDisclaimer: string;
-  }) => void;
+  onSubmit: (input: Record<string, unknown>) => Promise<boolean>;
 }) {
+  const [error, setError] = useState("");
   return (
-    <form
-      className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-card border border-white/10 rounded-lg p-4"
-      onSubmit={(event) => {
+    <AdminForm
+      title="Información comercial"
+      error={error}
+      disabled={disabled}
+      submitLabel="Guardar cambios"
+      onSubmit={async (event) => {
         event.preventDefault();
-        const form = new FormData(event.currentTarget);
-        onSubmit({
-          businessName: String(form.get("businessName") ?? ""),
-          address: String(form.get("address") ?? ""),
-          openingHours: String(form.get("openingHours") ?? ""),
-          email: String(form.get("email") ?? "").trim() || null,
-          pricingStatus: String(form.get("pricingStatus") ?? "estimated") as
-            | "estimated"
-            | "confirmed",
-          priceDisclaimer: String(form.get("priceDisclaimer") ?? ""),
-        });
+        const form = event.currentTarget;
+        const input = Object.fromEntries(new FormData(form));
+        try {
+          void parseBusinessProfileForm(input);
+          setError("");
+        } catch (error) {
+          setError(getFirstZodError(error, "Información comercial inválida."));
+          return;
+        }
+        await onSubmit(input);
       }}
     >
       <Field name="businessName" label="Nombre" defaultValue={profile.businessName} />
       <Field name="address" label="Dirección" defaultValue={profile.address} />
       <Field name="openingHours" label="Horario" defaultValue={profile.openingHours} />
-      <Field name="email" label="Email" defaultValue={profile.email ?? ""} />
+      <Field
+        name="email"
+        label="Email"
+        type="email"
+        defaultValue={profile.email ?? ""}
+        required={false}
+      />
       <SelectField
         name="pricingStatus"
         label="Estado precios"
         options={["estimated", "confirmed"]}
         defaultValue={profile.pricingStatus}
       />
-      <div className="md:col-span-2 space-y-1">
+      <div className="md:col-span-4 space-y-1">
         <Label htmlFor="priceDisclaimer">Disclaimer</Label>
         <Textarea
           id="priceDisclaimer"
@@ -60,9 +66,6 @@ export function BusinessForm({
           className="bg-black/40 border-white/10 text-white"
         />
       </div>
-      <Button disabled={disabled} className="bg-primary text-black hover:bg-amber-500">
-        <Save className="w-4 h-4 mr-2" /> Guardar
-      </Button>
-    </form>
+    </AdminForm>
   );
 }

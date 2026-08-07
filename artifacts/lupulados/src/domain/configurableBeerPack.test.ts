@@ -12,6 +12,7 @@ import {
   getPackRemainingCount,
   getPackSelectedCount,
   groupIdenticalPacks,
+  hasOtherConfiguredPacks,
   isPackComplete,
   listPackAvailableProducts,
   resizePackDrafts,
@@ -42,7 +43,9 @@ describe("configurableBeerPack", () => {
 
     expect(withBlonde.selections).toEqual([{ productId: blonde.productId, quantity: 2 }]);
     expect(getPackSelectedCount(full)).toBe(6);
-    expect(full.selections.find((selection) => selection.productId === ipa.productId)?.quantity).toBe(4);
+    expect(
+      full.selections.find((selection) => selection.productId === ipa.productId)?.quantity,
+    ).toBe(4);
     expect(decremented.selections.some((selection) => selection.quantity < 0)).toBe(false);
     expect(getPackSelectedCount(decremented)).toBe(4);
   });
@@ -70,9 +73,18 @@ describe("configurableBeerPack", () => {
   });
 
   it("generates equal keys for equal packs and different keys for different packs", () => {
-    const a = canonicalizePackComposition({ capacity: 6, selections: [{ productId: blonde.productId, quantity: 6 }] });
-    const b = canonicalizePackComposition({ capacity: 6, selections: [{ productId: blonde.productId, quantity: 6 }] });
-    const c = canonicalizePackComposition({ capacity: 6, selections: [{ productId: ipa.productId, quantity: 6 }] });
+    const a = canonicalizePackComposition({
+      capacity: 6,
+      selections: [{ productId: blonde.productId, quantity: 6 }],
+    });
+    const b = canonicalizePackComposition({
+      capacity: 6,
+      selections: [{ productId: blonde.productId, quantity: 6 }],
+    });
+    const c = canonicalizePackComposition({
+      capacity: 6,
+      selections: [{ productId: ipa.productId, quantity: 6 }],
+    });
 
     expect(a).toBe(b);
     expect(a).not.toBe(c);
@@ -81,7 +93,10 @@ describe("configurableBeerPack", () => {
   it("copies compositions and applies to all packs without sharing references", () => {
     const source = updatePackSelection(createEmptyPackDraft(), blonde.productId, 6);
     const copy = copyPackComposition(source, "copy");
-    const applied = applyCompositionToAllPacks([source, createEmptyPackDraft(1), createEmptyPackDraft(2)], 0);
+    const applied = applyCompositionToAllPacks(
+      [source, createEmptyPackDraft(1), createEmptyPackDraft(2)],
+      0,
+    );
 
     copy.selections[0].quantity = 1;
     applied[1].selections[0].quantity = 2;
@@ -119,7 +134,9 @@ describe("configurableBeerPack", () => {
     const invalid = { capacity: 6, selections: [{ productId: "missing", quantity: 6 }] };
 
     expect(calculatePackPrice(sixBlonde, products)).toBe(blonde.price * 6);
-    expect(calculatePackPrice(mixed, products)).toBe(blonde.price * 2 + ipa.price + stout.price * 3);
+    expect(calculatePackPrice(mixed, products)).toBe(
+      blonde.price * 2 + ipa.price + stout.price * 3,
+    );
     expect(calculatePackPrice(mixed, products)).not.toBe(calculatePackPrice(sixBlonde, products));
     expect(Number.isNaN(calculatePackPrice(invalid, products))).toBe(false);
   });
@@ -127,11 +144,18 @@ describe("configurableBeerPack", () => {
   it("excludes beers without an active porron price from selectable products", () => {
     const catalog = beerCatalog.map((beer) =>
       beer.id === blonde.productId
-        ? { ...beer, presentations: beer.presentations.filter((presentation) => presentation.id !== "porron500ml") }
+        ? {
+            ...beer,
+            presentations: beer.presentations.filter(
+              (presentation) => presentation.id !== "porron500ml",
+            ),
+          }
         : beer,
     );
 
-    expect(listPackAvailableProducts(catalog).map((product) => product.productId)).not.toContain(blonde.productId);
+    expect(listPackAvailableProducts(catalog).map((product) => product.productId)).not.toContain(
+      blonde.productId,
+    );
   });
 
   it("groups identical packs, keeps different packs separate and uses qty as packs", () => {
@@ -143,16 +167,34 @@ describe("configurableBeerPack", () => {
 
     const grouped = groupIdenticalPacks([completeA, sameCompleteA, packB], products);
     const cart = grouped.reduce(
-      (items, group) => addCartItemToCart(items, buildConfigurablePackCartItem(group.draft, products), group.qty),
+      (items, group) =>
+        addCartItemToCart(items, buildConfigurablePackCartItem(group.draft, products), group.qty),
       [],
     );
 
     expect(grouped).toHaveLength(2);
-    expect(grouped.find((group) => group.qty === 2)?.unitPrice).toBe(blonde.price * 3 + stout.price * 3);
+    expect(grouped.find((group) => group.qty === 2)?.unitPrice).toBe(
+      blonde.price * 3 + stout.price * 3,
+    );
     expect(cart).toHaveLength(2);
-    expect(cart.find((item) => item.pack?.composition.some((selection) => selection.productId === ipa.productId))?.qty).toBe(1);
+    expect(
+      cart.find((item) =>
+        item.pack?.composition.some((selection) => selection.productId === ipa.productId),
+      )?.qty,
+    ).toBe(1);
     expect(cart.find((item) => item.qty === 2)?.pack?.capacity).toBe(6);
-    expect(getCartItemSubtotal(cart.find((item) => item.qty === 2)!)).toBe((blonde.price * 3 + stout.price * 3) * 2);
+    expect(getCartItemSubtotal(cart.find((item) => item.qty === 2)!)).toBe(
+      (blonde.price * 3 + stout.price * 3) * 2,
+    );
+  });
+
+  it("detects other configured packs, excluding the active one", () => {
+    const empty = createEmptyPackDraft();
+    const configured = updatePackSelection(createEmptyPackDraft(1), blonde.productId, 3);
+
+    expect(hasOtherConfiguredPacks([empty, configured], 0)).toBe(true);
+    expect(hasOtherConfiguredPacks([empty, configured], 1)).toBe(false);
+    expect(hasOtherConfiguredPacks([empty, createEmptyPackDraft(1)], 0)).toBe(false);
   });
 
   it("adding the same composition again increments quantity", () => {

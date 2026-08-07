@@ -33,7 +33,7 @@ describe("Calculadora", () => {
     await user.click(intensaButton);
 
     expect(intensaButton).toHaveAttribute("aria-pressed", "true");
-  });
+  }, 15000); // el layout viewport-first monta desktop y mobile a la vez; bajo instrumentación de coverage supera el timeout default (ver CHANGELOG, mismo caso que ArmaTuPedido.test.tsx)
 
   it("llama a onUseRecommendation con la recomendacion, la mezcla y las preferencias de estilo", async () => {
     const user = userEvent.setup();

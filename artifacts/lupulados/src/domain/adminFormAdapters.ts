@@ -6,6 +6,7 @@ import type {
   CreateProductInput,
   CreatePromotionInput,
   CreateWhatsAppChannelInput,
+  UpdateBusinessProfileInput,
   UpdateDeliveryOptionInput,
   UpdateExtraOptionInput,
   UpdatePresentationInput,
@@ -13,17 +14,82 @@ import type {
   UpdatePromotionInput,
   UpdateWhatsAppChannelInput,
 } from "./adminContracts";
-import type { DeliveryOption, ExtraOption, Product, ProductPresentation, Promotion, WhatsAppChannel } from "./commercialTypes";
+import type {
+  BusinessProfile,
+  DeliveryOption,
+  ExtraOption,
+  Product,
+  ProductPresentation,
+  Promotion,
+  WhatsAppChannel,
+} from "./commercialTypes";
 
 const requiredText = (label: string) => z.string().trim().min(1, `${label} es obligatorio.`);
-const optionalText = z.string().trim().transform((value) => value || null);
-const requiredUrl = z.string().trim().min(1, "La URL de imagen es obligatoria.").url("Ingresá una URL válida.");
-const nonNegativeNumber = (label: string) => z.preprocess(parseRequiredNumber, z.number({ message: `${label} debe ser un número.` }).finite().nonnegative(`${label} no puede ser negativo.`));
-const positiveNumber = (label: string) => z.preprocess(parseRequiredNumber, z.number({ message: `${label} debe ser un número.` }).finite().positive(`${label} debe ser mayor a 0.`));
-const optionalPositiveNumber = (label: string) => z.preprocess(parseOptionalNumber, z.number({ message: `${label} debe ser un número.` }).finite().positive(`${label} debe ser mayor a 0.`).nullable());
-const optionalNonNegativeNumber = (label: string) => z.preprocess(parseOptionalNumber, z.number({ message: `${label} debe ser un número.` }).finite().nonnegative(`${label} no puede ser negativo.`).nullable());
-const sortOrder = z.preprocess(parseRequiredNumber, z.number({ message: "El orden debe ser un número." }).int("El orden debe ser un entero.").nonnegative("El orden no puede ser negativo."));
-const dateOrNull = z.string().trim().transform((value) => value || null).pipe(z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Usá una fecha válida.").nullable());
+const optionalText = z
+  .string()
+  .trim()
+  .transform((value) => value || null);
+const requiredUrl = z
+  .string()
+  .trim()
+  .min(1, "La URL de imagen es obligatoria.")
+  .url("Ingresá una URL válida.");
+const nonNegativeNumber = (label: string) =>
+  z.preprocess(
+    parseRequiredNumber,
+    z
+      .number({ message: `${label} debe ser un número.` })
+      .finite()
+      .nonnegative(`${label} no puede ser negativo.`),
+  );
+const positiveNumber = (label: string) =>
+  z.preprocess(
+    parseRequiredNumber,
+    z
+      .number({ message: `${label} debe ser un número.` })
+      .finite()
+      .positive(`${label} debe ser mayor a 0.`),
+  );
+const optionalPositiveNumber = (label: string) =>
+  z.preprocess(
+    parseOptionalNumber,
+    z
+      .number({ message: `${label} debe ser un número.` })
+      .finite()
+      .positive(`${label} debe ser mayor a 0.`)
+      .nullable(),
+  );
+const optionalNonNegativeNumber = (label: string) =>
+  z.preprocess(
+    parseOptionalNumber,
+    z
+      .number({ message: `${label} debe ser un número.` })
+      .finite()
+      .nonnegative(`${label} no puede ser negativo.`)
+      .nullable(),
+  );
+const sortOrder = z.preprocess(
+  parseRequiredNumber,
+  z
+    .number({ message: "El orden debe ser un número." })
+    .int("El orden debe ser un entero.")
+    .nonnegative("El orden no puede ser negativo."),
+);
+const dateOrNull = z
+  .string()
+  .trim()
+  .transform((value) => value || null)
+  .pipe(
+    z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, "Usá una fecha válida.")
+      .nullable(),
+  );
+const emailOrNull = z
+  .string()
+  .trim()
+  .transform((value) => value || null)
+  .pipe(z.string().email("Ingresá un email válido.").nullable());
 
 export const adminProductFormSchema = z.object({
   id: requiredText("El ID"),
@@ -42,11 +108,16 @@ export const adminProductFormSchema = z.object({
 export const adminPresentationFormSchema = z.object({
   id: requiredText("El ID"),
   productId: requiredText("El producto"),
-  presentationType: z.enum(["barril20L", "barril30L", "barril50L", "growler1L", "growler2L", "porron500ml"], { message: "Elegí un tipo válido." }),
+  presentationType: z.enum(
+    ["barril20L", "barril30L", "barril50L", "growler1L", "growler2L", "porron500ml"],
+    { message: "Elegí un tipo válido." },
+  ),
   label: requiredText("La etiqueta"),
   volumeLiters: positiveNumber("El volumen"),
   unitPrice: nonNegativeNumber("El precio"),
-  category: z.enum(["barril", "growler", "porrón", "pack"], { message: "Elegí una categoría válida." }),
+  category: z.enum(["barril", "growler", "porrón", "pack"], {
+    message: "Elegí una categoría válida.",
+  }),
   description: optionalText,
   sortOrder,
 });
@@ -79,29 +150,66 @@ const promotionBaseSchema = z.object({
 
 export const adminPromotionFormSchema = promotionBaseSchema.superRefine((promotion, ctx) => {
   if (promotion.type === "percentage" && promotion.value > 1) {
-    ctx.addIssue({ code: "custom", path: ["value"], message: "El porcentaje debe estar entre 0 y 1." });
+    ctx.addIssue({
+      code: "custom",
+      path: ["value"],
+      message: "El porcentaje debe estar entre 0 y 1.",
+    });
   }
   if (promotion.startDate && promotion.endDate && promotion.startDate > promotion.endDate) {
-    ctx.addIssue({ code: "custom", path: ["startDate"], message: "La fecha inicial no puede ser posterior a la final." });
+    ctx.addIssue({
+      code: "custom",
+      path: ["startDate"],
+      message: "La fecha inicial no puede ser posterior a la final.",
+    });
   }
 });
 
-const adminPromotionUpdateFormSchema = promotionBaseSchema.omit({ id: true }).superRefine((promotion, ctx) => {
-  if (promotion.type === "percentage" && promotion.value > 1) {
-    ctx.addIssue({ code: "custom", path: ["value"], message: "El porcentaje debe estar entre 0 y 1." });
-  }
-  if (promotion.startDate && promotion.endDate && promotion.startDate > promotion.endDate) {
-    ctx.addIssue({ code: "custom", path: ["startDate"], message: "La fecha inicial no puede ser posterior a la final." });
-  }
-});
+const adminPromotionUpdateFormSchema = promotionBaseSchema
+  .omit({ id: true })
+  .superRefine((promotion, ctx) => {
+    if (promotion.type === "percentage" && promotion.value > 1) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["value"],
+        message: "El porcentaje debe estar entre 0 y 1.",
+      });
+    }
+    if (promotion.startDate && promotion.endDate && promotion.startDate > promotion.endDate) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["startDate"],
+        message: "La fecha inicial no puede ser posterior a la final.",
+      });
+    }
+  });
 
 export const adminWhatsAppFormSchema = z.object({
   id: requiredText("El ID"),
   label: requiredText("La etiqueta"),
   phoneDisplay: requiredText("El teléfono visible"),
-  phoneE164: z.string().trim().regex(/^54911\d{8}$/, "Usá formato E.164: 54911XXXXXXXX."),
-  purpose: z.enum(["orders", "contact", "orders_and_contact"], { message: "Elegí un propósito válido." }),
+  phoneE164: z
+    .string()
+    .trim()
+    .regex(/^54911\d{8}$/, "Usá formato E.164: 54911XXXXXXXX."),
+  purpose: z.enum(["orders", "contact", "orders_and_contact"], {
+    message: "Elegí un propósito válido.",
+  }),
   sortOrder,
+});
+
+// BusinessProfile es singleton (no hay CreateBusinessProfileInput, solo
+// UpdateBusinessProfileInput) — a diferencia de las demás entidades, este
+// schema no tiene variante de creación ni campo `id` en el form.
+export const adminBusinessProfileFormSchema = z.object({
+  businessName: requiredText("El nombre"),
+  address: requiredText("La dirección"),
+  openingHours: requiredText("El horario"),
+  email: emailOrNull,
+  pricingStatus: z.enum(["estimated", "confirmed"], {
+    message: "Elegí un estado de precios válido.",
+  }),
+  priceDisclaimer: requiredText("El disclaimer"),
 });
 
 export type ProductFormValues = z.infer<typeof adminProductFormSchema>;
@@ -110,6 +218,7 @@ export type DeliveryFormValues = z.infer<typeof adminDeliveryFormSchema>;
 export type ExtraFormValues = z.infer<typeof adminExtraFormSchema>;
 export type PromotionFormValues = z.infer<typeof adminPromotionFormSchema>;
 export type WhatsAppFormValues = z.infer<typeof adminWhatsAppFormSchema>;
+export type BusinessProfileFormValues = z.infer<typeof adminBusinessProfileFormSchema>;
 
 export function parseProductForm(input: FormData | Record<string, unknown>) {
   const values = adminProductFormSchema.parse(toObject(input));
@@ -142,7 +251,10 @@ export function productToFormValues(product: Product): ProductFormValues {
   };
 }
 
-export function parsePresentationForm(input: FormData | Record<string, unknown>, products: Product[]) {
+export function parsePresentationForm(
+  input: FormData | Record<string, unknown>,
+  products: Product[],
+) {
   const values = adminPresentationFormSchema.parse(toObject(input));
   assertProductExists(values.productId, products);
   return {
@@ -151,13 +263,18 @@ export function parsePresentationForm(input: FormData | Record<string, unknown>,
   } satisfies CreatePresentationInput;
 }
 
-export function parsePresentationUpdateForm(input: FormData | Record<string, unknown>, products: Product[]) {
+export function parsePresentationUpdateForm(
+  input: FormData | Record<string, unknown>,
+  products: Product[],
+) {
   const values = adminPresentationFormSchema.omit({ id: true }).parse(toObject(input));
   assertProductExists(values.productId, products);
   return values satisfies UpdatePresentationInput;
 }
 
-export function presentationToFormValues(presentation: ProductPresentation): PresentationFormValues {
+export function presentationToFormValues(
+  presentation: ProductPresentation,
+): PresentationFormValues {
   return {
     id: presentation.id,
     productId: presentation.productId,
@@ -176,7 +293,9 @@ export function parseDeliveryForm(input: FormData | Record<string, unknown>) {
 }
 
 export function parseDeliveryUpdateForm(input: FormData | Record<string, unknown>) {
-  return adminDeliveryFormSchema.omit({ id: true }).parse(toObject(input)) satisfies UpdateDeliveryOptionInput;
+  return adminDeliveryFormSchema
+    .omit({ id: true })
+    .parse(toObject(input)) satisfies UpdateDeliveryOptionInput;
 }
 
 export function deliveryToFormValues(option: DeliveryOption): DeliveryFormValues {
@@ -195,7 +314,9 @@ export function parseExtraForm(input: FormData | Record<string, unknown>) {
 }
 
 export function parseExtraUpdateForm(input: FormData | Record<string, unknown>) {
-  return adminExtraFormSchema.omit({ id: true }).parse(toObject(input)) satisfies UpdateExtraOptionInput;
+  return adminExtraFormSchema
+    .omit({ id: true })
+    .parse(toObject(input)) satisfies UpdateExtraOptionInput;
 }
 
 export function extraToFormValues(option: ExtraOption): ExtraFormValues {
@@ -233,7 +354,9 @@ export function parseWhatsAppForm(input: FormData | Record<string, unknown>) {
 }
 
 export function parseWhatsAppUpdateForm(input: FormData | Record<string, unknown>) {
-  return adminWhatsAppFormSchema.omit({ id: true }).parse(toObject(input)) satisfies UpdateWhatsAppChannelInput;
+  return adminWhatsAppFormSchema
+    .omit({ id: true })
+    .parse(toObject(input)) satisfies UpdateWhatsAppChannelInput;
 }
 
 export function whatsAppToFormValues(channel: WhatsAppChannel): WhatsAppFormValues {
@@ -244,6 +367,21 @@ export function whatsAppToFormValues(channel: WhatsAppChannel): WhatsAppFormValu
     phoneE164: channel.phoneE164,
     purpose: channel.purpose,
     sortOrder: channel.sortOrder,
+  };
+}
+
+export function parseBusinessProfileForm(input: FormData | Record<string, unknown>) {
+  return adminBusinessProfileFormSchema.parse(toObject(input)) satisfies UpdateBusinessProfileInput;
+}
+
+export function businessProfileToFormValues(profile: BusinessProfile): BusinessProfileFormValues {
+  return {
+    businessName: profile.businessName,
+    address: profile.address,
+    openingHours: profile.openingHours,
+    email: profile.email,
+    pricingStatus: profile.pricingStatus,
+    priceDisclaimer: profile.priceDisclaimer,
   };
 }
 

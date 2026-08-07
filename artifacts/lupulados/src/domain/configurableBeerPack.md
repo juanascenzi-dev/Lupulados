@@ -10,11 +10,12 @@ related: ["[[beerCatalog]]", "[[beverageMix]]", "[[cartStorage]]"]
 **Exports principales:**
 
 - Constantes: `CONFIGURABLE_BEER_PACK_CAPACITY` (6), `CONFIGURABLE_BEER_PACK_MAX_PACKS` (12), `CONFIGURABLE_BEER_PACK_VERSION` (1, para invalidar packs guardados con un schema viejo), `CONFIGURABLE_BEER_PACK_PRODUCT_ID`/`_PRESENTATION_ID` (IDs sintéticos usados en el carrito).
-- Tipos: `PackSelection` (`{ productId, quantity, name? }`), `ConfigurablePackComposition`, `PackDraft` (composición en edición, con `id`), `PackAvailableProduct`, `PackLineMetadata` (lo que se persiste en `StoredCartItem.pack`), `GroupedConfigurablePack`.
+- Tipos: `PackSelection` (`{ productId, quantity, name? }`), `ConfigurablePackComposition`, `PackDraft` (composición en edición, con `id`), `PackAvailableProduct`, `PackLineMetadata` (lo que se persiste en `StoredCartItem.pack`), `GroupedConfigurablePack`, `PendingPackConfirmation` (unión discriminada del diálogo de confirmación pendiente en el builder: `{ type: "reduce", count }` | `{ type: "apply-all", sourceIndex }` | `null`).
 - `normalizePackCount`, `createEmptyPackDraft`, `normalizePackSelection`, `normalizePackComposition` — normalización/saneamiento: enteros positivos, capacidad válida, selecciones sin productos desconocidos (`validProductIds`), recortadas para no superar la capacidad, ordenadas por `productId`.
 - `getPackSelectedCount`, `getPackRemainingCount`, `isPackComplete` — estado derivado de un draft.
 - `updatePackSelection(draft, productId, quantity, validProductIds?)` — fija la cantidad de un producto en el draft, clampeada a lo que quede libre de capacidad (mismo patrón que `updateBeverageMixShare` en [[beverageMix]]).
 - `copyPackComposition`, `resizePackDrafts`, `applyCompositionToAllPacks` — gestión de múltiples packs en el wizard (agregar/quitar packs, replicar la composición de uno a todos).
+- `hasOtherConfiguredPacks(drafts, excludeIndex)` — true si algún draft distinto de `excludeIndex` tiene selecciones cargadas; usado para decidir si "usar en todos" pide confirmación antes de pisar composiciones ya hechas.
 - `canonicalizePackComposition(composition)` — genera una clave string determinística de la composición (`pack=...|version=...|capacity=...|productId=qty|...`), usada para detectar packs idénticos y como parte del `id` de línea de carrito.
 - `listPackAvailableProducts(beers)` — de un catálogo de cervezas, extrae las que tienen presentación `porron500ml` con precio > 0, ordenadas por nombre.
 - `calculatePackPrice(composition, products)` — suma precio × cantidad de cada selección, resolviendo el precio contra la lista de productos disponibles.
@@ -29,6 +30,6 @@ related: ["[[beerCatalog]]", "[[beverageMix]]", "[[cartStorage]]"]
 - `isPackLineMetadata` valida `capacity === CONFIGURABLE_BEER_PACK_CAPACITY` (6 fijo), no solo `> 0` — un pack persistido con otra capacidad (de una versión futura/pasada del feature) se considera inválido y se descarta en la reconciliación de [[cartStorage]].
 - `canonicalizePackComposition` es la base de la deduplicación: dos packs con la misma composición pero distinto orden de selección producen la misma clave porque `normalizePackComposition` ordena por `productId` antes de serializar.
 
-**Dependencias clave:** `Beer` de [[beerCatalog]]; `StoredCartItem` de [[cartStorage]] (tipo de retorno de `buildConfigurablePackCartItem`, dependencia inversa a la de `cartStorage.ts` que importa funciones de este archivo — cuidado con imports circulares si se refactoriza).
+**Dependencias clave:** `Beer` de [[beerCatalog]]; `StoredCartItem` de [[cartStorage]] (tipo de retorno de `buildConfigurablePackCartItem`, dependencia inversa a la de `cartStorage.ts` que importa funciones de este archivo — cuidado con imports circulares si se refactoriza). Consumido por `hooks/useConfigurableBeerPackBuilderState.ts` y los componentes de `components/configurable-beer-pack/`, que orquestan estos helpers puros sin reimplementar lógica.
 
-**Tests:** `configurableBeerPack.test.ts` (si existe) cubre este módulo — es de los más complejos de `domain` junto con `cartStorage.ts`.
+**Tests:** `configurableBeerPack.test.ts` cubre este módulo — es de los más complejos de `domain` junto con `cartStorage.ts`.

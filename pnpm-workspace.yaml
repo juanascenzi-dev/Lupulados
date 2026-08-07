@@ -1,7 +1,5 @@
 packages:
   - artifacts/*
-  - lib/*
-  - lib/integrations/*
   - scripts
 
 allowBuilds:
@@ -10,15 +8,15 @@ allowBuilds:
 autoInstallPeers: false
 
 catalog:
-  '@replit/vite-plugin-cartographer': ^0.5.0
-  '@replit/vite-plugin-dev-banner': ^0.1.1
+  '@replit/vite-plugin-cartographer': ^0.5.21
+  '@replit/vite-plugin-dev-banner': ^0.1.2
   '@replit/vite-plugin-runtime-error-modal': ^0.0.6
-  '@tailwindcss/vite': ^4.1.14
-  '@tanstack/react-query': ^5.90.21
-  '@types/node': ^25.3.3
-  '@types/react': ^19.2.0
-  '@types/react-dom': ^19.2.0
-  '@vitejs/plugin-react': ^5.0.4
+  '@tailwindcss/vite': ^4.3.3
+  '@tanstack/react-query': ^5.101.4
+  '@types/node': ^25.9.5
+  '@types/react': ^19.2.18
+  '@types/react-dom': ^19.2.4
+  '@vitejs/plugin-react': ^5.2.0
   class-variance-authority: ^0.7.1
   clsx: 2.1.1
   drizzle-orm: ^0.45.1
@@ -27,9 +25,9 @@ catalog:
   react: 19.1.0
   react-dom: 19.1.0
   tailwind-merge: 3.5.0
-  tailwindcss: ^4.1.14
-  tsx: ^4.21.0
-  vite: ^7.3.0
+  tailwindcss: ^4.3.3
+  tsx: ^4.23.8
+  vite: ^7.3.6
   zod: ^3.25.76
 
 minimumReleaseAge: 1440
@@ -52,4 +50,10 @@ overrides:
   '@expo/ngrok-bin>@expo/ngrok-bin-sunos-x64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-win32-ia32': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-win32-x64': '-'
-  esbuild: 0.27.3
+  # Antes fijado a 0.27.3 para blindar contra la versión vieja de esbuild que
+  # traía drizzle-kit (backend eliminado, ver CHANGELOG "Removed"). Ya no hay
+  # ninguna dependencia real de drizzle-kit/drizzle-orm en el repo, pero se
+  # mantiene el pin como piso de versión: 0.27.3 era además la primera
+  # versión vulnerable a GHSA-g7r4-m6w7-qqqr (arbitrary file read vía dev
+  # server en Windows), parcheada en 0.28.1.
+  esbuild: 0.28.1

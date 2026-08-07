@@ -425,7 +425,7 @@ export function useOrderWizardState({
   const setDraftQuantity = (id: string, qty: number) => {
     setDraftQuantities((prev) => ({
       ...prev,
-      [id]: Math.max(1, Math.min(999, Math.trunc(qty) || 1)),
+      [id]: normalizeCatalogQuantity(qty),
     }));
   };
 
