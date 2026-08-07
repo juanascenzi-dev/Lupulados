@@ -1,3 +1,8 @@
+---
+tags: [domain, calculator]
+related: ["[[storeCatalog]]", "[[storePageFormatting]]"]
+---
+
 # `storePricing.ts`
 
 **Propósito:** el motor de comparación de precios de la tienda: calcula precio unitario efectivo (por litro/botella/unidad), detecta cuál presentación de un producto es "mejor precio", y determina cuánto ahorra el usuario tanto por comprar de a más volumen como por promociones explícitas.

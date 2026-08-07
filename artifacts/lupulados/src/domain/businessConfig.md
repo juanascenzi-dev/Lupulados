@@ -1,3 +1,8 @@
+---
+tags: [domain, constants]
+related: ["[[commercialAdapters]]", "[[format]]", "[[whatsAppOrder]]"]
+---
+
 # `businessConfig.ts`
 
 **Propósito:** capa de compatibilidad hacia atrás: expone como constantes top-level (calculadas una sola vez al importar el módulo) la misma configuración comercial que [[commercialAdapters]] arma dinámicamente vía `buildBusinessConfig`. Pensado para código legado que espera `import { whatsappNumber, deliveryOptions, ... } from "./businessConfig"` en vez de leer del snapshot.

@@ -1,3 +1,8 @@
+---
+tags: [domain, catalog]
+related: ["[[configurableBeerPack]]", "[[demoStoreCatalog]]"]
+---
+
 # `demoStoreCatalogData.ts`
 
 **Propósito:** datos crudos (hardcodeados) de los productos "demo" del storefront — vinos, fernet, whiskies, gaseosas, accesorios y combos que existen solo para mostrar la variedad de categorías que soporta el catálogo, marcados explícitamente como `demo: true`. Es el input que [[demoStoreCatalog]] transforma en `Product[]`/`ProductPresentation[]` reales.

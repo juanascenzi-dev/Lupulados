@@ -1,3 +1,8 @@
+---
+tags: [domain, schema]
+related: []
+---
+
 # `adminContracts.ts`
 
 **Propósito:** define los tipos de input (create/update) y las interfaces de repositorio que debe implementar cualquier fuente de datos del panel admin (hoy: Supabase, ver `commercialRepository.ts`). Es el contrato entre la UI admin y la capa de persistencia, sin acoplarse a Supabase.

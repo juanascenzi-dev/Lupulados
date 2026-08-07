@@ -1,3 +1,8 @@
+---
+tags: [domain, catalog]
+related: ["[[demoStoreCatalog]]", "[[productCatalog]]", "[[storePricing]]"]
+---
+
 # `storeCatalog.ts`
 
 **Propósito:** el módulo central del storefront (`StorePage`): arma el catálogo completo con datos demo mezclados, y provee filtrado, ordenamiento, normalización de texto/labels y agregaciones (subcategorías, tipos de presentación disponibles) para la grilla de productos.

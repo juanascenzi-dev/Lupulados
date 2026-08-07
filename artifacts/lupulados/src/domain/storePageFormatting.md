@@ -1,3 +1,8 @@
+---
+tags: [domain, formatting]
+related: ["[[format]]", "[[storeCatalog]]", "[[storePricing]]"]
+---
+
 # `storePageFormatting.ts`
 
 **Propósito:** formatea porcentajes y el texto de "ahorro" (copy tipo "Ahorrás $X (Y%)") que se muestra en las tarjetas de producto de la tienda, a partir de una comparación de precios ya calculada por [[storePricing]].

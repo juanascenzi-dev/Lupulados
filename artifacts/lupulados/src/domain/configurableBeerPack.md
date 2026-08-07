@@ -1,3 +1,8 @@
+---
+tags: [domain, calculator]
+related: ["[[beerCatalog]]", "[[beverageMix]]", "[[cartStorage]]"]
+---
+
 # `configurableBeerPack.ts`
 
 **Propósito:** modela los "packs de 6 porrones configurables" (el usuario arma su propio pack eligiendo qué estilos y cuántos de cada uno, hasta completar una capacidad fija), incluyendo la lógica de agrupar packs idénticos en el carrito y convertirlos en líneas de `StoredCartItem`.

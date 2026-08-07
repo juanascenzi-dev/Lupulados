@@ -1,3 +1,8 @@
+---
+tags: [domain, calculator]
+related: ["[[beerConsumptionEstimate]]"]
+---
+
 # `beverageMix.ts`
 
 **Propósito:** modela la mezcla de bebidas de un evento cuando el usuario quiere combinar cerveza con otras bebidas (fernet, whisky, vino, gin, vodka, ron, tequila) en vez de solo cerveza. La cerveza nunca se asigna explícitamente: es siempre el remanente (`100 - suma de los demás shares`).

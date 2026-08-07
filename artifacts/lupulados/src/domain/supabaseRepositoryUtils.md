@@ -1,3 +1,8 @@
+---
+tags: [domain, util]
+related: ["[[commercialRepository]]"]
+---
+
 # `supabaseRepositoryUtils.ts`
 
 **Propósito:** helpers genéricos y mínimos para hablar con Supabase desde `SupabaseCommercialRepository` de [[commercialRepository]]: aserción de respuesta sin error, y wrappers de select/insert/update por tabla con ordenamiento/manejo de errores consistente.

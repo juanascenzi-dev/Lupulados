@@ -1,3 +1,8 @@
+---
+tags: [domain, guard]
+related: ["[[orderFlow]]"]
+---
+
 # `orderWizardValidation.ts`
 
 **Propósito:** dos funciones de validación del wizard de pedido que **intencionalmente no están unificadas**: `getOrderWizardValidationMessage` (mensaje de error en español para mostrar al usuario) y `getOrderWizardCanProceed` (booleano usado para habilitar/deshabilitar el botón "Siguiente"). El código documenta explícitamente que no son 1:1 derivables entre sí.

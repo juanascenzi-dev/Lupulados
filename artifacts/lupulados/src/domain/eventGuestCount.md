@@ -1,3 +1,8 @@
+---
+tags: [domain, util]
+related: ["[[eventDuration]]"]
+---
+
 # `eventGuestCount.ts`
 
 **Propósito:** parseo y clamp de la cantidad de invitados de un evento, con límites fijos de sanity check.

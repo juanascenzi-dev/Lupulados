@@ -1,3 +1,8 @@
+---
+tags: [domain, calculator]
+related: ["[[beerCatalog]]"]
+---
+
 # `barrelCalculator.ts`
 
 **Propósito:** dado un requerimiento de litros (y opcionalmente una cerveza puntual), calcula la combinación de barriles (20L/30L/50L) que minimiza el excedente y el precio, para recomendar qué comprar en la calculadora.

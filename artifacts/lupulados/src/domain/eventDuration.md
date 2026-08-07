@@ -1,3 +1,8 @@
+---
+tags: [domain, formatting]
+related: ["[[beerConsumptionEstimate]]"]
+---
+
 # `eventDuration.ts`
 
 **Propósito:** parseo, normalización y formateo de la duración de un evento (días/horas/minutos) para el wizard de pedido, incluyendo la conversión a horas decimales que consume [[beerConsumptionEstimate]].

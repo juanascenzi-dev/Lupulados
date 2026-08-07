@@ -1,3 +1,15 @@
+---
+tags: [domain, adapter]
+related:
+  [
+    "[[adminContracts]]",
+    "[[adminFormAdapters]]",
+    "[[commercialData]]",
+    "[[commercialRepositoryRows]]",
+    "[[commercialSchemas]]",
+  ]
+---
+
 # `commercialRepositoryMappers.ts`
 
 **Propósito:** capa de mapeo bidireccional entre las filas crudas de Supabase (`snake_case`, tipos de [[commercialRepositoryRows]]) y los tipos de dominio (`camelCase`, `commercialTypes.ts`). Aísla el resto de la app del shape exacto de las tablas de Supabase.

@@ -1,3 +1,8 @@
+---
+tags: [domain, util]
+related: ["[[adminDataLoader]]"]
+---
+
 # `adminDashboardHelpers.ts`
 
 **Propósito:** helpers de UI-adjacent (filtrado, formateo, confirmación) usados por el dashboard del panel admin (`AdminDashboard.tsx`), separados del componente para poder testearlos sin renderizar React.

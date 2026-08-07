@@ -1,3 +1,8 @@
+---
+tags: [domain, constants]
+related: ["[[beerConsumptionEstimate]]", "[[beverageMix]]"]
+---
+
 # `calculadoraConstants.ts`
 
 **Propósito:** constantes de UI/configuración para la calculadora de barriles — tipos de bebidas no-cerveza disponibles, tipos de evento (con emoji/label/desc) y chips de duración predefinidos.

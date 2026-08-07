@@ -1,3 +1,14 @@
+---
+tags: [domain, repository]
+related:
+  [
+    "[[adminContracts]]",
+    "[[commercialData]]",
+    "[[commercialRepositoryMappers]]",
+    "[[supabaseRepositoryUtils]]",
+  ]
+---
+
 # `commercialRepository.ts`
 
 **Propósito:** define el contrato `CommercialRepository` (lectura pública del catálogo comercial) y sus dos implementaciones: `StaticCommercialRepository` (sirve el snapshot hardcodeado de [[commercialData]], usado como fallback/demo) y `SupabaseCommercialRepository` (persistencia real contra Supabase, implementa también `CommercialAdminRepository` de [[adminContracts]] para las mutaciones del panel admin).

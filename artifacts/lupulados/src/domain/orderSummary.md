@@ -1,3 +1,16 @@
+---
+tags: [domain, calculator]
+related:
+  [
+    "[[businessConfig]]",
+    "[[commercialAdapters]]",
+    "[[commercialData]]",
+    "[[configurableBeerPack]]",
+    "[[promotionDiscount]]",
+    "[[promotionMatching]]",
+  ]
+---
+
 # `orderSummary.ts`
 
 **Propósito:** el cálculo final del pedido: dado el carrito y los "extras" del checkout (chopera, hielo, vasos, entrega, código promocional), arma el desglose completo (subtotal, líneas de extras, costo de entrega, descuento, total) que se muestra en el resumen y se manda por WhatsApp.

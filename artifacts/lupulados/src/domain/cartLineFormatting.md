@@ -1,3 +1,8 @@
+---
+tags: [domain, formatting]
+related: ["[[productCatalog]]"]
+---
+
 # `cartLineFormatting.ts`
 
 **Propósito:** deriva textos legibles para mostrar un ítem del carrito (título, "cerveza"/tipo, presentación, descripción compacta) a partir de los campos crudos de un `CartItemDraft`/`StoredCartItem`, con fallbacks para ítems legados que no tienen todos los campos nuevos poblados.

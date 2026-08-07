@@ -1,3 +1,8 @@
+---
+tags: [domain, constants]
+related: ["[[storeCatalog]]"]
+---
+
 # `storePageConstants.ts`
 
 **Propósito:** listas de opciones derivadas de [[storeCatalog]] para poblar los selectores de filtro de `StorePage` (categoría principal, orden, rango de precio), en el orden en que deben mostrarse.

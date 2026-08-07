@@ -1,3 +1,8 @@
+---
+tags: [domain, catalog]
+related: ["[[commercialAdapters]]", "[[commercialData]]", "[[format]]", "[[productCatalog]]"]
+---
+
 # `beerCatalog.ts`
 
 **Propósito:** punto central del catálogo de cervezas y sus presentaciones/precios para la calculadora y el flujo de armado de pedido; también arma los "tipos de pedido" (barril/growler/porrón/pack degustación) que se muestran como opciones de entrada al usuario.

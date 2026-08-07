@@ -1,3 +1,8 @@
+---
+tags: [domain, constants]
+related: ["[[activationGuard]]", "[[orderFlow]]"]
+---
+
 # `orderWizardConstants.ts`
 
 **Propósito:** constantes de configuración y navegación del wizard de pedido (pasos, categorías de acceso rápido, guard de activación de WhatsApp, decoración visual de burbujas), más la lógica de qué paso sigue/precede saltando el paso 2 para ciertos tipos de orden.

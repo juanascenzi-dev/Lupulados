@@ -1,3 +1,8 @@
+---
+tags: [domain, context-logic]
+related: ["[[beerCatalog]]"]
+---
+
 # `beerStylePreference.ts`
 
 **Propósito:** maneja la selección de estilos de cerveza preferidos del usuario en el wizard de pedido (multi-select), garantizando que la selección quede siempre sincronizada con el catálogo vigente.

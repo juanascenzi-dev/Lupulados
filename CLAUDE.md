@@ -36,9 +36,20 @@ Antes cada cambio no trivial generaba un archivo nuevo en `docs/*.md`. A partir 
 
 Todo archivo de `artifacts/lupulados/src/domain/` (excepto `*.test.ts`) tiene un `.md` compañero colocado en la misma carpeta, mismo nombre base (`archivo.ts` → `archivo.md`), que explica su lógica. Es una convención distinta de la anterior (esa es sobre docs por _cambio_; esta es documentación viva por _archivo_, que describe el estado actual del código, no su historia).
 
-- Al crear un archivo nuevo en `src/domain`, se crea su `.md` en el mismo cambio.
-- Al modificar la lógica de un archivo existente en `src/domain` (no aplica a cambios triviales de formato/typo), se actualiza su `.md` para que siga reflejando el comportamiento real.
-- Formato del `.md`: propósito (1-2 frases), exports principales (qué hace cada uno, inputs/outputs relevantes), reglas de negocio/edge cases no obvios desde la firma de tipos, dependencias clave de otros módulos, y referencia al `.test.ts` si existe.
+Estas notas son notas de Obsidian (el repo tiene `.obsidian/` en la raíz): usan wikilinks `[[archivo]]` para referenciar otros módulos del dominio y frontmatter YAML para tags/relaciones, así se aprovechan el grafo y el panel de propiedades de Obsidian.
+
+- Al crear un archivo nuevo en `src/domain`, se crea su `.md` en el mismo cambio, con frontmatter.
+- Al modificar la lógica de un archivo existente en `src/domain` (no aplica a cambios triviales de formato/typo), se actualiza su `.md` para que siga reflejando el comportamiento real — tanto el cuerpo como `tags`/`related` si cambiaron las relaciones con otros módulos.
+- Formato del `.md`:
+  - Frontmatter al inicio del archivo:
+    ```yaml
+    ---
+    tags: [domain, <categoría>]
+    related: ["[[otroModulo]]", "[[otroModulo2]]"]
+    ---
+    ```
+    `tags` siempre incluye `domain` más una categoría corta de esta taxonomía fija (se elige la que mejor calce, no se inventan nuevas): `schema`, `calculator`, `repository`, `guard`, `catalog`, `formatting`, `constants`, `adapter`, `context-logic`, `util`. `related` lista los wikilinks que ya aparecen en el cuerpo de la nota (`related: []` si no referencia otros módulos) — no se agrega campo de fecha/"última actualización", eso ya lo cubre git.
+  - Cuerpo: propósito (1-2 frases), exports principales (qué hace cada uno, inputs/outputs relevantes), reglas de negocio/edge cases no obvios desde la firma de tipos, dependencias clave de otros módulos (con wikilinks `[[archivo]]` cuando son módulos de `src/domain`), y referencia al `.test.ts` si existe.
 - Esta regla aplica hoy solo a `src/domain`; no se extiende automáticamente a otros directorios de `src/` salvo que se decida explícitamente ampliarla.
 
 ### Flujo de branches y PRs

@@ -1,3 +1,8 @@
+---
+tags: [domain, calculator]
+related: ["[[beverageMix]]"]
+---
+
 # `beerConsumptionEstimate.ts`
 
 **Propósito:** estima cuántos litros de cerveza va a consumir un evento en base a cantidad de invitados (o composición por género), intensidad del evento, duración y si es en verano. Es la fórmula base que reutiliza [[beverageMix]] para escalar también las bebidas no-cerveza.

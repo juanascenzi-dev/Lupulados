@@ -1,3 +1,8 @@
+---
+tags: [domain, schema]
+related: []
+---
+
 # `checkout.ts`
 
 **Propósito:** validación del formulario de checkout (datos del pedido: nombre, fecha, entrega, dirección) y selección del canal de WhatsApp por defecto para enviar el pedido.

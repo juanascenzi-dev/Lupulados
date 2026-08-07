@@ -1,3 +1,8 @@
+---
+tags: [domain, schema]
+related: []
+---
+
 # `contact.ts`
 
 **Propósito:** schema de validación del formulario de contacto (no del checkout de pedido).

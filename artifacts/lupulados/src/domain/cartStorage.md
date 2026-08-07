@@ -1,3 +1,8 @@
+---
+tags: [domain, repository]
+related: ["[[beerCatalog]]", "[[configurableBeerPack]]", "[[productCatalog]]"]
+---
+
 # `cartStorage.ts`
 
 **Propósito:** el módulo más grande y crítico de persistencia del carrito: serializa/deserializa el carrito en `localStorage`, migra formatos legados (versión 2→3, mojibake de encoding, categorías viejas), y reconcilia el carrito persistido contra el catálogo comercial vigente (por si un producto/presentación cambió de precio o se archivó desde la última visita).

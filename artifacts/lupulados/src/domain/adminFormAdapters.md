@@ -1,3 +1,8 @@
+---
+tags: [domain, adapter]
+related: ["[[adminContracts]]"]
+---
+
 # `adminFormAdapters.ts`
 
 **Propósito:** capa de validación y (de/)serialización entre los `<form>` HTML del panel admin y los tipos de dominio/`adminContracts.ts`. Define los schemas Zod de cada entidad editable y las funciones `parse*Form` / `parse*UpdateForm` / `*ToFormValues` que la UI usa para ir de `FormData` a input tipado y viceversa.

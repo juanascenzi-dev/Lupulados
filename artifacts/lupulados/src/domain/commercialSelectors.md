@@ -1,3 +1,16 @@
+---
+tags: [domain, util]
+related:
+  [
+    "[[adminFormAdapters]]",
+    "[[businessConfig]]",
+    "[[checkout]]",
+    "[[commercialAdapters]]",
+    "[[commercialData]]",
+    "[[commercialSchemas]]",
+  ]
+---
+
 # `commercialSelectors.ts`
 
 **Propósito:** capa de lectura/consulta sobre un `CommercialSnapshot`: filtra por activo/status, ordena por `sortOrder`, y resuelve reglas puntuales (canal de WhatsApp principal para pedidos, promoción vigente por fecha). Es la base que reutilizan tanto [[businessConfig]] (congelado) como [[commercialAdapters]] (dinámico).

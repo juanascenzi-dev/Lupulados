@@ -1,3 +1,8 @@
+---
+tags: [domain, catalog]
+related: ["[[beerCatalog]]", "[[cartStorage]]", "[[configurableBeerPack]]", "[[orderFlow]]"]
+---
+
 # `productCatalog.ts`
 
 **Propósito:** capa de catálogo genérica (no específica de cerveza) sobre el `CommercialSnapshot`: categorías visibles, productos/presentaciones activos por categoría, construcción de líneas de carrito comerciales, y reconciliación de una selección de categoría/producto/presentación contra lo disponible actualmente (usado por el selector de productos no-cerveza del wizard).

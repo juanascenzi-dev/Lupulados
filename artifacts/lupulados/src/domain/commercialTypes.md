@@ -1,3 +1,8 @@
+---
+tags: [domain, schema]
+related: ["[[beverageMix]]", "[[demoStoreCatalogData]]"]
+---
+
 # `commercialTypes.ts`
 
 **Propósito:** fuente de verdad de los tipos de dominio del catálogo comercial (productos, presentaciones, entregas, extras, promociones, canales de WhatsApp, perfil de negocio, snapshot agregado). Todo el resto de `src/domain` y buena parte de `src/` importa de acá.

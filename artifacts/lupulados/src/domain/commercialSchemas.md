@@ -1,3 +1,8 @@
+---
+tags: [domain, schema]
+related: ["[[adminFormAdapters]]", "[[commercialData]]", "[[commercialRepositoryMappers]]"]
+---
+
 # `commercialSchemas.ts`
 
 **Propósito:** define los schemas Zod que validan el shape completo de un `CommercialSnapshot` (sea el estático de [[commercialData]] o el reconstruido desde Supabase en [[commercialRepositoryMappers]]). Es la "puerta de entrada" que garantiza que cualquier snapshot que circula por la app cumple las invariantes de negocio, no solo los tipos TS.

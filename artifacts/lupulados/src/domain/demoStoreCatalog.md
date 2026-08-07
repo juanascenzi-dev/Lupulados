@@ -1,3 +1,8 @@
+---
+tags: [domain, adapter]
+related: ["[[commercialData]]", "[[demoStoreCatalogData]]"]
+---
+
 # `demoStoreCatalog.ts`
 
 **Propósito:** transforma los datos crudos de [[demoStoreCatalogData]] en `Product[]`/`ProductPresentation[]` con la forma final que espera `commercialSnapshot` (genera `id` de presentación, asigna `active: true`, resuelve la imagen, y agrega metadata de comparación de precios por producto/presentación).

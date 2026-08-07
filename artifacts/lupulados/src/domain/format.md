@@ -1,3 +1,8 @@
+---
+tags: [domain, formatting]
+related: []
+---
+
 # `format.ts`
 
 **Propósito:** único helper de formateo de precios de todo el dominio: `formatPrice`, usado por prácticamente todos los módulos que muestran montos en pesos argentinos.

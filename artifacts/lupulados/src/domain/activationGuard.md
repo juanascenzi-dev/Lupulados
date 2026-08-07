@@ -1,3 +1,8 @@
+---
+tags: [domain, guard]
+related: []
+---
+
 # `activationGuard.ts`
 
 **Propósito:** decide si una acción "activable" (ej. un botón de instalar PWA, un prompt reintentable) puede dispararse de nuevo o si todavía está dentro de su período de enfriamiento (cooldown).

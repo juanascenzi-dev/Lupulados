@@ -1,3 +1,8 @@
+---
+tags: [domain, catalog]
+related: ["[[commercialSchemas]]", "[[demoStoreCatalog]]"]
+---
+
 # `commercialData.ts`
 
 **Propósito:** fuente de datos comerciales **estática** (hardcodeada) usada como catálogo demo/fallback cuando no hay conexión a Supabase o durante desarrollo/tests. Define el `commercialSnapshot` completo: perfil de negocio, canales de WhatsApp, productos, presentaciones, entregas, extras y una promoción de ejemplo.

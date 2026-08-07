@@ -1,3 +1,9 @@
+---
+tags: [domain, adapter]
+related:
+  ["[[beerCatalog]]", "[[businessConfig]]", "[[commercialData]]", "[[format]]", "[[whatsAppOrder]]"]
+---
+
 # `commercialAdapters.ts`
 
 **Propósito:** puente entre el `CommercialSnapshot` (datos crudos de Supabase/estático) y las estructuras que consume la UI de la calculadora/storefront (`Beer`, opciones de tipo de pedido, config comercial pública). A diferencia de [[businessConfig]] (que congela los valores al importar), este módulo recalcula todo por snapshot pasado como parámetro — es la versión "reactiva" preferida para código nuevo.

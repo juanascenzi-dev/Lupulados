@@ -1,3 +1,8 @@
+---
+tags: [domain, context-logic]
+related: ["[[cartStorage]]"]
+---
+
 # `pwaInstall.ts`
 
 **Propósito:** lógica de estado del prompt de instalación de la PWA: detecta si ya corre en modo standalone, si el dispositivo es iOS (que no soporta el evento `beforeinstallprompt` nativo y necesita un hint manual), cuándo compactar el prompt al hacer scroll, y persistencia de "el usuario ya descartó el hint de iOS".

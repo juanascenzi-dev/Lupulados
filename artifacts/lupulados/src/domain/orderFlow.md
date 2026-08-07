@@ -1,3 +1,15 @@
+---
+tags: [domain, context-logic]
+related:
+  [
+    "[[barrelCalculator]]",
+    "[[beerCatalog]]",
+    "[[beverageMix]]",
+    "[[cartStorage]]",
+    "[[productCatalog]]",
+  ]
+---
+
 # `orderFlow.ts`
 
 **Propósito:** lógica del wizard de pedido de cerveza: detectar si la selección actual ya está en el carrito (para no duplicar), construir las líneas de carrito recomendadas (barriles según el plan de [[barrelCalculator]], bebidas de la mezcla de [[beverageMix]]), y generar una clave de dedup para recomendaciones pendientes.

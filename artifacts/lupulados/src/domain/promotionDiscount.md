@@ -1,3 +1,8 @@
+---
+tags: [domain, calculator]
+related: ["[[barrelCalculator]]", "[[format]]"]
+---
+
 # `promotionDiscount.ts`
 
 **Propósito:** calcula el monto de descuento de una promoción sobre un subtotal, y formatea el valor de una promoción para mostrar en UI/mensajes. Es intencionalmente tolerante a inputs inválidos (a diferencia de [[barrelCalculator]]) porque corre en cada render vía `useCart()` → `calculateOrderSummary`.

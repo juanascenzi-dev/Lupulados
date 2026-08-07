@@ -1,3 +1,8 @@
+---
+tags: [domain, schema]
+related: ["[[commercialRepositoryMappers]]"]
+---
+
 # `commercialRepositoryRows.ts`
 
 **Propósito:** define los tipos TypeScript de las filas crudas tal como las devuelve Supabase (`snake_case`, nullable donde la columna lo permite) para cada tabla comercial. Es el "contrato de columnas" que consumen los mappers de [[commercialRepositoryMappers]].

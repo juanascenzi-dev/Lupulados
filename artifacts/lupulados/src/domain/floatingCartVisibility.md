@@ -1,3 +1,8 @@
+---
+tags: [domain, guard]
+related: []
+---
+
 # `floatingCartVisibility.ts`
 
 **Propósito:** decide si mostrar el botón flotante de carrito, en base a la ruta actual, el hash de la URL y si el wizard de pedido está activo — evita mostrarlo donde estorbaría o sería redundante.

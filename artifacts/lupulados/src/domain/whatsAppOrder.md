@@ -1,3 +1,16 @@
+---
+tags: [domain, formatting]
+related:
+  [
+    "[[cartLineFormatting]]",
+    "[[commercialSchemas]]",
+    "[[commercialSelectors]]",
+    "[[format]]",
+    "[[orderSummary]]",
+    "[[promotionDiscount]]",
+  ]
+---
+
 # `whatsAppOrder.ts`
 
 **Propósito:** genera el mensaje de texto completo del pedido (formato específico, en español, pensado para pegarse en WhatsApp) a partir de un `OrderSummary` ya calculado, y construye la URL `wa.me` final con el mensaje URL-encoded.

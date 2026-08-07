@@ -1,3 +1,8 @@
+---
+tags: [domain, util]
+related: ["[[commercialData]]", "[[commercialSelectors]]", "[[promotionDiscount]]"]
+---
+
 # `promotionMatching.ts`
 
 **Propósito:** única fuente de verdad para normalizar y comparar códigos promocionales ingresados por el usuario contra la promoción activa vigente. El código documenta que esta lógica estaba antes duplicada (con reglas ligeramente distintas) entre el wizard y el checkout de la tienda — este archivo la unificó (ver fix de "matcheo de código promocional" del commit `589dfc1`).

@@ -1,3 +1,8 @@
+---
+tags: [domain, context-logic]
+related: ["[[commercialRepository]]"]
+---
+
 # `adminDataLoader.ts`
 
 **Propósito:** orquesta la carga inicial de todos los datos comerciales que necesita el panel admin, y coordina el flujo de "mutación admin → refrescar datos admin → refrescar snapshot público" evitando mutaciones concurrentes.
