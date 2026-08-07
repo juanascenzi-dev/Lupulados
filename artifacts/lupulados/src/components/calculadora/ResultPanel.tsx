@@ -44,7 +44,7 @@ export function ResultPanel({
 
   return (
     <div className="calculator-result-column min-h-0 lg:col-span-5">
-      <div className="calculator-result-card relative flex min-h-0 flex-col overflow-hidden rounded-3xl border border-primary/20 bg-black/40 p-4 text-center lg:p-4 xl:p-5">
+      <div className="calculator-result-card relative flex h-full min-h-0 flex-col overflow-hidden rounded-3xl border border-primary/20 bg-black/40 p-4 text-center lg:p-4 xl:p-5">
         <div className="absolute right-0 top-0 h-28 w-28 rounded-full bg-primary/10 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-28 w-28 rounded-full bg-amber-500/10 blur-3xl" />
 

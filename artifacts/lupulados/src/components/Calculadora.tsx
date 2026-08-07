@@ -28,11 +28,11 @@ interface CalculadoraProps {
 }
 
 const FLEX_STEPPER_FIELD_CLASSES = {
-  wrapperClassName: "flex items-center gap-2",
+  wrapperClassName: "flex items-center gap-2 lg:gap-3",
   buttonClassName:
-    "h-9 w-9 shrink-0 rounded-lg border border-white/10 bg-white/5 font-bold text-white transition-colors hover:border-primary",
+    "h-9 w-9 lg:h-12 lg:w-12 shrink-0 rounded-lg lg:rounded-xl border border-white/10 bg-white/5 text-base font-bold text-white transition-colors hover:border-primary lg:text-xl",
   inputClassName:
-    "min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-2 py-2 text-center font-bold text-primary transition-colors focus:border-primary focus:outline-none",
+    "min-w-0 flex-1 rounded-lg lg:rounded-xl border border-white/10 bg-black/40 px-2 py-2 lg:px-3 lg:py-3 text-center font-bold text-primary transition-colors focus:border-primary focus:outline-none lg:text-lg",
 };
 
 const mobileSteps = [

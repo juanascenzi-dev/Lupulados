@@ -240,11 +240,11 @@
 
 @media (min-width: 1024px) {
   .calculator-panel {
-    --calculator-main-gap: clamp(1rem, 1.6dvh, 1.25rem);
-    --calculator-stack-gap: clamp(0.75rem, 1.2dvh, 0.875rem);
-    --calculator-inner-gap: 0.75rem;
-    --calculator-summary-card-height: clamp(6.375rem, 8.5dvh, 6.75rem);
-    padding: clamp(1rem, 1.9dvh, 1.5rem);
+    --calculator-main-gap: clamp(1.25rem, 2.4dvh, 1.75rem);
+    --calculator-stack-gap: clamp(1rem, 2dvh, 1.5rem);
+    --calculator-inner-gap: clamp(0.875rem, 1.6dvh, 1.125rem);
+    --calculator-summary-card-height: clamp(7.5rem, 11dvh, 9rem);
+    padding: clamp(1.25rem, 2.4dvh, 1.75rem);
   }
 
   .calculator-header {
@@ -267,7 +267,7 @@
   .calculator-event-stack,
   .calculator-right-stack {
     height: 100%;
-    align-content: start;
+    align-content: space-between;
     gap: var(--calculator-stack-gap);
   }
 
@@ -319,6 +319,7 @@
 
   .calculator-card {
     border-radius: 1rem;
+    padding: clamp(1rem, 2dvh, 1.5rem);
   }
 
   .calculator-controls {
@@ -417,12 +418,12 @@
   .calculator-controls input[type="number"],
   .calculator-controls button[aria-label^="Restar"],
   .calculator-controls button[aria-label^="Sumar"] {
-    height: 2rem !important;
+    height: 2.5rem !important;
   }
 
   .calculator-controls button[aria-label^="Restar"],
   .calculator-controls button[aria-label^="Sumar"] {
-    width: 2rem !important;
+    width: 2.5rem !important;
   }
 
   .calculator-event-option {
