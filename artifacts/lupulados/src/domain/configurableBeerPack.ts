@@ -50,12 +50,18 @@ export interface GroupedConfigurablePack {
   unitPrice: number;
 }
 
+export type PendingPackConfirmation =
+  { type: "reduce"; count: number } | { type: "apply-all"; sourceIndex: number } | null;
+
 export function normalizePackCount(value: number, max = CONFIGURABLE_BEER_PACK_MAX_PACKS) {
   if (!Number.isFinite(value)) return 1;
   return Math.max(1, Math.min(max, Math.trunc(value) || 1));
 }
 
-export function createEmptyPackDraft(index = 0, capacity = CONFIGURABLE_BEER_PACK_CAPACITY): PackDraft {
+export function createEmptyPackDraft(
+  index = 0,
+  capacity = CONFIGURABLE_BEER_PACK_CAPACITY,
+): PackDraft {
   return {
     id: `pack-${index + 1}`,
     capacity: normalizeCapacity(capacity),
@@ -67,7 +73,8 @@ export function normalizePackSelection(selection: PackSelection): PackSelection 
   const productId = typeof selection.productId === "string" ? selection.productId.trim() : "";
   const quantity = normalizeSelectionQuantity(selection.quantity);
   if (!productId || quantity <= 0) return null;
-  const name = typeof selection.name === "string" && selection.name.trim() ? selection.name.trim() : undefined;
+  const name =
+    typeof selection.name === "string" && selection.name.trim() ? selection.name.trim() : undefined;
   return { productId, quantity, name };
 }
 
@@ -82,7 +89,10 @@ export function normalizePackComposition(
     const normalized = normalizePackSelection(selection);
     if (!normalized) return;
     if (validProductIds && !validProductIds.has(normalized.productId)) return;
-    byProduct.set(normalized.productId, Math.min(capacity, (byProduct.get(normalized.productId) ?? 0) + normalized.quantity));
+    byProduct.set(
+      normalized.productId,
+      Math.min(capacity, (byProduct.get(normalized.productId) ?? 0) + normalized.quantity),
+    );
   });
 
   let used = 0;
@@ -103,7 +113,10 @@ export function normalizePackComposition(
 }
 
 export function getPackSelectedCount(draft: Pick<PackDraft, "capacity" | "selections">) {
-  return normalizePackComposition(draft).selections.reduce((total, selection) => total + selection.quantity, 0);
+  return normalizePackComposition(draft).selections.reduce(
+    (total, selection) => total + selection.quantity,
+    0,
+  );
 }
 
 export function getPackRemainingCount(draft: Pick<PackDraft, "capacity" | "selections">) {
@@ -127,20 +140,29 @@ export function updatePackSelection(
 
   const capacity = normalizeCapacity(draft.capacity);
   const current = normalizePackComposition(draft, validProductIds);
-  const otherSelections = current.selections.filter((selection) => selection.productId !== normalizedProductId);
+  const otherSelections = current.selections.filter(
+    (selection) => selection.productId !== normalizedProductId,
+  );
   const otherTotal = otherSelections.reduce((total, selection) => total + selection.quantity, 0);
-  const nextQuantity = Math.max(0, Math.min(normalizeSelectionQuantity(quantity), capacity - otherTotal));
+  const nextQuantity = Math.max(
+    0,
+    Math.min(normalizeSelectionQuantity(quantity), capacity - otherTotal),
+  );
 
   return {
     ...draft,
     capacity,
-    selections: nextQuantity > 0
-      ? [...otherSelections, { productId: normalizedProductId, quantity: nextQuantity }]
-      : otherSelections,
+    selections:
+      nextQuantity > 0
+        ? [...otherSelections, { productId: normalizedProductId, quantity: nextQuantity }]
+        : otherSelections,
   };
 }
 
-export function copyPackComposition(draft: Pick<PackDraft, "capacity" | "selections">, id = "pack-copy"): PackDraft {
+export function copyPackComposition(
+  draft: Pick<PackDraft, "capacity" | "selections">,
+  id = "pack-copy",
+): PackDraft {
   return {
     id,
     capacity: normalizeCapacity(draft.capacity),
@@ -158,7 +180,9 @@ export function resizePackDrafts(
     return {
       drafts: [
         ...drafts.map((draft, index) => copyPackComposition(draft, `pack-${index + 1}`)),
-        ...Array.from({ length: count - drafts.length }, (_, index) => createEmptyPackDraft(drafts.length + index)),
+        ...Array.from({ length: count - drafts.length }, (_, index) =>
+          createEmptyPackDraft(drafts.length + index),
+        ),
       ],
       needsConfirmation: false,
     };
@@ -167,10 +191,22 @@ export function resizePackDrafts(
   const removed = drafts.slice(count);
   const needsConfirmation = removed.some((draft) => getPackSelectedCount(draft) > 0);
   if (needsConfirmation && !options.allowDiscardConfigured) {
-    return { drafts: drafts.map((draft, index) => copyPackComposition(draft, `pack-${index + 1}`)), needsConfirmation: true };
+    return {
+      drafts: drafts.map((draft, index) => copyPackComposition(draft, `pack-${index + 1}`)),
+      needsConfirmation: true,
+    };
   }
 
-  return { drafts: drafts.slice(0, count).map((draft, index) => copyPackComposition(draft, `pack-${index + 1}`)), needsConfirmation: false };
+  return {
+    drafts: drafts
+      .slice(0, count)
+      .map((draft, index) => copyPackComposition(draft, `pack-${index + 1}`)),
+    needsConfirmation: false,
+  };
+}
+
+export function hasOtherConfiguredPacks(drafts: readonly PackDraft[], excludeIndex: number) {
+  return drafts.some((draft, index) => index !== excludeIndex && getPackSelectedCount(draft) > 0);
 }
 
 export function applyCompositionToAllPacks(drafts: readonly PackDraft[], sourceIndex: number) {
@@ -179,21 +215,29 @@ export function applyCompositionToAllPacks(drafts: readonly PackDraft[], sourceI
   return drafts.map((_, index) => copyPackComposition(source, `pack-${index + 1}`));
 }
 
-export function canonicalizePackComposition(composition: Pick<ConfigurablePackComposition, "capacity" | "selections">) {
+export function canonicalizePackComposition(
+  composition: Pick<ConfigurablePackComposition, "capacity" | "selections">,
+) {
   const normalized = normalizePackComposition(composition);
-  const selectionKey = normalized.selections.map((selection) => `${selection.productId}=${selection.quantity}`).join("|");
+  const selectionKey = normalized.selections
+    .map((selection) => `${selection.productId}=${selection.quantity}`)
+    .join("|");
   return [
     "pack=configurable-beer-pack",
     `version=${CONFIGURABLE_BEER_PACK_VERSION}`,
     `capacity=${normalized.capacity}`,
     selectionKey,
-  ].filter(Boolean).join("|");
+  ]
+    .filter(Boolean)
+    .join("|");
 }
 
 export function listPackAvailableProducts(beers: readonly Beer[]): PackAvailableProduct[] {
   return beers
     .flatMap((beer) => {
-      const presentation = beer.presentations.find((item) => item.id === "porron500ml" && item.price > 0);
+      const presentation = beer.presentations.find(
+        (item) => item.id === "porron500ml" && item.price > 0,
+      );
       if (!presentation || !Number.isFinite(presentation.price)) return [];
       return [{ productId: beer.id, name: beer.name, price: presentation.price }];
     })
@@ -205,19 +249,29 @@ export function calculatePackPrice(
   products: readonly PackAvailableProduct[],
 ) {
   const prices = new Map(products.map((product) => [product.productId, product.price]));
-  return normalizePackComposition(composition, new Set(prices.keys())).selections.reduce((total, selection) => {
-    const price = prices.get(selection.productId);
-    return total + (Number.isFinite(price) && price ? price * selection.quantity : 0);
-  }, 0);
+  return normalizePackComposition(composition, new Set(prices.keys())).selections.reduce(
+    (total, selection) => {
+      const price = prices.get(selection.productId);
+      return total + (Number.isFinite(price) && price ? price * selection.quantity : 0);
+    },
+    0,
+  );
 }
 
-export function groupIdenticalPacks(drafts: readonly PackDraft[], products: readonly PackAvailableProduct[]): GroupedConfigurablePack[] {
+export function groupIdenticalPacks(
+  drafts: readonly PackDraft[],
+  products: readonly PackAvailableProduct[],
+): GroupedConfigurablePack[] {
   const validProductIds = new Set(products.map((product) => product.productId));
   const grouped = new Map<string, GroupedConfigurablePack>();
 
   drafts.forEach((draft) => {
     const composition = normalizePackComposition(draft, validProductIds);
-    if (composition.selections.reduce((total, selection) => total + selection.quantity, 0) !== composition.capacity) return;
+    if (
+      composition.selections.reduce((total, selection) => total + selection.quantity, 0) !==
+      composition.capacity
+    )
+      return;
     const key = canonicalizePackComposition(composition);
     const current = grouped.get(key);
     const normalizedDraft = { ...draft, selections: composition.selections };
@@ -241,8 +295,11 @@ export function formatPackComposition(
   products: readonly PackAvailableProduct[],
 ) {
   const names = new Map(products.map((product) => [product.productId, product.name]));
-  return normalizePackComposition(composition, new Set(names.keys())).selections
-    .map((selection) => `${selection.quantity} ${names.get(selection.productId) ?? selection.productId}`)
+  return normalizePackComposition(composition, new Set(names.keys()))
+    .selections.map(
+      (selection) =>
+        `${selection.quantity} ${names.get(selection.productId) ?? selection.productId}`,
+    )
     .join(", ");
 }
 
@@ -253,7 +310,10 @@ export function buildConfigurablePackCartItem(
   const validProductIds = new Set(products.map((product) => product.productId));
   const names = new Map(products.map((product) => [product.productId, product.name]));
   const normalized = normalizePackComposition(composition, validProductIds);
-  const namedSelections = normalized.selections.map((selection) => ({ ...selection, name: names.get(selection.productId) }));
+  const namedSelections = normalized.selections.map((selection) => ({
+    ...selection,
+    name: names.get(selection.productId),
+  }));
   const canonicalKey = canonicalizePackComposition(normalized);
   const unitPrice = calculatePackPrice(normalized, products);
   const compositionLabel = formatPackComposition(normalized, products);
