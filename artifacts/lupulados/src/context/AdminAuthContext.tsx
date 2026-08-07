@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { getSupabasePublicConfig } from "@/lib/supabase/config";
@@ -35,7 +35,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
   const [access, setAccess] = useState<AdminAccess>(config.configured ? "loading" : "unconfigured");
   const [error, setError] = useState<string | null>(null);
 
-  const refreshAdminStatus = async () => {
+  const refreshAdminStatus = useCallback(async () => {
     if (!client) {
       setAccess("unconfigured");
       return;
@@ -60,7 +60,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
 
     setError(null);
     setAccess(data === true ? "admin" : "unauthorized");
-  };
+  }, [client]);
 
   useEffect(() => {
     void refreshAdminStatus();
@@ -71,7 +71,7 @@ export function AdminAuthProvider({ children }: { children: React.ReactNode }) {
       void refreshAdminStatus();
     });
     return () => data.subscription.unsubscribe();
-  }, [client]);
+  }, [client, refreshAdminStatus]);
 
   const signIn: AdminAuthState["signIn"] = async (email, password) => {
     if (!client) return { ok: false, message: "Supabase no esta configurado." };

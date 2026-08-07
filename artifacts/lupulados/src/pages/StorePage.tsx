@@ -45,12 +45,7 @@ import {
   type StorePriceRange,
   type StoreSortOption,
 } from "@/domain/storeCatalog";
-import {
-  buildPresentationComparison,
-  getProductMaxSavings,
-  hasPromotion,
-  hasVolumeSavings,
-} from "@/domain/storePricing";
+import { buildPresentationComparison, hasPromotion, hasVolumeSavings } from "@/domain/storePricing";
 import { getSavingsCopy } from "@/domain/storePageFormatting";
 import type { ProductPresentation } from "@/domain/commercialTypes";
 
