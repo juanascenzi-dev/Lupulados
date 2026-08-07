@@ -95,7 +95,7 @@ describe("SharedCheckoutPanel", () => {
     expect(screen.getByText("Promoción aplicada.")).toBeInTheDocument();
     expect(screen.getByText(/Promo PRIMERABIRRA/)).toBeInTheDocument();
     expect(screen.getByText(`-${formatPrice(testItemPrice * 0.1)}`)).toBeInTheDocument();
-  });
+  }, 15000); // fillRequiredFields + tipeo largo con espacios incidentales; bajo instrumentación de coverage supera el timeout default (ver CHANGELOG, mismo caso que ArmaTuPedido.test.tsx)
 
   it("rejects a promotion that is outside its active date window even if the code matches", async () => {
     const user = userEvent.setup();

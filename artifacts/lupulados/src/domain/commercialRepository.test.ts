@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { createFakeSupabaseAdminClient } from "@/test/supabaseAdminMock";
 import { commercialSnapshot } from "./commercialData";
 import {
   getActivePromotion,
@@ -8,6 +9,7 @@ import {
 import {
   productFromRow,
   snapshotFromRows,
+  StaticCommercialRepository,
   SupabaseCommercialRepository,
   type BusinessProfileRow,
   type DeliveryRow,
@@ -283,6 +285,248 @@ describe("commercial repository mutations", () => {
         }),
       ),
     ).toThrow();
+  });
+});
+
+describe("StaticCommercialRepository", () => {
+  it("returns cloned snapshot slices for every entity, matching the static seed", async () => {
+    const repo = new StaticCommercialRepository();
+    await expect(repo.getBusinessProfile()).resolves.toEqual(commercialSnapshot.businessProfile);
+    await expect(repo.listWhatsAppChannels()).resolves.toEqual(commercialSnapshot.whatsappChannels);
+    await expect(repo.listProducts()).resolves.toEqual(commercialSnapshot.products);
+    await expect(repo.listProductPresentations()).resolves.toEqual(
+      commercialSnapshot.productPresentations,
+    );
+    await expect(repo.listDeliveryOptions()).resolves.toEqual(commercialSnapshot.deliveryOptions);
+    await expect(repo.listExtraOptions()).resolves.toEqual(commercialSnapshot.extraOptions);
+    await expect(repo.listPromotions()).resolves.toEqual(commercialSnapshot.promotions);
+  });
+});
+
+describe("SupabaseCommercialRepository reads", () => {
+  it("getBusinessProfile resolves the active profile from the fake admin client", async () => {
+    const client = createFakeSupabaseAdminClient();
+    const repo = new SupabaseCommercialRepository(client as never);
+    const profile = await repo.getBusinessProfile();
+    expect(profile.businessName).toBe("Lupulados");
+  });
+
+  it("getProduct returns the mapped product when found, and null when missing", async () => {
+    const client = createFakeSupabaseAdminClient({ products: [productRows[0]] });
+    const repo = new SupabaseCommercialRepository(client as never);
+    await expect(repo.getProduct(productRows[0].id)).resolves.toEqual(
+      productFromRow(productRows[0]),
+    );
+    await expect(repo.getProduct("missing-id")).resolves.toBeNull();
+  });
+
+  it("getProduct throws when Supabase reports an error", async () => {
+    const maybeSingle = vi.fn().mockResolvedValue({ data: null, error: { message: "boom" } });
+    const eq = vi.fn(() => ({ maybeSingle }));
+    const select = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ select }));
+    const repo = new SupabaseCommercialRepository({ from } as never);
+    await expect(repo.getProduct("blonde-ale")).rejects.toThrow(
+      "leer producto: no se pudo consultar el producto",
+    );
+  });
+});
+
+describe("commercial repository creates", () => {
+  function repoForInsert<T>(row: T) {
+    const single = vi.fn().mockResolvedValue({ data: row, error: null });
+    const select = vi.fn(() => ({ single }));
+    const insert = vi.fn(() => ({ select }));
+    const from = vi.fn(() => ({ insert }));
+    const repo = new SupabaseCommercialRepository({ from } as never);
+    return { repo, insert };
+  }
+
+  it("creates a presentation and forces status active", async () => {
+    const { repo, insert } = repoForInsert(presentationRows[0]);
+    await repo.createPresentation(commercialSnapshot.productPresentations[0]);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ status: "active" }));
+  });
+
+  it("creates a WhatsApp channel and forces active true", async () => {
+    const { repo, insert } = repoForInsert(whatsappRows[0]);
+    await repo.createWhatsAppChannel(commercialSnapshot.whatsappChannels[0]);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ active: true }));
+  });
+
+  it("creates a delivery option and forces active true", async () => {
+    const { repo, insert } = repoForInsert(deliveryRows[0]);
+    await repo.createDeliveryOption(commercialSnapshot.deliveryOptions[0]);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ active: true }));
+  });
+
+  it("creates an extra option and forces active true", async () => {
+    const { repo, insert } = repoForInsert(extraRows[0]);
+    await repo.createExtraOption(commercialSnapshot.extraOptions[0]);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ active: true }));
+  });
+
+  it("creates a promotion and forces active true", async () => {
+    const { repo, insert } = repoForInsert(promotionRows[0]);
+    await repo.createPromotion(commercialSnapshot.promotions[0]);
+    expect(insert).toHaveBeenCalledWith(expect.objectContaining({ active: true }));
+  });
+});
+
+describe("commercial repository archive/restore and remaining updates", () => {
+  function repoForUpdate<T>(row: T) {
+    const single = vi.fn().mockResolvedValue({ data: row, error: null });
+    const select = vi.fn(() => ({ single }));
+    const eq = vi.fn(() => ({ select }));
+    const update = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ update }));
+    const repo = new SupabaseCommercialRepository({ from } as never);
+    return { repo, update };
+  }
+
+  it("archives and restores presentations using status", async () => {
+    const { repo, update } = repoForUpdate(presentationRows[0]);
+    await repo.archivePresentation("apa:barril20L");
+    await repo.restorePresentation("apa:barril20L");
+    expect(update).toHaveBeenNthCalledWith(1, { status: "archived" });
+    expect(update).toHaveBeenNthCalledWith(2, { status: "active" });
+  });
+
+  it("archives whatsapp channels and clears the primary flag", async () => {
+    const { repo, update } = repoForUpdate(whatsappRows[0]);
+    await repo.archiveWhatsAppChannel("whatsapp-principal");
+    expect(update).toHaveBeenCalledWith({ active: false, is_primary: false });
+  });
+
+  it("updates a whatsapp channel", async () => {
+    const { repo, update } = repoForUpdate(whatsappRows[0]);
+    await repo.updateWhatsAppChannel("whatsapp-principal", { label: "Pedidos" });
+    expect(update).toHaveBeenCalledWith({ label: "Pedidos" });
+  });
+
+  it("archives and restores delivery options using active", async () => {
+    const { repo, update } = repoForUpdate(deliveryRows[0]);
+    await repo.archiveDeliveryOption("delivery");
+    await repo.restoreDeliveryOption("delivery");
+    expect(update).toHaveBeenNthCalledWith(1, { active: false });
+    expect(update).toHaveBeenNthCalledWith(2, { active: true });
+  });
+
+  it("archives and restores extra options using active", async () => {
+    const { repo, update } = repoForUpdate(extraRows[0]);
+    await repo.archiveExtraOption("ice");
+    await repo.restoreExtraOption("ice");
+    expect(update).toHaveBeenNthCalledWith(1, { active: false });
+    expect(update).toHaveBeenNthCalledWith(2, { active: true });
+  });
+
+  it("archives and restores promotions using active", async () => {
+    const { repo, update } = repoForUpdate(promotionRows[0]);
+    await repo.archivePromotion("promo");
+    await repo.restorePromotion("promo");
+    expect(update).toHaveBeenNthCalledWith(1, { active: false });
+    expect(update).toHaveBeenNthCalledWith(2, { active: true });
+  });
+});
+
+describe("updateBusinessProfile", () => {
+  it("reads the current profile to get its id, then updates that row", async () => {
+    const row = profileRows[0];
+    const updateSpy = vi.fn();
+    const from = vi.fn((table: string) => {
+      if (table !== "business_profiles") throw new Error(`unexpected table ${table}`);
+      return {
+        select: vi.fn(() => ({
+          order: vi.fn(() => Promise.resolve({ data: [row], error: null })),
+        })),
+        update: vi.fn((payload: Record<string, unknown>) => {
+          updateSpy(payload);
+          return {
+            eq: vi.fn(() => ({
+              select: vi.fn(() => ({
+                single: vi.fn().mockResolvedValue({
+                  data: { ...row, business_name: "Nuevo nombre" },
+                  error: null,
+                }),
+              })),
+            })),
+          };
+        }),
+      };
+    });
+    const repo = new SupabaseCommercialRepository({ from } as never);
+    const updated = await repo.updateBusinessProfile({ businessName: "Nuevo nombre" });
+    expect(updateSpy).toHaveBeenCalledWith({ business_name: "Nuevo nombre" });
+    expect(updated.businessName).toBe("Nuevo nombre");
+  });
+});
+
+describe("setPrimaryWhatsAppChannel", () => {
+  it("clears the previous primary channel, then marks the new one primary and active", async () => {
+    const neqSpy = vi.fn();
+    const single = vi.fn().mockResolvedValue({
+      data: { ...whatsappRows[0], is_primary: true },
+      error: null,
+    });
+    const select = vi.fn(() => ({ single }));
+    const eq = vi.fn(() => ({ select }));
+    const update = vi.fn((payload: Record<string, unknown>) => {
+      if ("is_primary" in payload && payload.is_primary === false) {
+        return {
+          neq: (...args: unknown[]) => {
+            neqSpy(...args);
+            return Promise.resolve({ error: null });
+          },
+        };
+      }
+      return { eq };
+    });
+    const from = vi.fn(() => ({ update }));
+    const repo = new SupabaseCommercialRepository({ from } as never);
+    const result = await repo.setPrimaryWhatsAppChannel("whatsapp-alternativo");
+    expect(neqSpy).toHaveBeenCalledWith("id", "whatsapp-alternativo");
+    expect(update).toHaveBeenCalledWith({ is_primary: true, active: true });
+    expect(result.isPrimary).toBe(true);
+  });
+
+  it("throws when clearing the previous primary channel fails", async () => {
+    const update = vi.fn(() => ({
+      neq: vi.fn(() => Promise.resolve({ error: { message: "boom" } })),
+    }));
+    const from = vi.fn(() => ({ update }));
+    const repo = new SupabaseCommercialRepository({ from } as never);
+    await expect(repo.setPrimaryWhatsAppChannel("whatsapp-alternativo")).rejects.toThrow(
+      "desmarcar WhatsApp principal: boom",
+    );
+  });
+});
+
+describe("listAuditLog", () => {
+  it("maps audit log rows to camelCase", async () => {
+    const auditRow = {
+      id: "log-1",
+      actor_user_id: "admin-1",
+      table_name: "products",
+      record_id: "blonde-ale",
+      operation: "update",
+      created_at: "2026-08-01T00:00:00.000Z",
+    };
+    const limit = vi.fn().mockResolvedValue({ data: [auditRow], error: null });
+    const order = vi.fn(() => ({ limit }));
+    const select = vi.fn(() => ({ order }));
+    const from = vi.fn(() => ({ select }));
+    const repo = new SupabaseCommercialRepository({ from } as never);
+    await expect(repo.listAuditLog()).resolves.toEqual([
+      {
+        id: "log-1",
+        actorUserId: "admin-1",
+        tableName: "products",
+        recordId: "blonde-ale",
+        operation: "update",
+        createdAt: "2026-08-01T00:00:00.000Z",
+      },
+    ]);
+    expect(limit).toHaveBeenCalledWith(25);
   });
 });
 
