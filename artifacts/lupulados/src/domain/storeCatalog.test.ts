@@ -273,12 +273,8 @@ describe("storeCatalog", () => {
       resolve(process.cwd(), "src/components/ConfigurableBeerPackBuilder.tsx"),
       "utf8",
     );
-    const packProductList = readFileSync(
-      resolve(process.cwd(), "src/components/configurable-beer-pack/PackProductList.tsx"),
-      "utf8",
-    );
-    const packSummaryPanel = readFileSync(
-      resolve(process.cwd(), "src/components/configurable-beer-pack/PackSummaryPanel.tsx"),
+    const liveOrderSummary = readFileSync(
+      resolve(process.cwd(), "src/components/order-wizard/LiveOrderSummary.tsx"),
       "utf8",
     );
 
@@ -290,8 +286,8 @@ describe("storeCatalog", () => {
     expect(beerQuantityStep).toContain('layout="wide"');
     expect(orderWizard).toContain("WizardActionBar");
     expect(orderWizard).toContain("MobileCartSummary");
-    expect(orderWizard).toContain("getCompactCartLineDescription");
-    expect(orderWizard).toContain('detailed && item.pack?.type === "configurable-beer-pack"');
+    expect(liveOrderSummary).toContain("getCompactCartLineDescription");
+    expect(liveOrderSummary).toContain('detailed && item.pack?.type === "configurable-beer-pack"');
     expect(orderWizard).toContain("--wizard-action-bottom-inset");
     expect(orderWizard).toContain("lg:min-h-[min(620px,var(--wizard-viewport-height))]");
     expect(orderWizard).toContain("lg:h-[var(--wizard-viewport-height)]");

@@ -6,6 +6,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 
 ### Added
 
+- Se agregaron 8 archivos `.test.ts` nuevos en `src/domain` cerrando los gaps de cobertura reales que había dejado sin cerrar la ronda anterior de auditoría (módulos con lógica de negocio, no solo tipos): `contact.ts` (0% de cobertura), `checkout.ts`, `cartLineFormatting.ts` (34.88%/22.22% statements/branches), `commercialSelectors.ts`, `commercialAdapters.ts`, `businessConfig.ts` (0% functions), `storePageFormatting.ts` (75%/72%) y `adminDashboardHelpers.ts` (84%/42.85% branches). Cubren edge cases reales (límites de validación Zod, ventana de fechas de promociones, las 4 ramas de parseo de `getCartItemLitersFromSnapshot`, la cascada de fallback de `getCompactCartLineDescription`, etc.), no relleno para forzar porcentaje, y suben la cobertura global de `src/domain` por encima del 96.54%/87.38%/93.78%/96.54% (statements/branches/functions/lines) medido antes de este cambio.
 - La calculadora de barriles ahora tiene arquitectura viewport-first: layout reutilizable de módulo interactivo, flujo mobile por pasos, modales compactos para estilos y mezcla, y tests de duración extendida/selección múltiple/porcentajes.
 - Opción para editar manualmente la cantidad de litros de cerveza por persona en la calculadora de barriles.
 - `lib/db/src/schema` ahora define en Drizzle las 9 tablas del esquema comercial/admin (antes vacío), espejando `supabase/migrations/20260725120000_commercial_admin_foundation.sql` (columnas, checks, únicos, FK). No se tocaron endpoints de `api-server`; el frontend sigue consultando Supabase directamente.
@@ -19,6 +20,7 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/). C
 
 ### Changed
 
+- `LiveOrderSummary` (el panel "Tu pedido" en vivo del wizard, ~170 líneas) se extrajo de `ArmaTuPedido.tsx` a su propio archivo `components/order-wizard/LiveOrderSummary.tsx`, siguiendo el mismo patrón usado para el resto de sus componentes hermanos. Cierra la deuda que las dos pasadas de refactor anteriores habían dejado explícitamente pendiente (ver historial de este CHANGELOG) porque `storeCatalog.test.ts` verificaba literales de su código fuente en `ArmaTuPedido.tsx`; ese test se actualizó para leer y verificar esos mismos literales (`getCompactCartLineDescription`, el chequeo de `configurable-beer-pack`) desde la nueva ubicación. Sin cambios de comportamiento.
 - La preferencia de estilos de cerveza en la calculadora pasa de selección única visible como tags a selección múltiple en modal. Queda documentada como preferencia para "Arma tu pedido" y ya no modifica litros ni promete reservar estilos concretos.
 - La mezcla de bebidas pasa de controles expansivos inline a modal transaccional con resumen compacto, validación de porcentajes, distribución automática y detalle truncado con "Ver N más" en el resultado.
 - La duración del evento se representa internamente en minutos totales, sin límite de 12/24 horas, con formato en días/horas/minutos y validación explícita para duración cero.
