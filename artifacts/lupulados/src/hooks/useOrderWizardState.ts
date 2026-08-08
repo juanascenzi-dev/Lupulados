@@ -31,6 +31,8 @@ import {
   CONFIGURABLE_PACK_ORDER_TYPE,
   getNextWizardStep,
   getPrevWizardStep,
+  getWizardPhase,
+  PHASE_LABELS,
   QUICK_ORDER_CATEGORIES,
   WHATSAPP_ACTIVATION_GUARD_MS,
   type Step,
@@ -47,6 +49,7 @@ import {
 } from "@/domain/productCatalog";
 import { resolveAppliedPromotion } from "@/domain/promotionMatching";
 import { buildWhatsAppOrderMessage, buildWhatsAppOrderUrl } from "@/domain/whatsAppOrder";
+import { reportError } from "@/lib/monitoring/sentry";
 
 interface UseOrderWizardStateInput {
   pendingRecommendation: BarrelRecommendation | null;
@@ -487,13 +490,23 @@ export function useOrderWizardState({
     snapshot,
   });
   let whatsAppOrderUrl: string | null = null;
-  try {
-    whatsAppOrderUrl = selectedWhatsAppChannel
-      ? buildWhatsAppOrderUrl(selectedWhatsAppChannel.phoneE164, whatsAppOrderMessage)
-      : null;
-  } catch {
-    whatsAppOrderUrl = null;
+  let whatsAppOrderError: string | null = null;
+  if (selectedWhatsAppChannel) {
+    try {
+      whatsAppOrderUrl = buildWhatsAppOrderUrl(
+        selectedWhatsAppChannel.phoneE164,
+        whatsAppOrderMessage,
+      );
+    } catch (error) {
+      // Canal mal configurado (ej. telefono invalido) es un bug de datos, no algo que
+      // el cliente pueda resolver: se reporta para que el equipo lo vea y se le muestra
+      // un aviso en vez de dejar el boton "Confirmar por WhatsApp" inerte sin explicacion.
+      reportError(error, { scope: "order-wizard-whatsapp-url" });
+      whatsAppOrderError =
+        "No pudimos generar el link de WhatsApp. Escribinos directo por consultas.";
+    }
   }
+  const stepAnnouncement = `Paso ${step} de 5 — ${PHASE_LABELS[getWizardPhase(step) - 1]}`;
   const slideVariants: Variants = {
     initial: (dir: number) => ({ opacity: 0, x: dir * 60 }),
     animate: {
@@ -619,6 +632,8 @@ export function useOrderWizardState({
       canProceed,
       validationMessage,
       whatsAppOrderUrl,
+      whatsAppOrderError,
+      stepAnnouncement,
       slideVariants,
       whatsAppChannels,
       selectedWhatsAppChannel,

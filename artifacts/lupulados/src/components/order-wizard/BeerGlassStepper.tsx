@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { PHASE_LABELS, type Step } from "@/domain/orderWizardConstants";
+import { getWizardPhase, PHASE_LABELS, type Step } from "@/domain/orderWizardConstants";
 import { BeerGlass } from "@/components/order-wizard/BeerGlass";
 
 interface BeerGlassStepperProps {
@@ -7,7 +7,7 @@ interface BeerGlassStepperProps {
 }
 
 export function BeerGlassStepper({ step }: BeerGlassStepperProps) {
-  const phase = step <= 3 ? 1 : step === 4 ? 2 : 3;
+  const phase = getWizardPhase(step);
   const progress = ((phase - 1) / 2) * 100;
   return (
     <div className="w-full">

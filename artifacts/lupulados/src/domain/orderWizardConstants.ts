@@ -34,6 +34,11 @@ export const BUBBLES = Array.from({ length: 12 }, (_, i) => ({
 
 const SKIP_STEP_TWO_ORDER_TYPES: OrderType[] = ["paquete", "porrón"];
 
+/** Agrupa los 5 steps internos del wizard en las 3 fases visibles de `PHASE_LABELS`. */
+export function getWizardPhase(step: Step): 1 | 2 | 3 {
+  return step <= 3 ? 1 : step === 4 ? 2 : 3;
+}
+
 export function getNextWizardStep(step: Step, isBeerCategory: boolean, orderType: OrderType): Step {
   if (isBeerCategory && step === 1 && SKIP_STEP_TWO_ORDER_TYPES.includes(orderType)) {
     return 3;

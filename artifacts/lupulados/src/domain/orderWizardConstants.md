@@ -15,6 +15,7 @@ related: ["[[activationGuard]]", "[[orderFlow]]"]
 - `QUICK_ORDER_CATEGORIES` — categorías que aparecen como acceso rápido en el selector (no incluye todas las `ProductCategory`, ej. excluye `aperitif`, `liqueur`, `water`, `ice`).
 - `CONFIGURABLE_PACK_ORDER_TYPE` — `"porrón"`, el `OrderType` que dispara el flujo de pack configurable.
 - `BUBBLES` — array de 12 elementos con propiedades aleatorias (`size`, `left`, `delay`, `duration`) para la animación decorativa de burbujas del fondo.
+- `getWizardPhase(step)` — agrupa los 5 steps internos en las 3 fases visibles de `PHASE_LABELS`: pasos 1-3 → fase 1, paso 4 → fase 2, paso 5 → fase 3. Fuente única de esta regla; la usan tanto `BeerGlassStepper` (barra visual) como el anuncio `aria-live` de cambio de paso, para que nunca queden desincronizados.
 - `getNextWizardStep(step, isBeerCategory, orderType)` / `getPrevWizardStep(step, isBeerCategory, orderType)` — avanzan/retroceden el step, saltando el paso 2 (selección de cerveza puntual) cuando `orderType` es `"paquete"` o `"porrón"` (`SKIP_STEP_TWO_ORDER_TYPES`) y estamos en categoría cerveza.
 
 **Reglas de negocio / edge cases:**
@@ -22,6 +23,7 @@ related: ["[[activationGuard]]", "[[orderFlow]]"]
 - `BUBBLES` se genera **una sola vez al importar el módulo** (`Math.random()` en top-level) — todas las instancias/renders de la animación comparten el mismo set de burbujas hasta que se recargue la página; no es un valor que se regenere en cada render.
 - El salto de paso 2 solo aplica `isBeerCategory` — para categorías no-cerveza el wizard siempre pasa por los 3 pasos secuenciales sin saltos.
 - `getNextWizardStep`/`getPrevWizardStep` clampan el resultado a `[1, 5]` con `Math.min`/`Math.max`, así que nunca hace falta que el caller valide el rango por separado.
+- `getWizardPhase` es una función total sobre `Step` (`1 | 2 | 3 | 4 | 5`): no hay valor de entrada que quede sin fase asignada.
 
 **Dependencias clave:** `OrderType` de [[orderFlow]]; `ProductCategory` de `commercialTypes.ts`.
 

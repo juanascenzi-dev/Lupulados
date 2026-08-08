@@ -4,7 +4,7 @@ import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { BarrelRecommendation } from "@/domain/barrelCalculator";
 import type { BeverageMixItemEstimate } from "@/domain/beverageMix";
-import { BUBBLES } from "@/domain/orderWizardConstants";
+import { OrderWizardBubbles } from "@/components/order-wizard/OrderWizardBubbles";
 import { OrderTypeGrid } from "@/components/order-wizard/OrderTypeGrid";
 import { BeerStyleGrid } from "@/components/order-wizard/BeerStyleGrid";
 import { PendingRecommendationSummary } from "@/components/order-wizard/PendingRecommendationSummary";
@@ -103,6 +103,8 @@ export function ArmaTuPedido({
     canProceed,
     validationMessage,
     whatsAppOrderUrl,
+    whatsAppOrderError,
+    stepAnnouncement,
     slideVariants,
     whatsAppChannels,
     selectedWhatsAppChannel,
@@ -144,31 +146,7 @@ export function ArmaTuPedido({
       className="site-section site-section-standard relative overflow-x-clip overflow-y-visible border-t border-white/5 bg-background"
     >
       {/* Beer bubble decorations */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {BUBBLES.map((b) => (
-          <motion.div
-            key={b.id}
-            className="absolute rounded-full"
-            style={{
-              width: b.size,
-              height: b.size,
-              left: `${b.left}%`,
-              bottom: "-5%",
-              background: "radial-gradient(circle, rgba(245,158,11,0.25), transparent)",
-            }}
-            animate={{
-              y: [0, -window.innerHeight * 1.2],
-              opacity: [0, 0.15, 0],
-            }}
-            transition={{
-              duration: b.duration,
-              delay: b.delay,
-              repeat: Infinity,
-              ease: "easeIn",
-            }}
-          />
-        ))}
-      </div>
+      <OrderWizardBubbles />
 
       <div
         data-section-entry
@@ -183,6 +161,9 @@ export function ArmaTuPedido({
           isConfigurablePackStep ? "max-w-7xl" : "max-w-6xl",
         )}
       >
+        <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+          {stepAnnouncement}
+        </p>
         <div className="shrink-0">
           <div className="mb-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(280px,420px)] lg:items-center">
             <div className="text-center lg:text-left">
@@ -219,7 +200,7 @@ export function ArmaTuPedido({
         {!hasCatalogProducts ? (
           <div className="max-w-2xl mx-auto rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
             <ShoppingCart className="w-10 h-10 text-primary mx-auto mb-4" aria-hidden="true" />
-            <h3 className="text-xl font-bold text-white mb-2">Catalogo no disponible</h3>
+            <h3 className="text-xl font-bold text-white mb-2">Catálogo no disponible</h3>
             <p className="text-sm text-muted-foreground">
               No hay productos activos para armar un pedido en este momento.
             </p>
@@ -493,6 +474,7 @@ export function ArmaTuPedido({
               validationMessage={validationMessage}
               primaryActionLabel={primaryActionLabel}
               whatsAppOrderUrl={whatsAppOrderUrl}
+              whatsAppOrderError={whatsAppOrderError}
               whatsAppOpening={whatsAppOpening}
               onPrev={goPrev}
               onNext={goNext}

@@ -9,6 +9,7 @@ interface WizardActionBarProps {
   validationMessage: string | null;
   primaryActionLabel: string;
   whatsAppOrderUrl: string | null;
+  whatsAppOrderError: string | null;
   whatsAppOpening: boolean;
   onPrev: () => void;
   onNext: () => void;
@@ -23,6 +24,7 @@ export function WizardActionBar({
   validationMessage,
   primaryActionLabel,
   whatsAppOrderUrl,
+  whatsAppOrderError,
   whatsAppOpening,
   onPrev,
   onNext,
@@ -78,6 +80,11 @@ export function WizardActionBar({
       {!canProceed && step < 5 && (
         <p id={`order-step-${step}-error`} className="mt-2 text-xs text-white/70" role="alert">
           {validationMessage}
+        </p>
+      )}
+      {step === 5 && whatsAppOrderError && (
+        <p className="mt-2 text-xs text-white/70" role="alert">
+          {whatsAppOrderError}
         </p>
       )}
     </div>

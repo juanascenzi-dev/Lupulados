@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { getNextWizardStep, getPrevWizardStep } from "./orderWizardConstants";
+import { getNextWizardStep, getPrevWizardStep, getWizardPhase } from "./orderWizardConstants";
+
+describe("getWizardPhase", () => {
+  it("groups steps 1-3 into phase 1", () => {
+    expect(getWizardPhase(1)).toBe(1);
+    expect(getWizardPhase(2)).toBe(1);
+    expect(getWizardPhase(3)).toBe(1);
+  });
+
+  it("maps step 4 to phase 2 and step 5 to phase 3", () => {
+    expect(getWizardPhase(4)).toBe(2);
+    expect(getWizardPhase(5)).toBe(3);
+  });
+});
 
 describe("getNextWizardStep", () => {
   it("advances one step at a time outside the beer category", () => {
