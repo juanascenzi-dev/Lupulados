@@ -1,0 +1,4 @@
+# Ver https://docs.github.com/articles/about-code-owners
+# Reviewer por defecto para todo el repo. Se puede afinar por directorio
+# más adelante si se suman más colaboradores.
+* @juanascenzi-dev
