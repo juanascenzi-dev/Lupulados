@@ -68,6 +68,50 @@ Estas notas son notas de Obsidian (el repo tiene `.obsidian/` en la raíz): usan
 
 `.github/workflows/ci.yml` corre en push/PR contra `main`: install → typecheck → lint → test (con coverage) → build. Un PR no se mergea si CI falla.
 
+### Versión de Node
+
+`package.json` (raíz y `artifacts/lupulados`) fija `engines.node: "24.x"`, y `.npmrc` tiene `engine-strict=true`. En la práctica, con pnpm 11.18.0 esto produce un `WARN` en `pnpm install` si la versión local no matchea (`[WARN] Unsupported engine`), no un hard-fail — sigue siendo señal visible de que el entorno local está desalineado de lo que corre `ci.yml` (`node-version: 24`), aunque no bloquee. Si tu Node local no es 24.x, verás ese warning; usar `nvm`/`fnm` para alinear localmente evita sorpresas de comportamiento entre dev y CI.
+
+### Versionado
+
+Este repo no usa SemVer ni releases/tags de Git: `artifacts/lupulados` es una app de deploy continuo a Vercel (ver [Deploy](#deploy)), no un paquete que alguien instala con una versión pineada. `package.json` queda en `0.0.0` a propósito. El historial de cambios vive en `CHANGELOG.md` bajo `[Unreleased]`, y "lo que está en producción" es simplemente lo último mergeado en `main`.
+
+### Manejo de secrets / variables de entorno
+
+- Nunca se commitea `.env`/`.env.local` (`.gitignore` ya los excluye; solo `.env.example` va versionado).
+- Toda variable de cliente nueva va prefijada `VITE_` (Vite solo expone al bundle las que tienen ese prefijo) y se documenta en la tabla de [`artifacts/lupulados/README.md`](artifacts/lupulados/README.md#variables-de-entorno). `.env.example` es la fuente de verdad de qué variables existen.
+- Nunca poner un secret de servidor (service-role key, API key privada) en una var `VITE_*`: termina literal en el bundle del cliente, visible para cualquiera. `src/lib/supabase/config.ts` ya valida esto en runtime y rechaza proactivamente keys `sb_secret_`/`service_role` filtradas del lado del cliente — es el patrón a replicar si se agrega otro provider con distinción de keys pública/privada.
+
+### Gestión de dependencias
+
+`pnpm-workspace.yaml` centraliza la política de dependencias del monorepo:
+
+- `catalog:` fija la versión de toda dependencia compartida entre `artifacts/lupulados` y `artifacts/mockup-sandbox` (React, Vite, Tailwind, TanStack Query, etc.) en un solo lugar en vez de repetirla por paquete. Una dependencia usada por ambos paquetes va al catálogo, no fijada individualmente en cada `package.json`.
+- `overrides` se usa solo para pins de seguridad justificados con un comentario que explique el motivo — ver el pin de `esbuild` a `0.28.1` en el archivo (blindaje contra GHSA-g7r4-m6w7-qqqr).
+- `minimumReleaseAge: 1440` (24h) pone en cuarentena cualquier versión de dependencia recién publicada antes de que `pnpm install` la resuelva — mitiga ataques de supply-chain vía paquetes maliciosos recién subidos a npm.
+- No hay `pnpm audit` automatizado en CI todavía; se corre manualmente (ver `docs/code-audit-checklist.md` como precedente). Es parte del checklist de code review (abajo) y de `SECURITY.md`.
+
+### Accesibilidad (a11y)
+
+Convención manual, sin lint ni test automatizado hoy (evaluado y descartado por ahora: agregar `eslint-plugin-jsx-a11y` con el gate `--max-warnings=0` actual requeriría auditar y arreglar el código existente en el mismo cambio; queda anotado como mejora futura, no como pendiente olvidado). Al escribir o tocar UI:
+
+- HTML semántico antes que `div`/`span` genéricos con `role` (`<button>`, `<nav>`, `<label>`, etc.).
+- `alt` obligatorio en toda imagen no decorativa; `alt=""` explícito en las decorativas.
+- Todo control de formulario con `<label htmlFor>` o `aria-label`/`aria-labelledby`.
+- Foco visible y navegación por teclado en componentes interactivos custom (los primitivos de Radix UI ya lo dan gratis en la mayoría de los casos usados en este repo — preferirlos a un `<div onClick>` hecho a mano).
+
+### Code review
+
+Más allá de "CI en verde", antes de aprobar un PR revisar:
+
+- ¿La lógica de negocio nueva o tocada tiene test? (`src/domain` tiene gate de cobertura del 70%, pero eso no cubre lógica fuera de `src/domain`).
+- ¿Hay `console.*` nuevo sin gate a `import.meta.env.DEV`? (ver [Política de logging](#política-de-logging)).
+- ¿Hay un `catch` de I/O real (Supabase, storage) sin `reportError(error, { scope })`?
+- ¿Alguna dependencia nueva tiene una vulnerabilidad conocida (`pnpm audit`)?
+- Si se tocó `src/domain`, ¿el `.md` compañero del archivo sigue reflejando el comportamiento real?
+
+Ver también [`SECURITY.md`](SECURITY.md) (cómo reportar una vulnerabilidad) y [`CODEOWNERS`](CODEOWNERS) (quién revisa por defecto).
+
 ### Testing de componentes
 
 - `artifacts/lupulados/vitest.config.mjs` define dos `test.projects`: `node` (specs de `src/domain`, sin DOM) y `jsdom` (`*.test.tsx`, con `@testing-library/react`/`jest-dom`/`user-event`, `setupFiles: src/test/setupTests.ts`).
